@@ -1,0 +1,34 @@
+<html>
+<head>
+<title>Peppermint</title>
+</head>
+
+<h1>Peppermint</h1>
+<body>
+  <p>A random picture of some peppermint should appear in 1.5 seconds.</p>
+  <script type="text/javascript">
+    function sleep(milliseconds){
+       var start = new Date().getTime();
+       var keep_looping = true;
+       while (keep_looping) {
+          if ((new Date().getTime() - start)> milliseconds) {
+            keep_looping = false;
+          }
+       }
+    }
+    
+    function message(int_value){
+       if(int_value == 0){
+          document.write("<img src='mint1.jpg'>")
+          document.write("<p>Peppermint Picture #1.</p>")
+       } else {
+          document.write("<img src='mint2.jpg'>")
+          document.write("<p>Peppermint Picture #2.</p>")
+       }
+    }
+
+    sleep(1500);
+    message( Math.floor(Math.random() * 2) )
+  </script> 
+</body>
+</html>
