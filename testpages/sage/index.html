@@ -1,0 +1,22 @@
+<html>
+<head>
+<title>Sage</title>
+</head>
+
+<h1>Sage</h1>
+<body>
+  <script type="text/javascript">
+    function sleep(milliseconds){
+       var start = new Date().getTime();
+       var keep_looping = true;
+       while (keep_looping) {
+          if ((new Date().getTime() - start)> milliseconds) {
+            keep_looping = false;
+          }
+       }
+    }
+    sleep(1500);  
+    document.write("<img src='sage.jpg'>")
+  </script>  
+</body>
+</html>
