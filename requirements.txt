@@ -1,0 +1,5 @@
+pelican==3.7.1
+beautifulsoup4==4.5.3
+pillow==4.1.1
+pysvg==0.2.2
+markdown==2.6.8
