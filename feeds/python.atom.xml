@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Joe Thomas - Python</title><link href="http://jsthomas.github.io/" rel="alternate"></link><link href="http://jsthomas.github.io/feeds/python.atom.xml" rel="self"></link><id>http://jsthomas.github.io/</id><updated>2013-12-10T00:00:00-05:00</updated><entry><title>A Camera-Based Virtual Keyboard System</title><link href="http://jsthomas.github.io/vkeyboard.html" rel="alternate"></link><published>2013-12-10T00:00:00-05:00</published><updated>2013-12-10T00:00:00-05:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2013-12-10:/vkeyboard.html</id><summary type="html">&lt;p&gt;A brief summary of my term project for ECE 532&lt;/p&gt;</summary><content type="html">&lt;p&gt;In the Fall of 2013, I developed a camera-based keyboard system as my
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Joe Thomas - Python</title><link href="https://jsthomas.github.io/" rel="alternate"></link><link href="https://jsthomas.github.io/feeds/python.atom.xml" rel="self"></link><id>https://jsthomas.github.io/</id><updated>2013-12-10T00:00:00-05:00</updated><entry><title>A Camera-Based Virtual Keyboard System</title><link href="https://jsthomas.github.io/vkeyboard.html" rel="alternate"></link><published>2013-12-10T00:00:00-05:00</published><updated>2013-12-10T00:00:00-05:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2013-12-10:/vkeyboard.html</id><summary type="html">&lt;p&gt;A brief summary of my term project for ECE 532&lt;/p&gt;</summary><content type="html">&lt;p&gt;In the Fall of 2013, I developed a camera-based keyboard system as my
 term project for an image analysis course. This page provides a brief
 summary of my project.&lt;/p&gt;
 &lt;p&gt;In my system, a webcam looks down on a user's hands, which rest on a
@@ -37,7 +37,7 @@ extract a contour &lt;span class="math"&gt;\(\gamma\)&lt;/span&gt; that traverse
 counterclockwise. Places where &lt;span class="math"&gt;\(\gamma\)&lt;/span&gt; has high curvature (the
 places where &lt;span class="math"&gt;\(\gamma\)&lt;/span&gt; bends the most sharply) typically correspond to
 fingertips.&lt;/p&gt;
-&lt;p&gt;&lt;img alt="Virtual keyboard processing steps." src="http://jsthomas.github.io/images/vkeyboard/kb_processing.png" style="width: 1680px; height: auto;"/&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt="Virtual keyboard processing steps." src="https://jsthomas.github.io/images/vkeyboard/kb_processing.png" style="width: 1680px; height: auto;"/&gt;&lt;/p&gt;
 &lt;p&gt;I addressed the second problem using a technique called &lt;em&gt;shadow
 analysis&lt;/em&gt;, which is discussed in [1]. With this technique, we perform
 another segmentation on &lt;span class="math"&gt;\(I\)&lt;/span&gt;, to locate the regions in the image that
@@ -77,10 +77,10 @@ work with your particular hardware and copy of OpenCV.&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;
 &lt;p&gt;Paper:
-  &lt;a href="http://jsthomas.github.io/docs/vkeyboard/vkeyboard.pdf"&gt;A Camera Based Virtual Keyboard with Touch Detection by Shadow Analysis&lt;/a&gt;&lt;/p&gt;
+  &lt;a href="https://jsthomas.github.io/docs/vkeyboard/vkeyboard.pdf"&gt;A Camera Based Virtual Keyboard with Touch Detection by Shadow Analysis&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
-&lt;p&gt;Project Code: &lt;a href="http://jsthomas.github.io/docs/vkeyboard/vkeyboard.zip"&gt;vkeyboard.zip&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Project Code: &lt;a href="https://jsthomas.github.io/docs/vkeyboard/vkeyboard.zip"&gt;vkeyboard.zip&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
 &lt;h2&gt;References&lt;/h2&gt;

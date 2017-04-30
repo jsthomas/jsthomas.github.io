@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Joe Thomas</title><link href="http://jsthomas.github.io/" rel="alternate"></link><link href="http://jsthomas.github.io/feeds/all.atom.xml" rel="self"></link><id>http://jsthomas.github.io/</id><updated>2014-04-02T00:00:00-04:00</updated><entry><title>A Mathematics Geneaology Project Visualizer</title><link href="http://jsthomas.github.io/math-genealogy-visualizer.html" rel="alternate"></link><published>2014-04-02T00:00:00-04:00</published><updated>2014-04-02T00:00:00-04:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2014-04-02:/math-genealogy-visualizer.html</id><summary type="html">&lt;p&gt;A program to visualize data from the Mathematics Geneaology Project&lt;/p&gt;</summary><content type="html">&lt;p&gt;The
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Joe Thomas</title><link href="https://jsthomas.github.io/" rel="alternate"></link><link href="https://jsthomas.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jsthomas.github.io/</id><updated>2014-04-02T00:00:00-04:00</updated><entry><title>A Mathematics Geneaology Project Visualizer</title><link href="https://jsthomas.github.io/math-genealogy-visualizer.html" rel="alternate"></link><published>2014-04-02T00:00:00-04:00</published><updated>2014-04-02T00:00:00-04:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2014-04-02:/math-genealogy-visualizer.html</id><summary type="html">&lt;p&gt;A program to visualize data from the Mathematics Geneaology Project&lt;/p&gt;</summary><content type="html">&lt;p&gt;The
 &lt;a href="http://genealogy.math.ndsu.nodak.edu/"&gt;Mathematics Geneaology Project&lt;/a&gt;
 (MGP) is a publicly searchable database that records advisor-advisee
 relations between mathematicians. Their website is interesting,
@@ -14,14 +14,14 @@ using python.&lt;/p&gt;
 &lt;h2&gt;Example Output&lt;/h2&gt;
 &lt;p&gt;After reading the steps below, you should be able to produce a picture
 like the one below.&lt;/p&gt;
-&lt;p&gt;&lt;img alt="A genealogical tree" src="http://jsthomas.github.io/images/mgptree/gauss.png" style="width: 764px; height: auto;"/&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt="A genealogical tree" src="https://jsthomas.github.io/images/mgptree/gauss.png" style="width: 764px; height: auto;"/&gt;&lt;/p&gt;
 &lt;p&gt;Naturally, the real purpose of the tool is to make much bigger graphs
 than this!&lt;/p&gt;
 &lt;h2&gt;Download&lt;/h2&gt;
 &lt;p&gt;You will need the following:&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;
-&lt;p&gt;A copy of my python script which you can &lt;a href="http://jsthomas.github.io/docs/mgptree/mgptree.zip"&gt;download here&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;A copy of my python script which you can &lt;a href="https://jsthomas.github.io/docs/mgptree/mgptree.zip"&gt;download here&lt;/a&gt;.&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
 &lt;p&gt;A working python installation with the "requests" package.&lt;/p&gt;
@@ -72,7 +72,7 @@ where we want to convert the input database &lt;code&gt;gf.mgp&lt;/code&gt; to a
 format, which we'll save as &lt;code&gt;gf.dot&lt;/code&gt;. The next line hands the textual
 data to the graphviz program &lt;code&gt;dot&lt;/code&gt;, which converts it to a PNG image
 file named &lt;code&gt;gf.png&lt;/code&gt;. (Many other file formats are available.)&lt;/p&gt;
-&lt;p&gt;&lt;img alt="Genealogical trees of Gauss and Fourier" src="http://jsthomas.github.io/images/mgptree/gf.png" style="width: 1915px; height: auto;"/&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt="Genealogical trees of Gauss and Fourier" src="https://jsthomas.github.io/images/mgptree/gf.png" style="width: 1915px; height: auto;"/&gt;&lt;/p&gt;
 &lt;p&gt;Creating the intermediate database &lt;code&gt;gf.mgp&lt;/code&gt; allows us to work with the
 data offline, without having to query the web while we are figuring
 out how we want to plot the data.  For example, suppose we only want
@@ -83,7 +83,7 @@ jthomas@emu:$ dot -Tpng gf_tiny.dot -o gf_tiny.png
 &lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;and we wouldn't have to retrieve any information from the web. The
 result, &lt;code&gt;gf_tiny.png&lt;/code&gt; looks like this:&lt;/p&gt;
-&lt;p&gt;&lt;img alt="A small genealogical tree of Gauss and Fourier." src="http://jsthomas.github.io/images/mgptree/gf_tiny.png" style="width: 907px; height: auto;"/&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt="A small genealogical tree of Gauss and Fourier." src="https://jsthomas.github.io/images/mgptree/gf_tiny.png" style="width: 907px; height: auto;"/&gt;&lt;/p&gt;
 &lt;p&gt;This feature can be pretty useful if you're trying to work with very
 large sets of data and don't know how much information you want to
 present.&lt;/p&gt;
@@ -123,7 +123,7 @@ graphviz is very useful for tasks like this.&lt;/p&gt;
 &lt;h2&gt;Questions, Comments, and Bug Reports&lt;/h2&gt;
 &lt;p&gt;If you end up using this script to do something cool, or want to ask
 me some questions about how to use it, or want to report a bug,
-&lt;a href="http://jsthomas.github.io/pages/about.html"&gt;here is my contact information&lt;/a&gt;.&lt;/p&gt;</content></entry><entry><title>A Camera-Based Virtual Keyboard System</title><link href="http://jsthomas.github.io/vkeyboard.html" rel="alternate"></link><published>2013-12-10T00:00:00-05:00</published><updated>2013-12-10T00:00:00-05:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2013-12-10:/vkeyboard.html</id><summary type="html">&lt;p&gt;A brief summary of my term project for ECE 532&lt;/p&gt;</summary><content type="html">&lt;p&gt;In the Fall of 2013, I developed a camera-based keyboard system as my
+&lt;a href="https://jsthomas.github.io/pages/about.html"&gt;here is my contact information&lt;/a&gt;.&lt;/p&gt;</content></entry><entry><title>A Camera-Based Virtual Keyboard System</title><link href="https://jsthomas.github.io/vkeyboard.html" rel="alternate"></link><published>2013-12-10T00:00:00-05:00</published><updated>2013-12-10T00:00:00-05:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2013-12-10:/vkeyboard.html</id><summary type="html">&lt;p&gt;A brief summary of my term project for ECE 532&lt;/p&gt;</summary><content type="html">&lt;p&gt;In the Fall of 2013, I developed a camera-based keyboard system as my
 term project for an image analysis course. This page provides a brief
 summary of my project.&lt;/p&gt;
 &lt;p&gt;In my system, a webcam looks down on a user's hands, which rest on a
@@ -161,7 +161,7 @@ extract a contour &lt;span class="math"&gt;\(\gamma\)&lt;/span&gt; that traverse
 counterclockwise. Places where &lt;span class="math"&gt;\(\gamma\)&lt;/span&gt; has high curvature (the
 places where &lt;span class="math"&gt;\(\gamma\)&lt;/span&gt; bends the most sharply) typically correspond to
 fingertips.&lt;/p&gt;
-&lt;p&gt;&lt;img alt="Virtual keyboard processing steps." src="http://jsthomas.github.io/images/vkeyboard/kb_processing.png" style="width: 1680px; height: auto;"/&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt="Virtual keyboard processing steps." src="https://jsthomas.github.io/images/vkeyboard/kb_processing.png" style="width: 1680px; height: auto;"/&gt;&lt;/p&gt;
 &lt;p&gt;I addressed the second problem using a technique called &lt;em&gt;shadow
 analysis&lt;/em&gt;, which is discussed in [1]. With this technique, we perform
 another segmentation on &lt;span class="math"&gt;\(I\)&lt;/span&gt;, to locate the regions in the image that
@@ -201,10 +201,10 @@ work with your particular hardware and copy of OpenCV.&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;
 &lt;p&gt;Paper:
-  &lt;a href="http://jsthomas.github.io/docs/vkeyboard/vkeyboard.pdf"&gt;A Camera Based Virtual Keyboard with Touch Detection by Shadow Analysis&lt;/a&gt;&lt;/p&gt;
+  &lt;a href="https://jsthomas.github.io/docs/vkeyboard/vkeyboard.pdf"&gt;A Camera Based Virtual Keyboard with Touch Detection by Shadow Analysis&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
-&lt;p&gt;Project Code: &lt;a href="http://jsthomas.github.io/docs/vkeyboard/vkeyboard.zip"&gt;vkeyboard.zip&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Project Code: &lt;a href="https://jsthomas.github.io/docs/vkeyboard/vkeyboard.zip"&gt;vkeyboard.zip&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
 &lt;h2&gt;References&lt;/h2&gt;
