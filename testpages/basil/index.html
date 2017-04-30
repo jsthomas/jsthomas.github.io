@@ -1,0 +1,23 @@
+<html>
+<head>
+<title>Basil</title>
+</head>
+
+<h1>Basil</h1>
+<body>
+  <script type="text/javascript">
+    function sleep(milliseconds){
+       var start = new Date().getTime();
+       var keep_looping = true;
+       while (keep_looping) {
+          if ((new Date().getTime() - start)> milliseconds) {
+            keep_looping = false;
+          }
+       }
+    }
+    sleep(1500);  
+    document.write("<img src='basil.jpg' height='400'>")
+    document.write("<p>Page Load Done.</p>")
+  </script>  
+</body>
+</html>

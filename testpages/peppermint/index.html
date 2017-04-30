@@ -1,0 +1,38 @@
+<html>
+<head>
+<title>Peppermint</title>
+</head>
+
+<h1>Peppermint</h1>
+<body>
+  <script type="text/javascript">
+    function sleep(milliseconds){
+       var start = new Date().getTime();
+       var keep_looping = true;
+       while (keep_looping) {
+          if ((new Date().getTime() - start)> milliseconds) {
+            keep_looping = false;
+          }
+       }
+       document.write("<img src='mint2.jpg?time_value_for_unit_test=" + start + "'>");
+       document.write("<p>The date value was: " + start + "<\p>");
+    }
+
+    function outermost(value){
+       middle(value);
+    }
+
+    function middle(value){
+       innermost(value);
+    }
+    
+    function innermost(value){
+        document.write("<img src='mint1.jpg?rand_value_for_unit_test="+ value  + "'>");
+        document.write("<p>Final rand value was: " + value + "<\p>");
+    }
+
+    sleep(1500);
+    outermost( Math.random() );
+  </script> 
+</body>
+</html>
