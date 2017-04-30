@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Joe Thomas - Python, Projects</title><link href="http://jsthomas.github.io/" rel="alternate"></link><link href="http://jsthomas.github.io/feeds/python-projects.atom.xml" rel="self"></link><id>http://jsthomas.github.io/</id><updated>2014-04-02T00:00:00-04:00</updated><entry><title>A Mathematics Geneaology Project Visualizer</title><link href="http://jsthomas.github.io/math-genealogy-visualizer.html" rel="alternate"></link><published>2014-04-02T00:00:00-04:00</published><updated>2014-04-02T00:00:00-04:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2014-04-02:/math-genealogy-visualizer.html</id><summary type="html">&lt;p&gt;A program to visualize data from the Mathematics Geneaology Project&lt;/p&gt;</summary><content type="html">&lt;p&gt;The
+&lt;a href="http://genealogy.math.ndsu.nodak.edu/"&gt;Mathematics Geneaology Project&lt;/a&gt;
+(MGP) is a publicly searchable database that records advisor-advisee
+relations between mathematicians. Their website is interesting,
+particularly if you're interested in the history of
+mathematics. Unfortunately, their website is also mostly text-based;
+there isn't a way to visualize the relationships between large groups
+of people.&lt;/p&gt;
+&lt;p&gt;I've created a tool that produces a directed graph displaying the
+advisor-advisee relations stored in the MGP database. I created this
+tool in 2012 in order to learn about how to process data from the web
+using python.&lt;/p&gt;
+&lt;h2&gt;Example Output&lt;/h2&gt;
+&lt;p&gt;After reading the steps below, you should be able to produce a picture
+like the one below.&lt;/p&gt;
+&lt;p&gt;&lt;img alt="A genealogical tree" src="http://jsthomas.github.io/images/mgptree/gauss.png" style="width: 764px; height: auto;"/&gt;&lt;/p&gt;
+&lt;p&gt;Naturally, the real purpose of the tool is to make much bigger graphs
+than this!&lt;/p&gt;
+&lt;h2&gt;Download&lt;/h2&gt;
+&lt;p&gt;You will need the following:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;A copy of my python script which you can &lt;a href="http://jsthomas.github.io/docs/mgptree/mgptree.zip"&gt;download here&lt;/a&gt;.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;A working python installation with the "requests" package.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;An installation of &lt;a href="http://www.graphviz.org/"&gt;graphviz&lt;/a&gt; (this
+program takes care of the actual graph drawing).&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Basic knowledge of the command line.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;On an Ubuntu machine, these dependencies (&lt;code&gt;graphviz&lt;/code&gt; and &lt;code&gt;requests&lt;/code&gt;)
+can be installed via:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;jthomas@emu:$ sudo apt install pip graphviz
+jthomas@emu:$ sudo pip install requests
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h2&gt;Usage Example&lt;/h2&gt;
+&lt;p&gt;The easiest way to learn how to use this tool is by way of an
+example. Place the &lt;code&gt;mgptree&lt;/code&gt; script in a convenient folder (the
+program generates a number of files). Change the permissions on the
+script so that you can execute it.&lt;/p&gt;
+&lt;p&gt;Let's say we want to generate a tree for Gauß and Fourier, going back
+5 generations. The first step is to prepare a file of names for our
+search:&lt;/p&gt;
+&lt;p&gt;So, we create a unicode text file:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;Gauß Carl Friedrich
+Fourier Jean-Baptiste Joseph
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;I'll call the file &lt;code&gt;gf.txt&lt;/code&gt;. Now we need to get some data from the
+web. We do this as follows:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;jthomas@emu:$ mgptree -g 5 -s -i gf.txt -o gf.mgp
+Saved 25 records to file gf.mgp.
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The &lt;code&gt;-s&lt;/code&gt; option indicates we want to "scrape" data from the MGP
+website. The &lt;code&gt;-g&lt;/code&gt; option indicates how many generations backward we
+want to search. The &lt;code&gt;-i&lt;/code&gt; denotes our input file, the &lt;code&gt;-o gf.mgp&lt;/code&gt;
+indicates that we want to save our results in a database named
+&lt;code&gt;gf.mgp&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Now we need to graph the data, so we type the following:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;:: bash
+
+jthomas@emu:$ mgptree -p -i gf.mgp -o gf.dot
+jthomas@emu:$ dot -Tpng gf.dot -o gf.png
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;In the first line, the &lt;code&gt;-p&lt;/code&gt; indicates we are now in "plotting mode"
+where we want to convert the input database &lt;code&gt;gf.mgp&lt;/code&gt; to a textual
+format, which we'll save as &lt;code&gt;gf.dot&lt;/code&gt;. The next line hands the textual
+data to the graphviz program &lt;code&gt;dot&lt;/code&gt;, which converts it to a PNG image
+file named &lt;code&gt;gf.png&lt;/code&gt;. (Many other file formats are available.)&lt;/p&gt;
+&lt;p&gt;&lt;img alt="Genealogical trees of Gauss and Fourier" src="http://jsthomas.github.io/images/mgptree/gf.png" style="width: 1915px; height: auto;"/&gt;&lt;/p&gt;
+&lt;p&gt;Creating the intermediate database &lt;code&gt;gf.mgp&lt;/code&gt; allows us to work with the
+data offline, without having to query the web while we are figuring
+out how we want to plot the data.  For example, suppose we only want
+to present two generations of the data we just downloaded. Then we'd
+type&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;jthomas@emu:$ mgptree -p -g2 -i gf.mgp -o gf_tiny.dot
+jthomas@emu:$ dot -Tpng gf_tiny.dot -o gf_tiny.png
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;and we wouldn't have to retrieve any information from the web. The
+result, &lt;code&gt;gf_tiny.png&lt;/code&gt; looks like this:&lt;/p&gt;
+&lt;p&gt;&lt;img alt="A small genealogical tree of Gauss and Fourier." src="http://jsthomas.github.io/images/mgptree/gf_tiny.png" style="width: 907px; height: auto;"/&gt;&lt;/p&gt;
+&lt;p&gt;This feature can be pretty useful if you're trying to work with very
+large sets of data and don't know how much information you want to
+present.&lt;/p&gt;
+&lt;h2&gt;Usage Tips&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;The Math Geneaology Project has some "holes" in its data. This seems
+to be particularly true for mathematicians who didn't get their degree
+in Europe or the US. If you or your advisor aren't listed, add your
+data to their website
+&lt;a href="http://genealogy.math.ndsu.nodak.edu/submit.php"&gt;here&lt;/a&gt; to help fill
+in the gaps!&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The number of requests to the MGP's database can grow to be quite
+large if you search back 10 or more generations. In particular, it's
+probably not a good idea to try to generate a tree for a large number
+of people &lt;em&gt;and&lt;/em&gt; many generations.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Accurately matching name data isn't easy. For example, the
+mathematician Felix Klein is really named Christian Felix Klein. If
+your searches don't succeed, check to make sure you've got your name
+data right. This is particularly true for names with accents and
+umlauts.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;Making Pretty Graphs&lt;/h2&gt;
+&lt;p&gt;Because my script produces an intermediate &lt;code&gt;.dot&lt;/code&gt; file, it is possible
+for you to edit that file to add additional information or decorations
+to the graph. Don't like the font I chose? Change the &lt;code&gt;font=Courier&lt;/code&gt;
+entry in the &lt;code&gt;.dot&lt;/code&gt; file. Want to adjust a few nodes so that
+significant mathematicians have special node colors? Search for their
+names in the &lt;code&gt;.dot&lt;/code&gt; file, then add the metadata
+&lt;code&gt;color=[your color here]&lt;/code&gt; to their nodes. The documentation for
+graphviz is very useful for tasks like this.&lt;/p&gt;
+&lt;h2&gt;Questions, Comments, and Bug Reports&lt;/h2&gt;
+&lt;p&gt;If you end up using this script to do something cool, or want to ask
+me some questions about how to use it, or want to report a bug,
+&lt;a href="http://jsthomas.github.io/pages/about.html"&gt;here is my contact information&lt;/a&gt;.&lt;/p&gt;</content></entry></feed>
