@@ -123,7 +123,7 @@ graphviz is very useful for tasks like this.&lt;/p&gt;
 &lt;h2&gt;Questions, Comments, and Bug Reports&lt;/h2&gt;
 &lt;p&gt;If you end up using this script to do something cool, or want to ask
 me some questions about how to use it, or want to report a bug,
-&lt;a href="https://jsthomas.github.io/pages/about.html"&gt;here is my contact information&lt;/a&gt;.&lt;/p&gt;</content></entry><entry><title>A Camera-Based Virtual Keyboard System</title><link href="https://jsthomas.github.io/vkeyboard.html" rel="alternate"></link><published>2013-12-10T00:00:00-05:00</published><updated>2013-12-10T00:00:00-05:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2013-12-10:/vkeyboard.html</id><summary type="html">&lt;p&gt;A brief summary of my term project for ECE 532&lt;/p&gt;</summary><content type="html">&lt;p&gt;In the Fall of 2013, I developed a camera-based keyboard system as my
+&lt;a href="https://jsthomas.github.io/"&gt;here is my contact information&lt;/a&gt;.&lt;/p&gt;</content></entry><entry><title>A Camera-Based Virtual Keyboard System</title><link href="https://jsthomas.github.io/vkeyboard.html" rel="alternate"></link><published>2013-12-10T00:00:00-05:00</published><updated>2013-12-10T00:00:00-05:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2013-12-10:/vkeyboard.html</id><summary type="html">&lt;p&gt;A brief summary of my term project for ECE 532&lt;/p&gt;</summary><content type="html">&lt;p&gt;In the Fall of 2013, I developed a camera-based keyboard system as my
 term project for an image analysis course. This page provides a brief
 summary of my project.&lt;/p&gt;
 &lt;p&gt;In my system, a webcam looks down on a user's hands, which rest on a
