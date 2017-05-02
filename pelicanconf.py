@@ -38,5 +38,29 @@ DEFAULT_PAGINATION = 10
 
 STATIC_PATHS = ['images', 'docs']
 
+SHOW_ARTICLE_AUTHOR = False
+DISPLAY_FOOTER = True
+DISPLAY_HOME = False
+
+# provided as examples, they make ‘clean’ urls. used by MENU_INTERNAL_PAGES.
+TAGS_URL           = 'tags'
+TAGS_SAVE_AS       = 'tags/index.html'
+AUTHORS_URL        = 'authors'
+AUTHORS_SAVE_AS    = 'authors/index.html'
+CATEGORIES_URL     = 'categories'
+CATEGORIES_SAVE_AS = 'categories/index.html'
+ARCHIVES_URL       = 'blog'
+ARCHIVES_SAVE_AS   = 'blog/index.html'
+
+# use those if you want pelican standard pages to appear in your menu
+MENU_INTERNAL_PAGES = (
+    ('Blog', ARCHIVES_URL, ARCHIVES_SAVE_AS),
+)
+# additional menu items
+MENUITEMS = (
+    ('GitHub', 'https://github.com/jsthomas/'),
+    ('LinkedIn', 'https://www.linkedin.com/in/joseph-thomas-539bb969/')
+)
+
 # Uncomment following line if you want document-relative URLs when developing
 #RELATIVE_URLS = True

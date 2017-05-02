@@ -1,17 +1,13 @@
 Title: About
 Date: 2017-04-30
 Author: Joe Thomas
-
-
-This blog consists of articles about new things I learned and topics
-I'm excited about. It documents some of the projects I worked on in
-the past (and some of my efforts to refactor them) and my current
-understanding of "good techniques".
-
-
-### About the Author
+URL:
+save_as: index.html
 
 ![Picture of the author]({filename}/images/about/profile.png)
+
+Hello! This blog consists of articles about new things I've learned
+and topics I'm excited about.
 
 I studied mathematics and computer science at the University of
 Arizona, in Tucson. Currently I live in Boston, Massachusetts, where I
