@@ -1,5 +1,133 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Joe Thomas</title><link href="https://jsthomas.github.io/" rel="alternate"></link><link href="https://jsthomas.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jsthomas.github.io/</id><updated>2014-04-02T00:00:00-04:00</updated><entry><title>A Mathematics Geneaology Project Visualizer</title><link href="https://jsthomas.github.io/math-genealogy-visualizer.html" rel="alternate"></link><published>2014-04-02T00:00:00-04:00</published><updated>2014-04-02T00:00:00-04:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2014-04-02:/math-genealogy-visualizer.html</id><summary type="html">&lt;p&gt;A program to visualize data from the Mathematics Geneaology Project&lt;/p&gt;</summary><content type="html">&lt;p&gt;The
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Joe Thomas</title><link href="https://jsthomas.github.io/" rel="alternate"></link><link href="https://jsthomas.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jsthomas.github.io/</id><updated>2017-05-01T00:00:00-04:00</updated><entry><title>On Refactoring</title><link href="https://jsthomas.github.io/mgptree-refactor.html" rel="alternate"></link><published>2017-05-01T00:00:00-04:00</published><updated>2017-05-01T00:00:00-04:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2017-05-01:/mgptree-refactor.html</id><summary type="html">&lt;p&gt;Refactoring some python code from many years ago.&lt;/p&gt;</summary><content type="html">&lt;p&gt;Recently, a friend from grad-school asked me about a
+&lt;a href="https://github.com/jsthomas/mgptree"&gt;one-off python tool&lt;/a&gt; I wrote
+in 2014. There are a lot of things I didn't know back then, so I
+thought it'd be interesting to revisit this old code and blog about
+some of the new things I've learned about python in the intervening
+years.&lt;/p&gt;
+&lt;h2&gt;What's this supposed to do again?&lt;/h2&gt;
+&lt;p&gt;The premise of the program is pretty simple:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;The
+   &lt;a href="https://www.genealogy.math.ndsu.nodak.edu/"&gt;Mathematics Genealogy Project&lt;/a&gt;
+   lets us search for advisor-advisee relationships between names. The
+   application is in PHP, and we can query the application using &lt;code&gt;requests&lt;/code&gt;.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;We want to take a list of names &lt;span class="math"&gt;\(L\)&lt;/span&gt; and an integer &lt;span class="math"&gt;\(n\)&lt;/span&gt;, and look up
+   &lt;span class="math"&gt;\(n\)&lt;/span&gt; generations of mathematicians, starting from &lt;span class="math"&gt;\(L\)&lt;/span&gt;.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Then, we want to render the digraph of advisee-advisor
+   relationships using the &lt;a href="http://graphviz.org/"&gt;&lt;code&gt;graphviz&lt;/code&gt;&lt;/a&gt; program
+   &lt;code&gt;dot&lt;/code&gt;.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;Where to start?&lt;/h2&gt;
+&lt;p&gt;Looking at this code (which I first wrote in 2012) it's surprising
+some of the things I did and didn't know:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;Prior to 2014, I wasn't in the habit of using virtual environments
+   and &lt;code&gt;pip&lt;/code&gt;. For this project, that's not really a big deal because
+   there aren't a lot of dependencies.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;I wasn't aware of &lt;code&gt;pylint&lt;/code&gt;. Today, I find that &lt;code&gt;pylint&lt;/code&gt; makes it a
+   lot easier to write clean python (and refactor it).&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;I wasn't aware of facilities like &lt;code&gt;setup.py&lt;/code&gt;, that make it easier
+   to specify how a python application gets installed.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;I wasn't aware of &lt;code&gt;sqlite&lt;/code&gt;, which would've made it much easier to
+   store the advisor-advisee relations I recorded from the
+   web.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Some things that haven't changed:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;I still think graphviz is really great --- it makes plotting
+   directed graphs &lt;em&gt;so&lt;/em&gt; easy, and it's easy to decorate them with a
+   lot of metadata.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;argparse&lt;/code&gt; makes it easy to write a command line interface that
+   works just like other familiar unix tools.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;Phase 1: Cleaning up basic &lt;code&gt;pylint&lt;/code&gt;ed issues.&lt;/h2&gt;
+&lt;p&gt;Pylint scored my original code -2.11/10. D'oh. After fixing the
+whitespace issues, my score rises to 6.94/10. Woo hoo!&lt;/p&gt;
+&lt;p&gt;-- C:393,11: Do not use &lt;code&gt;len(SEQUENCE)&lt;/code&gt; as condition value (len-as-condition)
+Discuss why this is somewhat annoying.&lt;/p&gt;
+&lt;p&gt;-- Disabled docstrings issue.&lt;/p&gt;
+&lt;p&gt;-- Discuss how good pylint is for finding unused variables and cruft.&lt;/p&gt;
+&lt;p&gt;-- Discuss logging issues.&lt;/p&gt;
+&lt;p&gt;-- Discuss pyan.&lt;/p&gt;
+&lt;p&gt;Theme: Current implementation muddies data cleaning with other
+issues. It would be nice to do a better job of this.&lt;/p&gt;
+&lt;p&gt;Unicode was never handled. (umlauts)&lt;/p&gt;
+&lt;p&gt;Dumb post versus get mistake.&lt;/p&gt;
+&lt;p&gt;Comment on API changes.&lt;/p&gt;
+&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width &lt; 768) ? "left" : align;
+        indent = (screen.width &lt; 768) ? "0em" : indent;
+        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
+    }
+
+    var mathjaxscript = document.createElement('script');
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+&lt;/script&gt;</content></entry><entry><title>A Mathematics Geneaology Project Visualizer</title><link href="https://jsthomas.github.io/math-genealogy-visualizer.html" rel="alternate"></link><published>2014-04-02T00:00:00-04:00</published><updated>2014-04-02T00:00:00-04:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2014-04-02:/math-genealogy-visualizer.html</id><summary type="html">&lt;p&gt;A program to visualize data from the Mathematics Geneaology Project&lt;/p&gt;</summary><content type="html">&lt;p&gt;The
 &lt;a href="http://genealogy.math.ndsu.nodak.edu/"&gt;Mathematics Geneaology Project&lt;/a&gt;
 (MGP) is a publicly searchable database that records advisor-advisee
 relations between mathematicians. Their website is interesting,
@@ -21,10 +149,7 @@ than this!&lt;/p&gt;
 &lt;p&gt;You will need the following:&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;
-&lt;p&gt;A copy of my python script which you can &lt;a href="https://jsthomas.github.io/docs/mgptree/mgptree.zip"&gt;download here&lt;/a&gt;.&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;A working python installation with the "requests" package.&lt;/p&gt;
+&lt;p&gt;A copy of my python script which you can &lt;a href="https://github.com/jsthomas/mgptree"&gt;download here&lt;/a&gt;.&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
 &lt;p&gt;An installation of &lt;a href="http://www.graphviz.org/"&gt;graphviz&lt;/a&gt; (this
@@ -36,8 +161,10 @@ program takes care of the actual graph drawing).&lt;/p&gt;
 &lt;/ol&gt;
 &lt;p&gt;On an Ubuntu machine, these dependencies (&lt;code&gt;graphviz&lt;/code&gt; and &lt;code&gt;requests&lt;/code&gt;)
 can be installed via:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;jthomas@emu:$ sudo apt install pip graphviz
-jthomas@emu:$ sudo pip install requests
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;$ sudo apt install virtualenv graphviz
+$ virtualenv venv
+$ venv/bin/activate
+&lt;span class="o"&gt;(&lt;/span&gt;venv&lt;span class="o"&gt;)&lt;/span&gt; $ pip install requirements.txt
 &lt;/pre&gt;&lt;/div&gt;
 &lt;h2&gt;Usage Example&lt;/h2&gt;
 &lt;p&gt;The easiest way to learn how to use this tool is by way of an
@@ -48,12 +175,12 @@ script so that you can execute it.&lt;/p&gt;
 5 generations. The first step is to prepare a file of names for our
 search:&lt;/p&gt;
 &lt;p&gt;So, we create a unicode text file:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;Gauß Carl Friedrich
-Fourier Jean-Baptiste Joseph
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;Gauß, Carl, Friedrich
+Fourier, Jean-Baptiste, Joseph
 &lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;I'll call the file &lt;code&gt;gf.txt&lt;/code&gt;. Now we need to get some data from the
 web. We do this as follows:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;jthomas@emu:$ mgptree -g 5 -s -i gf.txt -o gf.mgp
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;(venv) $ python mgptree.py -g 5 -s -i gf.txt -o gf.mgp
 Saved 25 records to file gf.mgp.
 &lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;The &lt;code&gt;-s&lt;/code&gt; option indicates we want to "scrape" data from the MGP
@@ -64,8 +191,8 @@ indicates that we want to save our results in a database named
 &lt;p&gt;Now we need to graph the data, so we type the following:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;:: bash
 
-jthomas@emu:$ mgptree -p -i gf.mgp -o gf.dot
-jthomas@emu:$ dot -Tpng gf.dot -o gf.png
+&lt;span class="o"&gt;(&lt;/span&gt;venv&lt;span class="o"&gt;)&lt;/span&gt; $ python mgptree.py -p -i gf.mgp -o gf.dot
+&lt;span class="o"&gt;(&lt;/span&gt;venv&lt;span class="o"&gt;)&lt;/span&gt; $ dot -Tpng gf.dot -o gf.png
 &lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;In the first line, the &lt;code&gt;-p&lt;/code&gt; indicates we are now in "plotting mode"
 where we want to convert the input database &lt;code&gt;gf.mgp&lt;/code&gt; to a textual
@@ -78,8 +205,8 @@ data offline, without having to query the web while we are figuring
 out how we want to plot the data.  For example, suppose we only want
 to present two generations of the data we just downloaded. Then we'd
 type&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;jthomas@emu:$ mgptree -p -g2 -i gf.mgp -o gf_tiny.dot
-jthomas@emu:$ dot -Tpng gf_tiny.dot -o gf_tiny.png
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;(venv) $ python mgptree.py -p -g2 -i gf.mgp -o gf_tiny.dot
+(venv) $ dot -Tpng gf_tiny.dot -o gf_tiny.png
 &lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;and we wouldn't have to retrieve any information from the web. The
 result, &lt;code&gt;gf_tiny.png&lt;/code&gt; looks like this:&lt;/p&gt;
@@ -119,11 +246,7 @@ entry in the &lt;code&gt;.dot&lt;/code&gt; file. Want to adjust a few nodes so t
 significant mathematicians have special node colors? Search for their
 names in the &lt;code&gt;.dot&lt;/code&gt; file, then add the metadata
 &lt;code&gt;color=[your color here]&lt;/code&gt; to their nodes. The documentation for
-graphviz is very useful for tasks like this.&lt;/p&gt;
-&lt;h2&gt;Questions, Comments, and Bug Reports&lt;/h2&gt;
-&lt;p&gt;If you end up using this script to do something cool, or want to ask
-me some questions about how to use it, or want to report a bug,
-&lt;a href="https://jsthomas.github.io/"&gt;here is my contact information&lt;/a&gt;.&lt;/p&gt;</content></entry><entry><title>A Camera-Based Virtual Keyboard System</title><link href="https://jsthomas.github.io/vkeyboard.html" rel="alternate"></link><published>2013-12-10T00:00:00-05:00</published><updated>2013-12-10T00:00:00-05:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2013-12-10:/vkeyboard.html</id><summary type="html">&lt;p&gt;A brief summary of my term project for ECE 532&lt;/p&gt;</summary><content type="html">&lt;p&gt;In the Fall of 2013, I developed a camera-based keyboard system as my
+graphviz is very useful for tasks like this.&lt;/p&gt;</content></entry><entry><title>A Camera-Based Virtual Keyboard System</title><link href="https://jsthomas.github.io/vkeyboard.html" rel="alternate"></link><published>2013-12-10T00:00:00-05:00</published><updated>2013-12-10T00:00:00-05:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2013-12-10:/vkeyboard.html</id><summary type="html">&lt;p&gt;A brief summary of my term project for ECE 532&lt;/p&gt;</summary><content type="html">&lt;p&gt;In the Fall of 2013, I developed a camera-based keyboard system as my
 term project for an image analysis course. This page provides a brief
 summary of my project.&lt;/p&gt;
 &lt;p&gt;In my system, a webcam looks down on a user's hands, which rest on a

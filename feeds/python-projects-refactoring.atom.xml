@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Joe Thomas - Python, Projects, Refactoring</title><link href="https://jsthomas.github.io/" rel="alternate"></link><link href="https://jsthomas.github.io/feeds/python-projects-refactoring.atom.xml" rel="self"></link><id>https://jsthomas.github.io/</id><updated>2017-05-01T00:00:00-04:00</updated><entry><title>On Refactoring</title><link href="https://jsthomas.github.io/mgptree-refactor.html" rel="alternate"></link><published>2017-05-01T00:00:00-04:00</published><updated>2017-05-01T00:00:00-04:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2017-05-01:/mgptree-refactor.html</id><summary type="html">&lt;p&gt;Refactoring some python code from many years ago.&lt;/p&gt;</summary><content type="html">&lt;p&gt;Recently, a friend from grad-school asked me about a
+&lt;a href="https://github.com/jsthomas/mgptree"&gt;one-off python tool&lt;/a&gt; I wrote
+in 2014. There are a lot of things I didn't know back then, so I
+thought it'd be interesting to revisit this old code and blog about
+some of the new things I've learned about python in the intervening
+years.&lt;/p&gt;
+&lt;h2&gt;What's this supposed to do again?&lt;/h2&gt;
+&lt;p&gt;The premise of the program is pretty simple:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;The
+   &lt;a href="https://www.genealogy.math.ndsu.nodak.edu/"&gt;Mathematics Genealogy Project&lt;/a&gt;
+   lets us search for advisor-advisee relationships between names. The
+   application is in PHP, and we can query the application using &lt;code&gt;requests&lt;/code&gt;.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;We want to take a list of names &lt;span class="math"&gt;\(L\)&lt;/span&gt; and an integer &lt;span class="math"&gt;\(n\)&lt;/span&gt;, and look up
+   &lt;span class="math"&gt;\(n\)&lt;/span&gt; generations of mathematicians, starting from &lt;span class="math"&gt;\(L\)&lt;/span&gt;.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Then, we want to render the digraph of advisee-advisor
+   relationships using the &lt;a href="http://graphviz.org/"&gt;&lt;code&gt;graphviz&lt;/code&gt;&lt;/a&gt; program
+   &lt;code&gt;dot&lt;/code&gt;.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;Where to start?&lt;/h2&gt;
+&lt;p&gt;Looking at this code (which I first wrote in 2012) it's surprising
+some of the things I did and didn't know:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;Prior to 2014, I wasn't in the habit of using virtual environments
+   and &lt;code&gt;pip&lt;/code&gt;. For this project, that's not really a big deal because
+   there aren't a lot of dependencies.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;I wasn't aware of &lt;code&gt;pylint&lt;/code&gt;. Today, I find that &lt;code&gt;pylint&lt;/code&gt; makes it a
+   lot easier to write clean python (and refactor it).&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;I wasn't aware of facilities like &lt;code&gt;setup.py&lt;/code&gt;, that make it easier
+   to specify how a python application gets installed.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;I wasn't aware of &lt;code&gt;sqlite&lt;/code&gt;, which would've made it much easier to
+   store the advisor-advisee relations I recorded from the
+   web.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Some things that haven't changed:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;I still think graphviz is really great --- it makes plotting
+   directed graphs &lt;em&gt;so&lt;/em&gt; easy, and it's easy to decorate them with a
+   lot of metadata.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;argparse&lt;/code&gt; makes it easy to write a command line interface that
+   works just like other familiar unix tools.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;Phase 1: Cleaning up basic &lt;code&gt;pylint&lt;/code&gt;ed issues.&lt;/h2&gt;
+&lt;p&gt;Pylint scored my original code -2.11/10. D'oh. After fixing the
+whitespace issues, my score rises to 6.94/10. Woo hoo!&lt;/p&gt;
+&lt;p&gt;-- C:393,11: Do not use &lt;code&gt;len(SEQUENCE)&lt;/code&gt; as condition value (len-as-condition)
+Discuss why this is somewhat annoying.&lt;/p&gt;
+&lt;p&gt;-- Disabled docstrings issue.&lt;/p&gt;
+&lt;p&gt;-- Discuss how good pylint is for finding unused variables and cruft.&lt;/p&gt;
+&lt;p&gt;-- Discuss logging issues.&lt;/p&gt;
+&lt;p&gt;-- Discuss pyan.&lt;/p&gt;
+&lt;p&gt;Theme: Current implementation muddies data cleaning with other
+issues. It would be nice to do a better job of this.&lt;/p&gt;
+&lt;p&gt;Unicode was never handled. (umlauts)&lt;/p&gt;
+&lt;p&gt;Dumb post versus get mistake.&lt;/p&gt;
+&lt;p&gt;Comment on API changes.&lt;/p&gt;
+&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width &lt; 768) ? "left" : align;
+        indent = (screen.width &lt; 768) ? "0em" : indent;
+        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
+    }
+
+    var mathjaxscript = document.createElement('script');
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+&lt;/script&gt;</content></entry></feed>

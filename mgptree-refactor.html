@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Joe Thomas | On Refactoring</title>
+    <link rel="shortcut icon" type="image/png" href="https://jsthomas.github.io/favicon.png">
+    <link rel="shortcut icon" type="image/x-icon" href="https://jsthomas.github.io/favicon.ico">
+    <link href="https://jsthomas.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Joe Thomas Full Atom Feed" />
+    <link href="https://jsthomas.github.io/feeds/python-projects-refactoring.atom.xml" type="application/atom+xml" rel="alternate" title="Joe Thomas Categories Atom Feed" />
+    <link rel="stylesheet" href="https://jsthomas.github.io/theme/css/screen.css" type="text/css" />
+    <link rel="stylesheet" href="https://jsthomas.github.io/theme/css/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="https://jsthomas.github.io/theme/css/print.css" type="text/css" media="print" />
+    <meta name="generator" content="Pelican" />
+    <meta name="description" content="" />
+    <meta name="author" content="Joe Thomas" />
+
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="https://jsthomas.github.io/">About</a></li>
+                <li><a href="https://jsthomas.github.io/pages/papers.html">Papers</a></li>
+                <li><a href="https://jsthomas.github.io/pages/projects.html">Projects</a></li>
+                <li><a href="https://jsthomas.github.io/pages/talks.html">Talks</a></li>
+                <li><a href="https://github.com/jsthomas/">GitHub</a></li>
+                <li><a href="https://www.linkedin.com/in/joseph-thomas-539bb969/">LinkedIn</a></li>
+                <li><a href="https://jsthomas.github.io/blog">Blog</a></li>
+            </ul>
+        </nav>
+        <div class="header_box">
+            <h1><a href="https://jsthomas.github.io/">Joe Thomas</a></h1>
+        </div>
+    </header>
+    <div id="wrapper">
+        <div id="content">            <h4 class="date">May 01, 2017</h4>
+
+            <article class="post">
+                <h2 class="title">
+                    <a href="https://jsthomas.github.io/mgptree-refactor.html" rel="bookmark" title="Permanent Link to &quot;On Refactoring&quot;">On Refactoring</a>
+                </h2>
+
+                
+                
+
+                <p>Recently, a friend from grad-school asked me about a
+<a href="https://github.com/jsthomas/mgptree">one-off python tool</a> I wrote
+in 2014. There are a lot of things I didn't know back then, so I
+thought it'd be interesting to revisit this old code and blog about
+some of the new things I've learned about python in the intervening
+years.</p>
+<h2>What's this supposed to do again?</h2>
+<p>The premise of the program is pretty simple:</p>
+<ol>
+<li>
+<p>The
+   <a href="https://www.genealogy.math.ndsu.nodak.edu/">Mathematics Genealogy Project</a>
+   lets us search for advisor-advisee relationships between names. The
+   application is in PHP, and we can query the application using <code>requests</code>.</p>
+</li>
+<li>
+<p>We want to take a list of names <span class="math">\(L\)</span> and an integer <span class="math">\(n\)</span>, and look up
+   <span class="math">\(n\)</span> generations of mathematicians, starting from <span class="math">\(L\)</span>.</p>
+</li>
+<li>
+<p>Then, we want to render the digraph of advisee-advisor
+   relationships using the <a href="http://graphviz.org/"><code>graphviz</code></a> program
+   <code>dot</code>.</p>
+</li>
+</ol>
+<h2>Where to start?</h2>
+<p>Looking at this code (which I first wrote in 2012) it's surprising
+some of the things I did and didn't know:</p>
+<ol>
+<li>
+<p>Prior to 2014, I wasn't in the habit of using virtual environments
+   and <code>pip</code>. For this project, that's not really a big deal because
+   there aren't a lot of dependencies.</p>
+</li>
+<li>
+<p>I wasn't aware of <code>pylint</code>. Today, I find that <code>pylint</code> makes it a
+   lot easier to write clean python (and refactor it).</p>
+</li>
+<li>
+<p>I wasn't aware of facilities like <code>setup.py</code>, that make it easier
+   to specify how a python application gets installed.</p>
+</li>
+<li>
+<p>I wasn't aware of <code>sqlite</code>, which would've made it much easier to
+   store the advisor-advisee relations I recorded from the
+   web.</p>
+</li>
+</ol>
+<p>Some things that haven't changed:</p>
+<ol>
+<li>
+<p>I still think graphviz is really great --- it makes plotting
+   directed graphs <em>so</em> easy, and it's easy to decorate them with a
+   lot of metadata.</p>
+</li>
+<li>
+<p><code>argparse</code> makes it easy to write a command line interface that
+   works just like other familiar unix tools.</p>
+</li>
+</ol>
+<h2>Phase 1: Cleaning up basic <code>pylint</code>ed issues.</h2>
+<p>Pylint scored my original code -2.11/10. D'oh. After fixing the
+whitespace issues, my score rises to 6.94/10. Woo hoo!</p>
+<p>-- C:393,11: Do not use <code>len(SEQUENCE)</code> as condition value (len-as-condition)
+Discuss why this is somewhat annoying.</p>
+<p>-- Disabled docstrings issue.</p>
+<p>-- Discuss how good pylint is for finding unused variables and cruft.</p>
+<p>-- Discuss logging issues.</p>
+<p>-- Discuss pyan.</p>
+<p>Theme: Current implementation muddies data cleaning with other
+issues. It would be nice to do a better job of this.</p>
+<p>Unicode was never handled. (umlauts)</p>
+<p>Dumb post versus get mistake.</p>
+<p>Comment on API changes.</p>
+<script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width < 768) ? "left" : align;
+        indent = (screen.width < 768) ? "0em" : indent;
+        linebreak = (screen.width < 768) ? 'true' : linebreak;
+    }
+
+    var mathjaxscript = document.createElement('script');
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+</script>
+                <div class="clear"></div>
+
+                <div class="info">
+                    <a href="https://jsthomas.github.io/mgptree-refactor.html">posted at 00:00</a>
+                    &nbsp;&middot;&nbsp;<a href="https://jsthomas.github.io/category/python-projects-refactoring.html" rel="tag">Python, Projects, Refactoring</a>
+                </div>
+            </article>
+            <div class="clear"></div>
+            <footer>
+                <p>
+                <a href="https://github.com/jody-frankowski/blue-penguin">Blue Penguin</a> Theme
+                &middot;
+                Powered by <a href="http://getpelican.com">Pelican</a>
+                &middot;
+                <a href="https://jsthomas.github.io/feeds/all.atom.xml" rel="alternate">Atom Feed</a>
+            </footer>
+        </div>
+        <div class="clear"></div>
+    </div>
+    <script type="text/javascript">
+    var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+    document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+    </script>
+    <script type="text/javascript">
+    try {
+        var pageTracker = _gat._getTracker("UA-50587049-3");
+    pageTracker._trackPageview();
+    } catch(err) {}</script>
+</body>
+</html>

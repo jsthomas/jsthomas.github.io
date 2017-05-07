@@ -66,10 +66,7 @@ than this!</p>
 <p>You will need the following:</p>
 <ol>
 <li>
-<p>A copy of my python script which you can <a href="https://jsthomas.github.io/docs/mgptree/mgptree.zip">download here</a>.</p>
-</li>
-<li>
-<p>A working python installation with the "requests" package.</p>
+<p>A copy of my python script which you can <a href="https://github.com/jsthomas/mgptree">download here</a>.</p>
 </li>
 <li>
 <p>An installation of <a href="http://www.graphviz.org/">graphviz</a> (this
@@ -81,8 +78,10 @@ program takes care of the actual graph drawing).</p>
 </ol>
 <p>On an Ubuntu machine, these dependencies (<code>graphviz</code> and <code>requests</code>)
 can be installed via:</p>
-<div class="highlight"><pre><span></span>jthomas@emu:$ sudo apt install pip graphviz
-jthomas@emu:$ sudo pip install requests
+<div class="highlight"><pre><span></span>$ sudo apt install virtualenv graphviz
+$ virtualenv venv
+$ venv/bin/activate
+<span class="o">(</span>venv<span class="o">)</span> $ pip install requirements.txt
 </pre></div>
 <h2>Usage Example</h2>
 <p>The easiest way to learn how to use this tool is by way of an
@@ -93,12 +92,12 @@ script so that you can execute it.</p>
 5 generations. The first step is to prepare a file of names for our
 search:</p>
 <p>So, we create a unicode text file:</p>
-<div class="highlight"><pre><span></span>Gauß Carl Friedrich
-Fourier Jean-Baptiste Joseph
+<div class="highlight"><pre><span></span>Gauß, Carl, Friedrich
+Fourier, Jean-Baptiste, Joseph
 </pre></div>
 <p>I'll call the file <code>gf.txt</code>. Now we need to get some data from the
 web. We do this as follows:</p>
-<div class="highlight"><pre><span></span>jthomas@emu:$ mgptree -g 5 -s -i gf.txt -o gf.mgp
+<div class="highlight"><pre><span></span>(venv) $ python mgptree.py -g 5 -s -i gf.txt -o gf.mgp
 Saved 25 records to file gf.mgp.
 </pre></div>
 <p>The <code>-s</code> option indicates we want to "scrape" data from the MGP
@@ -109,8 +108,8 @@ indicates that we want to save our results in a database named
 <p>Now we need to graph the data, so we type the following:</p>
 <div class="highlight"><pre><span></span>:: bash
 
-jthomas@emu:$ mgptree -p -i gf.mgp -o gf.dot
-jthomas@emu:$ dot -Tpng gf.dot -o gf.png
+<span class="o">(</span>venv<span class="o">)</span> $ python mgptree.py -p -i gf.mgp -o gf.dot
+<span class="o">(</span>venv<span class="o">)</span> $ dot -Tpng gf.dot -o gf.png
 </pre></div>
 <p>In the first line, the <code>-p</code> indicates we are now in "plotting mode"
 where we want to convert the input database <code>gf.mgp</code> to a textual
@@ -123,8 +122,8 @@ data offline, without having to query the web while we are figuring
 out how we want to plot the data.  For example, suppose we only want
 to present two generations of the data we just downloaded. Then we'd
 type</p>
-<div class="highlight"><pre><span></span>jthomas@emu:$ mgptree -p -g2 -i gf.mgp -o gf_tiny.dot
-jthomas@emu:$ dot -Tpng gf_tiny.dot -o gf_tiny.png
+<div class="highlight"><pre><span></span>(venv) $ python mgptree.py -p -g2 -i gf.mgp -o gf_tiny.dot
+(venv) $ dot -Tpng gf_tiny.dot -o gf_tiny.png
 </pre></div>
 <p>and we wouldn't have to retrieve any information from the web. The
 result, <code>gf_tiny.png</code> looks like this:</p>
@@ -165,10 +164,6 @@ significant mathematicians have special node colors? Search for their
 names in the <code>.dot</code> file, then add the metadata
 <code>color=[your color here]</code> to their nodes. The documentation for
 graphviz is very useful for tasks like this.</p>
-<h2>Questions, Comments, and Bug Reports</h2>
-<p>If you end up using this script to do something cool, or want to ask
-me some questions about how to use it, or want to report a bug,
-<a href="https://jsthomas.github.io/">here is my contact information</a>.</p>
                 <div class="clear"></div>
 
                 <div class="info">
@@ -188,5 +183,14 @@ me some questions about how to use it, or want to report a bug,
         </div>
         <div class="clear"></div>
     </div>
+    <script type="text/javascript">
+    var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+    document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+    </script>
+    <script type="text/javascript">
+    try {
+        var pageTracker = _gat._getTracker("UA-50587049-3");
+    pageTracker._trackPageview();
+    } catch(err) {}</script>
 </body>
 </html>
