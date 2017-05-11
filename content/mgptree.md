@@ -32,21 +32,20 @@ than this!
 
 You will need the following:
 
-0. A copy of my python script which you can [download here]({filename}/docs/mgptree/mgptree.zip).
+0. A copy of my python script which you can [download here](https://github.com/jsthomas/mgptree).
 
-1. A working python installation with the "requests" package.
-
-2. An installation of [graphviz](http://www.graphviz.org/) (this
+1. An installation of [graphviz](http://www.graphviz.org/) (this
 program takes care of the actual graph drawing).
 
-3. Basic knowledge of the command line.
+2. Basic knowledge of the command line.
 
 On an Ubuntu machine, these dependencies (`graphviz` and `requests`)
 can be installed via:
 
-    jthomas@emu:$ sudo apt install pip graphviz
-    jthomas@emu:$ sudo pip install requests
-
+    $ sudo apt install virtualenv graphviz
+    $ virtualenv venv
+    $ venv/bin/activate
+    (venv) $ pip install requirements.txt
 
 ##Usage Example
 
@@ -62,14 +61,14 @@ search:
 So, we create a unicode text file:
 
 ```
-Gauß Carl Friedrich
-Fourier Jean-Baptiste Joseph
+Gauß, Carl, Friedrich
+Fourier, Jean-Baptiste, Joseph
 ```
 
 I'll call the file `gf.txt`. Now we need to get some data from the
 web. We do this as follows:
 
-	jthomas@emu:$ mgptree -g 5 -s -i gf.txt -o gf.mgp
+	(venv) $ python mgptree.py -g 5 -s -i gf.txt -o gf.mgp
 	Saved 25 records to file gf.mgp.
 
 The `-s` option indicates we want to "scrape" data from the MGP
@@ -80,10 +79,8 @@ indicates that we want to save our results in a database named
 
 Now we need to graph the data, so we type the following:
 
-    :: bash
-
-	jthomas@emu:$ mgptree -p -i gf.mgp -o gf.dot
-	jthomas@emu:$ dot -Tpng gf.dot -o gf.png
+	(venv) $ python mgptree.py -p -i gf.mgp -o gf.dot
+	(venv) $ dot -Tpng gf.dot -o gf.png
 
 In the first line, the `-p` indicates we are now in "plotting mode"
 where we want to convert the input database `gf.mgp` to a textual
@@ -100,8 +97,8 @@ out how we want to plot the data.  For example, suppose we only want
 to present two generations of the data we just downloaded. Then we'd
 type
 
-	jthomas@emu:$ mgptree -p -g2 -i gf.mgp -o gf_tiny.dot
-	jthomas@emu:$ dot -Tpng gf_tiny.dot -o gf_tiny.png
+	(venv) $ python mgptree.py -p -g2 -i gf.mgp -o gf_tiny.dot
+	(venv) $ dot -Tpng gf_tiny.dot -o gf_tiny.png
 
 and we wouldn't have to retrieve any information from the web. The
 result, `gf_tiny.png` looks like this:
@@ -142,9 +139,3 @@ significant mathematicians have special node colors? Search for their
 names in the `.dot` file, then add the metadata
 `color=[your color here]` to their nodes. The documentation for
 graphviz is very useful for tasks like this.
-
-## Questions, Comments, and Bug Reports
-
-If you end up using this script to do something cool, or want to ask
-me some questions about how to use it, or want to report a bug,
-[here is my contact information]({filename}/pages/about.md).

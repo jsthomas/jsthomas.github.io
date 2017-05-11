@@ -56,6 +56,7 @@ ARCHIVES_SAVE_AS   = 'blog/index.html'
 MENU_INTERNAL_PAGES = (
     ('Blog', ARCHIVES_URL, ARCHIVES_SAVE_AS),
 )
+
 # additional menu items
 MENUITEMS = (
     ('GitHub', 'https://github.com/jsthomas/'),
