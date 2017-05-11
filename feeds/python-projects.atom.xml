@@ -61,10 +61,8 @@ want to search. The &lt;code&gt;-i&lt;/code&gt; denotes our input file, the &lt;
 indicates that we want to save our results in a database named
 &lt;code&gt;gf.mgp&lt;/code&gt;.&lt;/p&gt;
 &lt;p&gt;Now we need to graph the data, so we type the following:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;:: bash
-
-&lt;span class="o"&gt;(&lt;/span&gt;venv&lt;span class="o"&gt;)&lt;/span&gt; $ python mgptree.py -p -i gf.mgp -o gf.dot
-&lt;span class="o"&gt;(&lt;/span&gt;venv&lt;span class="o"&gt;)&lt;/span&gt; $ dot -Tpng gf.dot -o gf.png
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;(venv) $ python mgptree.py -p -i gf.mgp -o gf.dot
+(venv) $ dot -Tpng gf.dot -o gf.png
 &lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;In the first line, the &lt;code&gt;-p&lt;/code&gt; indicates we are now in "plotting mode"
 where we want to convert the input database &lt;code&gt;gf.mgp&lt;/code&gt; to a textual

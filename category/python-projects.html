@@ -107,10 +107,8 @@ want to search. The <code>-i</code> denotes our input file, the <code>-o gf.mgp<
 indicates that we want to save our results in a database named
 <code>gf.mgp</code>.</p>
 <p>Now we need to graph the data, so we type the following:</p>
-<div class="highlight"><pre><span></span>:: bash
-
-<span class="o">(</span>venv<span class="o">)</span> $ python mgptree.py -p -i gf.mgp -o gf.dot
-<span class="o">(</span>venv<span class="o">)</span> $ dot -Tpng gf.dot -o gf.png
+<div class="highlight"><pre><span></span>(venv) $ python mgptree.py -p -i gf.mgp -o gf.dot
+(venv) $ dot -Tpng gf.dot -o gf.png
 </pre></div>
 <p>In the first line, the <code>-p</code> indicates we are now in "plotting mode"
 where we want to convert the input database <code>gf.mgp</code> to a textual

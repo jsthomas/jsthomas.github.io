@@ -3,7 +3,7 @@
 <head>
         <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Joe Thomas | On Refactoring</title>
+    <title>Joe Thomas | Refactoring Python Code</title>
     <link rel="shortcut icon" type="image/png" href="https://jsthomas.github.io/favicon.png">
     <link rel="shortcut icon" type="image/x-icon" href="https://jsthomas.github.io/favicon.ico">
     <link href="https://jsthomas.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Joe Thomas Full Atom Feed" />
@@ -38,26 +38,25 @@
 
             <article class="post">
                 <h2 class="title">
-                    <a href="https://jsthomas.github.io/mgptree-refactor.html" rel="bookmark" title="Permanent Link to &quot;On Refactoring&quot;">On Refactoring</a>
+                    <a href="https://jsthomas.github.io/mgptree-refactor.html" rel="bookmark" title="Permanent Link to &quot;Refactoring Python Code&quot;">Refactoring Python Code</a>
                 </h2>
 
                 
                 
 
-                <p>Recently, a friend from grad-school asked me about a
-<a href="https://github.com/jsthomas/mgptree">one-off python tool</a> I wrote
-in 2014. There are a lot of things I didn't know back then, so I
-thought it'd be interesting to revisit this old code and blog about
-some of the new things I've learned about python in the intervening
-years.</p>
+                <p>Recently, a friend from grad-school asked me about an
+<a href="https://github.com/jsthomas/mgptree">experimental python data visualization tool</a>
+I wrote in 2012. Since the code had rotted (to the point that it no
+longer worked), and my understanding of python has changed quite a bit
+since I originally wrote it, I thought this would be a good
+opportunity to write about my current processes for debugging and refactoring.</p>
 <h2>What's this supposed to do again?</h2>
 <p>The premise of the program is pretty simple:</p>
 <ol>
 <li>
 <p>The
-   <a href="https://www.genealogy.math.ndsu.nodak.edu/">Mathematics Genealogy Project</a>
-   lets us search for advisor-advisee relationships between names. The
-   application is in PHP, and we can query the application using <code>requests</code>.</p>
+   <a href="https://www.genealogy.math.ndsu.nodak.edu/">Mathematics Genealogy Project (MGP)</a>
+   lets us search for advisor-advisee relationships between names.</p>
 </li>
 <li>
 <p>We want to take a list of names <span class="math">\(L\)</span> and an integer <span class="math">\(n\)</span>, and look up
@@ -69,9 +68,8 @@ years.</p>
    <code>dot</code>.</p>
 </li>
 </ol>
-<h2>Where to start?</h2>
-<p>Looking at this code (which I first wrote in 2012) it's surprising
-some of the things I did and didn't know:</p>
+<p>Looking at this code it's surprising some of the things I did and
+didn't know:</p>
 <ol>
 <li>
 <p>Prior to 2014, I wasn't in the habit of using virtual environments
@@ -80,44 +78,148 @@ some of the things I did and didn't know:</p>
 </li>
 <li>
 <p>I wasn't aware of <code>pylint</code>. Today, I find that <code>pylint</code> makes it a
-   lot easier to write clean python (and refactor it).</p>
-</li>
-<li>
-<p>I wasn't aware of facilities like <code>setup.py</code>, that make it easier
-   to specify how a python application gets installed.</p>
-</li>
-<li>
-<p>I wasn't aware of <code>sqlite</code>, which would've made it much easier to
-   store the advisor-advisee relations I recorded from the
-   web.</p>
+   lot easier to write clean python and refactor existing code.</p>
 </li>
 </ol>
 <p>Some things that haven't changed:</p>
 <ol>
 <li>
-<p>I still think graphviz is really great --- it makes plotting
-   directed graphs <em>so</em> easy, and it's easy to decorate them with a
-   lot of metadata.</p>
+<p>I still think graphviz is really great. It makes plotting directed
+   graphs <em>so</em> easy, and it's easy to decorate them with a lot of
+   metadata.</p>
 </li>
 <li>
 <p><code>argparse</code> makes it easy to write a command line interface that
-   works just like other familiar unix tools.</p>
+   works just like other familiar unix tools. I especially like that
+   adds <code>-h</code> options for displaying help, which are invaluable when
+   building a more extensive CLI tool.</p>
 </li>
 </ol>
-<h2>Phase 1: Cleaning up basic <code>pylint</code>ed issues.</h2>
-<p>Pylint scored my original code -2.11/10. D'oh. After fixing the
-whitespace issues, my score rises to 6.94/10. Woo hoo!</p>
-<p>-- C:393,11: Do not use <code>len(SEQUENCE)</code> as condition value (len-as-condition)
-Discuss why this is somewhat annoying.</p>
-<p>-- Disabled docstrings issue.</p>
-<p>-- Discuss how good pylint is for finding unused variables and cruft.</p>
-<p>-- Discuss logging issues.</p>
-<p>-- Discuss pyan.</p>
-<p>Theme: Current implementation muddies data cleaning with other
-issues. It would be nice to do a better job of this.</p>
-<p>Unicode was never handled. (umlauts)</p>
-<p>Dumb post versus get mistake.</p>
-<p>Comment on API changes.</p>
+<h2>Phase 1: Cleaning up lint issues.</h2>
+<p>Whenever I'm starting on unfamiliar python code, I like to begin with
+<code>pylint</code>'s suggestions.</p>
+<div class="highlight"><pre><span></span>```
+...
+C:384, 4: Invalid method name "extractPersonalData" (invalid-name)
+C:384, 4: Missing method docstring (missing-docstring)
+C:391,11: Do not use `len(SEQUENCE)` as condition value (len-as-condition)
+C:395,11: Do not use `len(SEQUENCE)` as condition value (len-as-condition)
+C:399,11: Do not use `len(SEQUENCE)` as condition value (len-as-condition)
+C:402, 4: Missing method docstring (missing-docstring)
+C:405, 4: Missing method docstring (missing-docstring)
+W:408,12: Unused variable 'name' (unused-variable)
+
+---------------------------------------------------------------------
+Your code has been rated at -1.83/10
+```
+</pre></div>
+<p>Pylint scored my original code -1.83/10. D'oh. It turns out one of the
+things I wasn't following in 2012 was PEP8, which means I had a lot of
+formatting/whitespace issues. Fixing these, my score rose to
+6.94/10.</p>
+<p>One thing that I really like about <code>pylint</code> is how it dramatically
+simplifies finding unused variables in my code. Sometimes, I even use
+this to help me refactor more systematically: First I change whatever
+lines I planned to simplify, then I let <code>pylint</code> confirm that I can
+get rid of the variables I'd planned to eliminate. It turns out I had
+four unused variables in 430 lines of code, all easy to fix.</p>
+<p>Another convention I wasn't following in 2012 is the use of
+docstrings. Instead, I was writing big block comments, like:</p>
+<div class="highlight"><pre><span></span><span class="c1">################################################################################</span>
+<span class="c1"># Procedure: validate_scrape</span>
+<span class="c1">#</span>
+<span class="c1"># Input: Parser and options objects from optparse</span>
+<span class="c1">#</span>
+<span class="c1"># Output: A list of well-formed name tuples.</span>
+<span class="c1">#</span>
+<span class="c1"># Effects: Checks the options object to confirm the inputs are well formed.</span>
+<span class="c1">#</span>
+<span class="c1">################################################################################</span>
+</pre></div>
+<p>Now that I work with jupyter and ipython more often, I have a better
+appreciation for docstrings. It's really helpful to be able to do
+<code>function_i_dont_remember ?</code> at a REPL and immediately pull up
+documentation without context switching.</p>
+<h2>Phase 2: Cleaning up the output.</h2>
+<p>After fixing documentation, the next issue I wanted to improve was the
+script's lack of logging. For some reason, I'd thought it would be a
+good idea to send everything directly to <code>stdout</code> or <code>stderr</code>. I even
+added a <code>verbose</code> command line flag, and then introduced conditionals
+in my code, like:</p>
+<div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">OPTIONS</span><span class="o">.</span><span class="n">verbose_on</span><span class="p">:</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"Searching MGP for </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">.</span><span class="se">\n</span><span class="s2">"</span> <span class="o">%</span> <span class="p">(</span><span class="n">last</span><span class="p">,</span> <span class="n">first</span><span class="p">,</span> <span class="n">middle</span><span class="p">))</span>
+</pre></div>
+<p>To simplify this, I introduced the <code>logging</code> package with a simple
+configuration:</p>
+<div class="highlight"><pre><span></span><span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
+                    <span class="n">format</span><span class="o">=</span><span class="s1">'</span><span class="si">%(asctime)s</span><span class="s1"> </span><span class="si">%(message)s</span><span class="s1">'</span><span class="p">,</span>
+                    <span class="n">datefmt</span><span class="o">=</span><span class="s1">'%m/</span><span class="si">%d</span><span class="s1">/%Y %I:%M:%S %p'</span><span class="p">)</span>
+</pre></div>
+<p>which let me write logs at several different levels whose visibility
+can be adjusted in the configuration.</p>
+<h2>Phase 3: Fixing bugs.</h2>
+<p>At this point, I'd resolved most of the obvious issues I wanted to
+fix, and narrowed down <code>pylint</code>'s suggestions to four issues, two of
+which were TODOs I'd notice while addressing other issues:</p>
+<div class="highlight"><pre><span></span>************* Module mgptree
+W: 58, 0: TODO: Refactor options to be either completely global or not. (fixme)
+W:158, 0: TODO: Consider refactor here. (fixme)
+W: 36, 4: Using the global statement (global-statement)
+R:208, 0: Too many instance attributes (8/7) (too-many-instance-attributes)
+
+--------------------------------------------------------------------
+Your code has been rated at 9.77/10
+</pre></div>
+<p>Fixing the whitespace/formatting issues turned out to be a good way to
+re-familiarize myself with the code before attempting to fix the
+functional issues.</p>
+<p>After running <code>mgptree</code> on a couple simple examples and looking at the
+logs, I realized that the main functional issue was in the function
+<code>fetch_id_num</code>. This function is supposed to take a tuple of names
+(first, middle, and last) and determine the ID number of the
+mathematician with that name in the MGP service (if the lookup fails
+or returns multiple answers, we return <code>None</code>). The function is
+supposed to do this by using <code>requests</code> to make a POST to the URL
+associated with the PHP script that handles users' searches on the MGP
+site, and then scraping the resulting reply.</p>
+<p>Looking at the MGP website, it didn't appear to be very different from
+what I remembered seeing in 2012, so I was puzzled why my scraping
+code had stopped working. After running my function a few times in an
+<code>ipython</code> shell, I realized my main error was my URL. Like a lot of
+websites, the math genealogy has moved to HTTPS since 2012. Fixing
+that and one other formatting change in the pages' <code>&lt;title&gt;</code> section
+and my scraping code was working properly again.</p>
+<h2>Wrapping Up</h2>
+<p>Overall, the improvements I made to my script were pretty trivial,
+but they illustrate some practices that I think are really helpful for
+increasing one's personal productivity:</p>
+<ol>
+<li>
+<p><em>Restoring an Invariant</em>: When I don't know what to do next (or
+   where to start), I find <code>pylint</code> and <code>nosetests</code> are great
+   guides. Both tools specify an invariant (no lint errors above a
+   certain level, all unit tests passing, etc.) that should be
+   maintained whenever code gets committed. If the invariant isn't
+   satisfied, the next steps are clear: Investigate why, and fix it.</p>
+</li>
+<li>
+<p><em>One Thing a Time:</em> Even though my changes were simple, I made a
+   total of 8 commits to get my code back in working order. Each one
+   focusses on a single issue I wanted to improve in the code
+   (i.e. remove all whitespace lint errors). I find it can be really
+   easy to start "improving" two or three issues at the same time, and
+   then do a poor job on all of them (or get stuck). For me, following
+   the rule of one issue per commit has been a great way to stay
+   organized and break larger problems into manageable pieces.</p>
+</li>
+</ol>
+<p>I can see a couple of areas I might want to improve in the future. It
+would be nice to to store scraped data in an <code>sqlite</code> database, which
+might simplify computing other graph-based presentations of the
+dataset (for example, finding all of the students descended from a
+particular mathematician). It might also be cool to convert this to a
+django or flask app, so that people unfamiliar with the command line
+can generate their own graphs.</p>
 <script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
     var align = "center",
         indent = "0em",
