@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Joe Thomas | On the Implementation of Map</title>
+    <link rel="shortcut icon" type="image/png" href="https://jsthomas.github.io/favicon.png">
+    <link rel="shortcut icon" type="image/x-icon" href="https://jsthomas.github.io/favicon.ico">
+    <link href="https://jsthomas.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Joe Thomas Full Atom Feed" />
+    <link href="https://jsthomas.github.io/feeds/ocaml-profiling.atom.xml" type="application/atom+xml" rel="alternate" title="Joe Thomas Categories Atom Feed" />
+    <link rel="stylesheet" href="https://jsthomas.github.io/theme/css/screen.css" type="text/css" />
+    <link rel="stylesheet" href="https://jsthomas.github.io/theme/css/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="https://jsthomas.github.io/theme/css/print.css" type="text/css" media="print" />
+    <meta name="generator" content="Pelican" />
+    <meta name="description" content="" />
+    <meta name="author" content="Joe Thomas" />
+
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="https://jsthomas.github.io/">About</a></li>
+                <li><a href="https://jsthomas.github.io/pages/papers.html">Papers</a></li>
+                <li><a href="https://jsthomas.github.io/pages/projects.html">Projects</a></li>
+                <li><a href="https://jsthomas.github.io/pages/talks.html">Talks</a></li>
+                <li><a href="https://github.com/jsthomas/">GitHub</a></li>
+                <li><a href="https://www.linkedin.com/in/joseph-thomas-539bb969/">LinkedIn</a></li>
+                <li><a href="https://jsthomas.github.io/blog">Blog</a></li>
+            </ul>
+        </nav>
+        <div class="header_box">
+            <h1><a href="https://jsthomas.github.io/">Joe Thomas</a></h1>
+        </div>
+    </header>
+    <div id="wrapper">
+        <div id="content">            <h4 class="date">Jun 06, 2017</h4>
+
+            <article class="post">
+                <h2 class="title">
+                    <a href="https://jsthomas.github.io/drafts/map-comparison.html" rel="bookmark" title="Permanent Link to &quot;On the Implementation of Map&quot;">On the Implementation of Map</a>
+                </h2>
+
+                
+                
+
+                <p><code>Map</code> is one of the first higher-order functions I remember
+encountering when I learned some rudimentary functional programming
+topics as an undergraduate. More recently I began learning OCaml. The
+<code>map</code>
+<a href="https://github.com/ocaml/ocaml/blob/2691c40f2ff9bc34912db39bc1f17045c9241473/stdlib/list.ml#L80-L82">implementation</a>
+I found in the standard library was the textbook definition I was
+expecting</p>
+<div class="highlight"><pre><span></span>let rec map f = function
+    [] -&gt; []
+  | a::l -&gt; let r = f a in r :: map f l
+</pre></div>
+<p>but I was surprised to learn there are actually several
+implementations of <code>map</code>, with different characteristics:</p>
+<ul>
+<li>
+<p>The implementation above (which I'll refer to as the control) is not
+  <em>tail recursive</em>, so it takes space on the stack proportional to the
+  length of the input list. For long enough lists, this causes a
+  stack overflow.</p>
+</li>
+<li>
+<p>One can instead write a tail recursive version that takes up
+  constant space on the stack, at the cost of an additional list
+  traversal.</p>
+</li>
+<li>
+<p>The package <code>batteries</code> features a more imperative
+  <a href="https://github.com/ocaml-batteries-team/batteries-included/blob/c10c65a203a7590b15b9a370f66e8c2884817428/src/batList.mlv#L163-L173">implementation</a>.</p>
+</li>
+<li>
+<p>The package <code>base</code> has an
+  <a href="https://github.com/janestreet/base/blob/f10483e957206dc6b656a28ffec667d8b068c149/src/list.ml#L311-L345">implementation</a>
+  that treats short lists and long lists differently
+  (somewhat like loop unrolling).</p>
+</li>
+<li>
+<p>The <code>containers</code> package features yet another
+<a href="https://g
+ithub.com/c-cube/ocaml-containers/blob/d659ba677e3dbd95430f59b3794ac2f2a5677d61/src/core/CCList.ml#L20-L37">implementation</a>
+that handles very short lists separately and defaults to tail
+recursion for long lists.</p>
+</li>
+</ul>
+<p>Given all of these different ways to <code>map</code>, I wanted to know:</p>
+<ul>
+<li>
+<p>Which version is the fastest?</p>
+</li>
+<li>
+<p>How much speed does one lose using the safer tail recursive version?</p>
+</li>
+</ul>
+<p>Part of my motivation to write this post arose from
+<a href="https://github.com/ocsigen/lwt/pull/347">this discussion</a> of a pull
+request, which proposes the default <code>map</code> implementation in <code>lwt</code>
+should be tail recursive. After reading all of the comments, I wanted
+to develop some experiments that would convince me whether a tail
+recursive <code>map</code> really is too slow to be used.</p>
+<h1>Experimental Setup</h1>
+<p>I wrote
+<a href="https://github.com/jsthomas/ocaml-analysis/blob/master/map/profile.ml">this program</a>
+to compare performance between the five implementations I described
+above. Specifically:</p>
+<ul>
+<li>I tested each algorithm against lists of lengths <span class="math">\(N=10^3, 10^4\)</span> and
+  <span class="math">\(10^5\)</span>. On my system, <span class="math">\(N=10^5\)</span> was the highest power of 10 for which
+  the naive implementation did not fail due to a stack overflow.</li>
+<li>Each list consisted of integer elements (all 0), and the function
+  mapped onto the list simply added one to each element.</li>
+<li>I measured each call to map with <code>Unix.gettimeofday</code> (which seems to
+  have better resolution than <code>Unix.times</code>).</li>
+<li>I collected 1000 measurements for each pair of (implementation,
+  <span class="math">\(N\)</span>), using <code>Gc.full_major</code> to trigger a garbage collection between
+  runs.</li>
+<li>I ran these tests on a Lenovo X220, Intel Core i5-2520M CPU (2.50GHz ×
+  4 cores), and 4GB RAM.</li>
+</ul>
+<h1>Results</h1>
+<p><strong>Median Map Times (μs) versus N</strong>
+<table class="dataframe">
+<thead>
+<tr>
+<th>N</th>
+<th>Control</th>
+<th>Tail Recursive</th>
+<th>Containers</th>
+<th>Batteries</th>
+<th>Base</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1000</th>
+<td>20.03</td>
+<td>19.07</td>
+<td>10.01</td>
+<td>15.50</td>
+<td>8.11</td>
+</tr>
+<tr>
+<th>10000</th>
+<td>121.95</td>
+<td>99.90</td>
+<td>77.01</td>
+<td>61.99</td>
+<td>75.10</td>
+</tr>
+<tr>
+<th>100000</th>
+<td>4835.97</td>
+<td>7393.48</td>
+<td>7177.11</td>
+<td>5104.07</td>
+<td>7130.98</td>
+</tr>
+</tbody>
+</table></p>
+<p>The medians alone suggest no single implementation is best overall and
+that the control only outperforms the tail recursive version for
+fairly large <span class="math">\(N\)</span>. I would guess that most lists in practice are
+shorter than 1000 elements; in that case, <code>base</code> appears to be
+preferable.</p>
+<p>I wanted to get a more detailed look at how the timings were
+distributed in each trial. Below are histograms for each
+implementation, and some further summary statistics. (Note: In these
+histograms the highest bin is open-ended, i.e. <span class="math">\([K, \infty)\)</span>):</p>
+<p><img alt="Histograms N=1000" src="https://jsthomas.github.io/images/map_profiling/hist10^3.png" style="width: 720px; height: auto;"/></p>
+<p><img alt="Histograms N=10000" src="https://jsthomas.github.io/images/map_profiling/hist10^4.png" style="width: 720px; height: auto;"/></p>
+<p><img alt="Histograms N=100000" src="https://jsthomas.github.io/images/map_profiling/hist10^5.png" style="width: 720px; height: auto;"/></p>
+<p><strong>Summary Statistics, <span class="math">\(N=10^3\)</span> Map Benchmark Times (μs)</strong></p>
+<table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Control</th>
+<th>Tail Rec.</th>
+<th>Base</th>
+<th>Batteries</th>
+<th>Containers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>Mean</th>
+<td>27.18</td>
+<td>27.21</td>
+<td>11.23</td>
+<td>19.03</td>
+<td>13.06</td>
+</tr>
+<tr>
+<th>Min</th>
+<td>15.97</td>
+<td>14.07</td>
+<td>6.91</td>
+<td>9.06</td>
+<td>7.87</td>
+</tr>
+<tr>
+<th>25%</th>
+<td>18.84</td>
+<td>17.88</td>
+<td>7.15</td>
+<td>10.97</td>
+<td>10.01</td>
+</tr>
+<tr>
+<th>50%</th>
+<td>20.03</td>
+<td>19.07</td>
+<td>8.11</td>
+<td>15.50</td>
+<td>10.01</td>
+</tr>
+<tr>
+<th>75%</th>
+<td>23.13</td>
+<td>22.17</td>
+<td>12.87</td>
+<td>18.84</td>
+<td>10.97</td>
+</tr>
+<tr>
+<th>Max</th>
+<td>849.01</td>
+<td>576.02</td>
+<td>379.80</td>
+<td>622.03</td>
+<td>434.88</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Summary Statistics, <span class="math">\(N=10^4\)</span> Map Benchmark Times (μs)</strong>
+<table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Control</th>
+<th>Tail Rec.</th>
+<th>Base</th>
+<th>Batteries</th>
+<th>Containers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>Mean</th>
+<td>230.23</td>
+<td>216.60</td>
+<td>141.39</td>
+<td>144.59</td>
+<td>161.56</td>
+</tr>
+<tr>
+<th>Min</th>
+<td>77.01</td>
+<td>73.91</td>
+<td>61.04</td>
+<td>54.84</td>
+<td>63.18</td>
+</tr>
+<tr>
+<th>25%</th>
+<td>97.04</td>
+<td>86.07</td>
+<td>67.95</td>
+<td>58.89</td>
+<td>70.81</td>
+</tr>
+<tr>
+<th>50%</th>
+<td>121.95</td>
+<td>99.90</td>
+<td>75.10</td>
+<td>61.99</td>
+<td>77.01</td>
+</tr>
+<tr>
+<th>75%</th>
+<td>193.83</td>
+<td>284.91</td>
+<td>148.59</td>
+<td>118.26</td>
+<td>175.24</td>
+</tr>
+<tr>
+<th>Max</th>
+<td>12719.87</td>
+<td>2753.97</td>
+<td>2960.21</td>
+<td>3616.09</td>
+<td>13603.93</td>
+</tr>
+</tbody>
+</table></p>
+<p><strong>Summary Statistics, <span class="math">\(N=10^5\)</span> Map Benchmark Times (μs)</strong>
+<table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Control</th>
+<th>Tail Rec.</th>
+<th>Base</th>
+<th>Batteries</th>
+<th>Containers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>Mean</th>
+<td>6071.46</td>
+<td>9529.15</td>
+<td>9257.47</td>
+<td>6397.77</td>
+<td>9307.99</td>
+</tr>
+<tr>
+<th>Min</th>
+<td>2696.04</td>
+<td>3623.96</td>
+<td>3582.95</td>
+<td>2647.88</td>
+<td>3551.01</td>
+</tr>
+<tr>
+<th>25%</th>
+<td>3667.29</td>
+<td>6251.45</td>
+<td>6265.58</td>
+<td>3757.12</td>
+<td>6388.78</td>
+</tr>
+<tr>
+<th>50%</th>
+<td>4835.97</td>
+<td>7393.48</td>
+<td>7130.98</td>
+<td>5104.07</td>
+<td>7177.11</td>
+</tr>
+<tr>
+<th>75%</th>
+<td>6349.86</td>
+<td>9692.43</td>
+<td>8736.14</td>
+<td>6772.99</td>
+<td>8820.65</td>
+</tr>
+<tr>
+<th>Max</th>
+<td>38676.98</td>
+<td>28940.92</td>
+<td>59360.03</td>
+<td>24572.13</td>
+<td>27489.90</td>
+</tr>
+</tbody>
+</table></p>
+<p>Several further things I notice:</p>
+<ul>
+<li>
+<p>For <span class="math">\(N=10^3\)</span>, <code>base</code> is consistently fastest at all percentiles.</p>
+</li>
+<li>
+<p><code>base</code>, <code>batteries</code>, and <code>containers</code> consistently outperform the
+  control and tail-recursive implementations.</p>
+</li>
+<li>
+<p>In the <span class="math">\(N=10^5\)</span> case, the distribution of times is oddly bimodal
+  across all implementations. Possibly this points to a weakness in my
+  experimental setup.</p>
+</li>
+</ul>
+<h1>Conclusions</h1>
+<p>For very large <span class="math">\(N\)</span>, there does appear to be a penalty to using a naive
+tail recursive implementation of <code>map</code>; in that case, assuming one
+looks at just the median or mean, the control implementation completes
+the same work in about 63-65% of the time. Given the choice, one
+should probably prefer one of the optimized implementations in more
+recent libraries.</p>
+<p>There is an argument
+(<a href="http://caml.inria.fr/pub/ml-archives/caml-list/1999/01/bcabe938d378046308a1901cfef6ef67.fr.html">here, for example</a>)
+that the non-tail recursive (control) implementation should be
+preferred to the tail recursive version. The tail recursive version is
+just too slow for small and medium sized lists, the argument goes, due
+to the additional time to allocate memory. The data here disagrees
+with that argument; in fact the tail recursive version is only slower
+for lists whose length approaches the point of causing a stack
+overflow in the non-tail recursive implementation.</p>
+<p>A follow up question to this analysis, especially in the context of
+the discussion of the implementation of <code>Lwt.map</code> is: "How significant
+is the cost of <code>map</code> compared to other operations?" To partially
+address this, I wrote
+<a href="https://github.com/jsthomas/ocaml-analysis/blob/master/map/buff_test.ml">another program</a>
+that measures how long it takes to write <span class="math">\(M\)</span> bytes to a Unix pipe
+using <code>Lwt.write</code>. Measuring 1000 trials of writing 4096 bytes to a
+pipe, I obtained the following table.</p>
+<p><strong>Summary Statistics, Unix Pipe Write Benchmark Times (μs)</strong>
+<table class="dataframe">
+<thead>
+<tr>
+<th>Mean</th>
+<th>Min</th>
+<th>25%</th>
+<th>50%</th>
+<th>75%</th>
+<th>Max</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2.80</td>
+<td>0.95</td>
+<td>1.91</td>
+<td>2.15</td>
+<td>3.10</td>
+<td>30.04</td>
+</tr>
+</tbody>
+</table></p>
+<p>There appear to be some significant outliers in this experiment as
+well, but overall we can see that the distribution is pretty tightly
+grouped around 2-4 μs.</p>
+<p>It seems reasonable to estimate that <code>Lwt.map</code> would primarily be
+applied to IO operations like the ones in this experiment. With that
+premise, the data suggests the cost of using the slowest
+implementation of map to write 4096 bytes to each of 1000 unix pipes
+would be about 0.9% of the total time required to complete the
+operation, at the median (20.03 μs to map, 2150 μs to write all the
+data). Overall, I take this to mean that the implementation of <code>map</code>
+shouldn't be a significant concern; the real cost is performing IO. In
+light of that, it seems preferable to use an implementation that
+can't produce a stack overflow.</p>
+<script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width < 768) ? "left" : align;
+        indent = (screen.width < 768) ? "0em" : indent;
+        linebreak = (screen.width < 768) ? 'true' : linebreak;
+    }
+
+    var mathjaxscript = document.createElement('script');
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+</script>
+                <div class="clear"></div>
+
+                <div class="info">
+                    <a href="https://jsthomas.github.io/drafts/map-comparison.html">posted at 00:00</a>
+                    &nbsp;&middot;&nbsp;<a href="https://jsthomas.github.io/category/ocaml-profiling.html" rel="tag">OCaml, Profiling</a>
+                </div>
+            </article>
+            <div class="clear"></div>
+            <footer>
+                <p>
+                <a href="https://github.com/jody-frankowski/blue-penguin">Blue Penguin</a> Theme
+                &middot;
+                Powered by <a href="http://getpelican.com">Pelican</a>
+                &middot;
+                <a href="https://jsthomas.github.io/feeds/all.atom.xml" rel="alternate">Atom Feed</a>
+            </footer>
+        </div>
+        <div class="clear"></div>
+    </div>
+    <script type="text/javascript">
+    var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+    document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+    </script>
+    <script type="text/javascript">
+    try {
+        var pageTracker = _gat._getTracker("UA-50587049-3");
+    pageTracker._trackPageview();
+    } catch(err) {}</script>
+</body>
+</html>
