@@ -20,10 +20,10 @@ expecting
 but I was surprised to learn there are actually several
 implementations of `map`, with different characteristics:
 
-* The implementation above (which I'll refer to as the control) is not
+* The implementation above (which I'll refer to as `stdlib`) is not
   *tail recursive*, so it takes space on the stack proportional to the
-  length of the input list. For long enough lists, this causes a
-  stack overflow.
+  *length of the input list. For long enough lists, this causes a
+  *stack overflow.
 
 * One can instead write a tail recursive version that takes up
   constant space on the stack, at the cost of an additional list
@@ -58,350 +58,165 @@ recursive `map` really is too slow to be used.
 
 # Experimental Setup
 
+In 2014, Jane Street introduced a
+[library](https://github.com/janestreet/core_bench) for
+microbenchmarking called `core_bench`. As they explain [on their
+blog](https://blogs.janestreet.com/core_bench-micro-benchmarking-for-ocaml/),
+`core_bench` is intended to measure the performance of small pieces of
+OCaml code.
+
+There are a couple benefits to measuring map implementations with
+`core_bench`.
+
+1. The library makes it easy to track both time and use of the heap.
+
+2. Once you specify your test, `core_bench` automatically provides
+   many [command line
+   options](https://github.com/janestreet/core_bench/wiki/Getting-Started-with-Core_bench)
+   to help you present your test data in different ways.
+
+3. The library uses statistical techniques (bootstrapping and linear
+   regression) to reduce many runs worth of data to a small number of
+   meaningful performance metrics.
+
 I wrote
-[this program](https://github.com/jsthomas/ocaml-analysis/blob/master/map/profile.ml)
+[this program](https://github.com/jsthomas/ocaml-analysis/blob/master/map/maptest.ml)
 to compare performance between the five implementations I described
 above. Specifically:
 
-* I tested each algorithm against lists of lengths $N=10^3, 10^4$ and
+* I tested each algorithm against lists of lengths $N=10^2, 10^3, 10^4$ and
   $10^5$. On my system, $N=10^5$ was the highest power of 10 for which
   the naive implementation did not fail due to a stack overflow.
 * Each list consisted of integer elements (all 0), and the function
   mapped onto the list simply added one to each element.
-* I measured each call to map with `Unix.gettimeofday` (which seems to
-  have better resolution than `Unix.times`).
-* I collected 1000 measurements for each pair of (implementation,
-  $N$), using `Gc.full_major` to trigger a garbage collection between
-  runs.
 * I ran these tests on a Lenovo X220, Intel Core i5-2520M CPU (2.50GHz ×
   4 cores), and 4GB RAM.
+* I used the OCaml 4.03.0 compiler, and compiled to native code
+  without using `flambda`. ([This
+  makefile](https://github.com/jsthomas/ocaml-analysis/blob/master/map/makefile)
+  gives the full specifications.)
 
 # Results
 
-**Median Map Times (μs) versus N**
-<table class="dataframe">
-  <thead>
-    <tr>
-      <th>N</th>
-      <th>Control</th>
-      <th>Tail Recursive</th>
-      <th>Containers</th>
-      <th>Batteries</th>
-      <th>Base</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>1000</th>
-      <td>20.03</td>
-      <td>19.07</td>
-      <td>10.01</td>
-      <td>15.50</td>
-      <td>8.11</td>
-    </tr>
-    <tr>
-      <th>10000</th>
-      <td>121.95</td>
-      <td>99.90</td>
-      <td>77.01</td>
-      <td>61.99</td>
-      <td>75.10</td>
-    </tr>
-    <tr>
-      <th>100000</th>
-      <td>4835.97</td>
-      <td>7393.48</td>
-      <td>7177.11</td>
-      <td>5104.07</td>
-      <td>7130.98</td>
-    </tr>
-  </tbody>
-</table>
+For each list size, `core_bench` produces a table with several metrics besides time:
 
-The medians alone suggest no single implementation is best overall and
-that the control only outperforms the tail recursive version for
-fairly large $N$. I would guess that most lists in practice are
-shorter than 1000 elements; in that case, `base` appears to be
-preferable.
+* `mWd` : Words allocated on the minor heap.
+* `mjWd` : Words allocated on the major heap.
+* `Prom` : Words promoted from minor to major heap.
 
-I wanted to get a more detailed look at how the timings were
-distributed in each trial. Below are histograms for each
-implementation, and some further summary statistics. (Note: In these
-histograms the highest bin is open-ended, i.e. $[K, \infty)$):
+The library also allows us to produce 95% confidence intervals and
+$R^2$ values for the time estimates.
 
-![Histograms N=1000]({filename}/images/map_profiling/hist10^3.png)
+**Map Benchmark, N = 100**
+```
+┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐
+│ Name       │ Time R^2 │ Time/Run │        95% ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │
+├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤
+│ tail rec.  │     1.00 │ 732.23ns │ -0.21% +0.23% │ 609.01w │    0.53w │    0.53w │    100.00% │
+│ containers │     1.00 │ 427.59ns │ -0.12% +0.13% │ 304.03w │    0.17w │    0.17w │     58.40% │
+│ batteries  │     1.00 │ 578.28ns │ -0.14% +0.15% │ 309.01w │    0.35w │    0.35w │     78.98% │
+│ base       │     1.00 │ 419.16ns │ -0.21% +0.27% │ 304.03w │    0.16w │    0.16w │     57.24% │
+│ stdlib     │     1.00 │ 614.10ns │ -0.24% +0.26% │ 304.01w │    0.17w │    0.17w │     83.87% │
+└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘
+```
+**Map Benchmark, N = 1000**
+```
+┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐
+│ Name       │ Time R^2 │ Time/Run │        95% CI │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │
+├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤
+│ tail rec.  │     1.00 │   8.82us │ -0.22% +0.27% │  6.01kw │   52.09w │   52.09w │    100.00% │
+│ containers │     1.00 │   5.08us │ -0.22% +0.26% │  3.00kw │   17.26w │   17.26w │     57.62% │
+│ batteries  │     0.98 │   6.79us │ -1.45% +1.88% │  3.01kw │   34.71w │   34.71w │     76.96% │
+│ base       │     1.00 │   4.96us │ -0.18% +0.19% │  3.00kw │   17.08w │   17.08w │     56.27% │
+│ stdlib     │     0.99 │   6.87us │ -0.99% +1.36% │  3.00kw │   17.25w │   17.25w │     77.84% │
+└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘
+```
 
-![Histograms N=10000]({filename}/images/map_profiling/hist10^4.png)
+**Map Benchmark, N = 10,000**
+```
+┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐
+│ Name       │ Time R^2 │ Time/Run │        95% CI │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │
+├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤
+│ tail rec.  │     1.00 │ 200.15us │ -0.27% +0.29% │ 60.01kw │   5.40kw │   5.40kw │    100.00% │
+│ containers │     0.98 │ 148.02us │ -1.51% +1.81% │ 48.01kw │   3.05kw │   3.05kw │     73.95% │
+│ batteries  │     1.00 │ 134.00us │ -0.46% +0.48% │ 30.01kw │   3.62kw │   3.62kw │     66.95% │
+│ base       │     1.00 │ 132.76us │ -0.53% +0.58% │ 44.98kw │   2.66kw │   2.66kw │     66.33% │
+│ stdlib     │     1.00 │ 120.09us │ -0.43% +0.48% │ 30.00kw │   1.79kw │   1.79kw │     60.00% │
+└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘
+```
 
-![Histograms N=100000]({filename}/images/map_profiling/hist10^5.png)
+**Map Benchmark, N = 100,000**
+```
+┌────────────┬──────────┬──────────┬───────────────┬──────────┬──────────┬──────────┬────────────┐
+│ Name       │ Time R^2 │ Time/Run │        95% CI │  mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │
+├────────────┼──────────┼──────────┼───────────────┼──────────┼──────────┼──────────┼────────────┤
+│ tail rec.  │     0.99 │  10.83ms │ -1.81% +1.61% │ 600.02kw │ 414.00kw │ 414.00kw │     99.85% │
+│ containers │     0.99 │  10.83ms │ -1.73% +1.97% │ 588.02kw │ 405.39kw │ 405.39kw │     99.84% │
+│ batteries  │     0.99 │   7.13ms │ -1.13% +1.05% │ 300.02kw │ 300.35kw │ 300.35kw │     65.77% │
+│ base       │     0.99 │  10.85ms │ -1.93% +1.92% │ 584.99kw │ 399.21kw │ 399.21kw │    100.00% │
+│ stdlib     │     0.99 │   6.57ms │ -1.24% +1.19% │ 300.01kw │ 173.43kw │ 173.43kw │     60.56% │
+└────────────┴──────────┴──────────┴───────────────┴──────────┴──────────┴──────────┴────────────┘
+```
 
-**Summary Statistics, $N=10^3$ Map Benchmark Times (μs)**
+I noticed several things about in the data above:
 
-<table class="dataframe">
-  <thead>
-    <tr>
-      <th></th>
-      <th>Control</th>
-      <th>Tail Rec.</th>
-      <th>Base</th>
-      <th>Batteries</th>
-      <th>Containers</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>Mean</th>
-      <td>27.18</td>
-      <td>27.21</td>
-      <td>11.23</td>
-      <td>19.03</td>
-      <td>13.06</td>
-    </tr>
-    <tr>
-      <th>Min</th>
-      <td>15.97</td>
-      <td>14.07</td>
-      <td>6.91</td>
-      <td>9.06</td>
-      <td>7.87</td>
-    </tr>
-    <tr>
-      <th>25%</th>
-      <td>18.84</td>
-      <td>17.88</td>
-      <td>7.15</td>
-      <td>10.97</td>
-      <td>10.01</td>
-    </tr>
-    <tr>
-      <th>50%</th>
-      <td>20.03</td>
-      <td>19.07</td>
-      <td>8.11</td>
-      <td>15.50</td>
-      <td>10.01</td>
-    </tr>
-    <tr>
-      <th>75%</th>
-      <td>23.13</td>
-      <td>22.17</td>
-      <td>12.87</td>
-      <td>18.84</td>
-      <td>10.97</td>
-    </tr>
-    <tr>
-      <th>Max</th>
-      <td>849.01</td>
-      <td>576.02</td>
-      <td>379.80</td>
-      <td>622.03</td>
-      <td>434.88</td>
-    </tr>
-  </tbody>
-</table>
+* The tail recursive implementation is consistently slowest. (In the
+  final test `base`, `containers` and the tail recursive version all
+  appear to be equally slow.) This makes sense, because both libraries
+  default to a tail recursive implementation for long lists.
 
-**Summary Statistics, $N=10^4$ Map Benchmark Times (μs)**
-<table class="dataframe">
-  <thead>
-    <tr>
-      <th></th>
-      <th>Control</th>
-      <th>Tail Rec.</th>
-      <th>Base</th>
-      <th>Batteries</th>
-      <th>Containers</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>Mean</th>
-      <td>230.23</td>
-      <td>216.60</td>
-      <td>141.39</td>
-      <td>144.59</td>
-      <td>161.56</td>
-    </tr>
-    <tr>
-      <th>Min</th>
-      <td>77.01</td>
-      <td>73.91</td>
-      <td>61.04</td>
-      <td>54.84</td>
-      <td>63.18</td>
-    </tr>
-    <tr>
-      <th>25%</th>
-      <td>97.04</td>
-      <td>86.07</td>
-      <td>67.95</td>
-      <td>58.89</td>
-      <td>70.81</td>
-    </tr>
-    <tr>
-      <th>50%</th>
-      <td>121.95</td>
-      <td>99.90</td>
-      <td>75.10</td>
-      <td>61.99</td>
-      <td>77.01</td>
-    </tr>
-    <tr>
-      <th>75%</th>
-      <td>193.83</td>
-      <td>284.91</td>
-      <td>148.59</td>
-      <td>118.26</td>
-      <td>175.24</td>
-    </tr>
-    <tr>
-      <th>Max</th>
-      <td>12719.87</td>
-      <td>2753.97</td>
-      <td>2960.21</td>
-      <td>3616.09</td>
-      <td>13603.93</td>
-    </tr>
-  </tbody>
-</table>
+* For short lists, `base` and `containers` are quite fast, possibly
+  due to the "loop unrolling" (special cases for short lists) in their
+  definitions.
 
-**Summary Statistics, $N=10^5$ Map Benchmark Times (μs)**
-<table class="dataframe">
-  <thead>
-    <tr>
-      <th></th>
-      <th>Control</th>
-      <th>Tail Rec.</th>
-      <th>Base</th>
-      <th>Batteries</th>
-      <th>Containers</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>Mean</th>
-      <td>6071.46</td>
-      <td>9529.15</td>
-      <td>9257.47</td>
-      <td>6397.77</td>
-      <td>9307.99</td>
-    </tr>
-    <tr>
-      <th>Min</th>
-      <td>2696.04</td>
-      <td>3623.96</td>
-      <td>3582.95</td>
-      <td>2647.88</td>
-      <td>3551.01</td>
-    </tr>
-    <tr>
-      <th>25%</th>
-      <td>3667.29</td>
-      <td>6251.45</td>
-      <td>6265.58</td>
-      <td>3757.12</td>
-      <td>6388.78</td>
-    </tr>
-    <tr>
-      <th>50%</th>
-      <td>4835.97</td>
-      <td>7393.48</td>
-      <td>7130.98</td>
-      <td>5104.07</td>
-      <td>7177.11</td>
-    </tr>
-    <tr>
-      <th>75%</th>
-      <td>6349.86</td>
-      <td>9692.43</td>
-      <td>8736.14</td>
-      <td>6772.99</td>
-      <td>8820.65</td>
-    </tr>
-    <tr>
-      <th>Max</th>
-      <td>38676.98</td>
-      <td>28940.92</td>
-      <td>59360.03</td>
-      <td>24572.13</td>
-      <td>27489.90</td>
-    </tr>
-  </tbody>
-</table>
+* We can see from the `mWd` and `mjWd` columns that the tail recursive
+  implementation uses the most heap space, as we would expect.
 
-Several further things I notice:
-
-* For $N=10^3$, `base` is consistently fastest at all percentiles.
-
-* `base`, `batteries`, and `containers` consistently outperform the
-  control and tail-recursive implementations.
-
-* In the $N=10^5$ case, the distribution of times is oddly bimodal
-  across all implementations. Possibly this points to a weakness in my
-  experimental setup.
+* As we increase the size of the list, `stdlib` gets faster relative
+  to `stdlib` (from 83% to 60%); I suspect this can be attributed to
+  the cost of garbage collections.
 
 # Conclusions
 
-For very large $N$, there does appear to be a penalty to using a naive
-tail recursive implementation of `map`; in that case, assuming one
-looks at just the median or mean, the control implementation completes
-the same work in about 63-65% of the time. Given the choice, one
-should probably prefer one of the optimized implementations in more
-recent libraries.
+The data above suggests two findings:
 
-There is an argument
-([here, for example](http://caml.inria.fr/pub/ml-archives/caml-list/1999/01/bcabe938d378046308a1901cfef6ef67.fr.html))
-that the non-tail recursive (control) implementation should be
-preferred to the tail recursive version. The tail recursive version is
-just too slow for small and medium sized lists, the argument goes, due
-to the additional time to allocate memory. The data here disagrees
-with that argument; in fact the tail recursive version is only slower
-for lists whose length approaches the point of causing a stack
-overflow in the non-tail recursive implementation.
+1. The naive tail recursive implementation is significantly slower
+   than the stack-based standard library implementation.
 
-A follow up question to this analysis, especially in the context of
-the discussion of the implementation of `Lwt.map` is: "How significant
-is the cost of `map` compared to other operations?" To partially
-address this, I wrote
-[another program](https://github.com/jsthomas/ocaml-analysis/blob/master/map/buff_test.ml)
-that measures how long it takes to write $M$ bytes to a Unix pipe
-using `Lwt.write`. Measuring 1000 trials of writing 4096 bytes to a
-pipe, I obtained the following table.
+2. There is a benefit to using a more complicated "hybrid"
+   implementation that treats very short lists with special cases, and
+   reverts to tail recursion for long lists.
 
-**Summary Statistics, Unix Pipe Write Benchmark Times (μs)**
-<table class="dataframe">
-  <thead>
-    <tr>
-      <th>Mean</th>
-      <th>Min</th>
-      <th>25%</th>
-      <th>50%</th>
-      <th>75%</th>
-      <th>Max</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>2.80</td>
-      <td>0.95</td>
-      <td>1.91</td>
-      <td>2.15</td>
-      <td>3.10</td>
-      <td>30.04</td>
-    </tr>
-  </tbody>
-</table>
+We can see in the $N = 100$ data that the `base` and `containers`
+implementations are significantly faster than `stdlib`, but unlike
+`stdlib` they cannot cause a stack overflow. Given that these
+implementations are safer *and* faster for short lists, it seems
+reasonable to prefer them.
 
-There appear to be some significant outliers in this experiment as
-well, but overall we can see that the distribution is pretty tightly
-grouped around 2-4 μs.
+# Discussion
 
+A follow up question to this analysis, in the context of the
+discussion of `Lwt.map` is: "How significant is the cost of `map`
+compared to other operations?" To partially address this, I wrote
+[another program](https://github.com/jsthomas/ocaml-analysis/blob/master/map/bufftest.ml)
+that measures how long it takes to write 4096 bytes to a Unix pipe
+using `Lwt.write`, and then read it back using `Lwt.read`. Using
+`core_bench`, I found:
+
+**Unix Pipe Write Benchmark**
+```
+┌─────────┬──────────┬───────────────┬─────────┬────────────┐
+│Time R^2 │ Time/Run │          95ci │ mWd/Run │ Percentage │
+├─────────┼──────────┼───────────────┼─────────┼────────────┤
+│    1.00 │ 893.33ns │ -0.16% +0.18% │  56.00w │    100.00% │
+└─────────┴──────────┴───────────────┴─────────┴────────────┘
+```
 It seems reasonable to estimate that `Lwt.map` would primarily be
 applied to IO operations like the ones in this experiment. With that
-premise, the data suggests the cost of using the slowest
-implementation of map to write 4096 bytes to each of 1000 unix pipes
-would be about 0.9% of the total time required to complete the
-operation, at the median (20.03 μs to map, 2150 μs to write all the
-data). Overall, I take this to mean that the implementation of `map`
-shouldn't be a significant concern; the real cost is performing IO. In
-light of that, it seems preferable to use an implementation that
-can't produce a stack overflow.
+premise, the data suggests that the ammortized cost per element of
+applying the slowest map implementation (`tail rec.`) is about 0.82%
+of the cost of one 4KB read/write operation on a unix pipe. Overall, I
+take this to mean that the implementation of `map` shouldn't be a
+significant concern; the real cost is performing IO. In light of that,
+it seems preferable to use an implementation that cannot fail due to a
+stack overflow.
