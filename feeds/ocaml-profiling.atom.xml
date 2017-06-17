@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Joe Thomas - OCaml, Profiling</title><link href="https://jsthomas.github.io/" rel="alternate"></link><link href="https://jsthomas.github.io/feeds/ocaml-profiling.atom.xml" rel="self"></link><id>https://jsthomas.github.io/</id><updated>2017-06-06T00:00:00-04:00</updated><entry><title>On the Implementation of Map</title><link href="https://jsthomas.github.io/map-comparison.html" rel="alternate"></link><published>2017-06-06T00:00:00-04:00</published><updated>2017-06-06T00:00:00-04:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2017-06-06:/map-comparison.html</id><summary type="html">&lt;p&gt;A comparison of different implementations of map in OCaml&lt;/p&gt;</summary><content type="html">&lt;p&gt;&lt;code&gt;Map&lt;/code&gt; is one of the first higher-order functions I remember
+encountering when I learned some rudimentary functional programming
+topics as an undergraduate. More recently I began learning OCaml. The
+&lt;code&gt;map&lt;/code&gt;
+&lt;a href="https://github.com/ocaml/ocaml/blob/2691c40f2ff9bc34912db39bc1f17045c9241473/stdlib/list.ml#L80-L82"&gt;implementation&lt;/a&gt;
+I found in the standard library was the textbook definition I was
+expecting&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;let rec map f = function
+    [] -&amp;gt; []
+  | a::l -&amp;gt; let r = f a in r :: map f l
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;but I was surprised to learn there are actually several
+implementations of &lt;code&gt;map&lt;/code&gt;, with different characteristics:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;The implementation above (which I'll refer to as &lt;code&gt;stdlib&lt;/code&gt;) is not
+  &lt;em&gt;tail recursive&lt;/em&gt;, so it takes space on the stack proportional to the
+  length of the input list. For long enough lists, this causes a
+  stack overflow.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;One can instead write a tail recursive version that takes up
+  constant space on the stack, at the cost of an additional list
+  traversal.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The package &lt;code&gt;batteries&lt;/code&gt; features a more imperative
+  &lt;a href="https://github.com/ocaml-batteries-team/batteries-included/blob/c10c65a203a7590b15b9a370f66e8c2884817428/src/batList.mlv#L163-L173"&gt;implementation&lt;/a&gt;.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;a href="https://github.com/janestreet/base/blob/f10483e957206dc6b656a28ffec667d8b068c149/src/list.ml#L311-L345"&gt;&lt;code&gt;base&lt;/code&gt;&lt;/a&gt;
+  and
+  &lt;a href="https://github.com/c-cube/ocaml-containers/blob/d659ba677e3dbd95430f59b3794ac2f2a5677d61/src/core/CCList.ml#L20-L37"&gt;&lt;code&gt;containers&lt;/code&gt;&lt;/a&gt;
+  use special cases to treat very short lists (similar to loop
+  unrolling) and revert to tail recursion for very long lists.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;that handles very short lists separately and defaults to tail
+recursion for long lists.&lt;/p&gt;
+&lt;p&gt;Given all of these different ways to &lt;code&gt;map&lt;/code&gt;, I wanted to know:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Which version is the fastest?&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;How much speed does one lose using the safer tail recursive version?&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Part of my motivation to write this post arose from
+&lt;a href="https://github.com/ocsigen/lwt/pull/347"&gt;this discussion&lt;/a&gt; of a pull
+request, which proposes the default &lt;code&gt;map&lt;/code&gt; implementation in &lt;code&gt;lwt&lt;/code&gt;
+should be tail recursive. After reading all of the comments, I wanted
+to develop some experiments that would convince me whether a tail
+recursive &lt;code&gt;map&lt;/code&gt; really is too slow to be used.&lt;/p&gt;
+&lt;h1&gt;Experimental Setup&lt;/h1&gt;
+&lt;p&gt;In 2014, Jane Street introduced a
+&lt;a href="https://github.com/janestreet/core_bench"&gt;library&lt;/a&gt; for
+microbenchmarking called &lt;code&gt;core_bench&lt;/code&gt;. As they explain
+&lt;a href="https://blogs.janestreet.com/core_bench-micro-benchmarking-for-ocaml/"&gt;on their blog&lt;/a&gt;,
+&lt;code&gt;core_bench&lt;/code&gt; is intended to measure the performance of small pieces of
+OCaml code. This library helps developers to better understand the
+cost of individual operations, like &lt;code&gt;map&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;There are a couple benefits to measuring map implementations with
+&lt;code&gt;core_bench&lt;/code&gt;.&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;The library makes it easy to track both time and use of the heap.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Once you specify your test, &lt;code&gt;core_bench&lt;/code&gt; automatically provides
+   many &lt;a href="https://github.com/janestreet/core_bench/wiki/Getting-Started-with-Core_bench"&gt;command line
+   options&lt;/a&gt;
+   to help you present your test data in different ways.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The library uses statistical techniques (bootstrapping and linear
+   regression) to reduce many runs worth of data to a small number of
+   meaningful performance metrics that account for the amortized cost
+   of garbage collection and error introduced by system activity.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;I wrote
+&lt;a href="https://github.com/jsthomas/ocaml-analysis/blob/master/map/maptest.ml"&gt;this program&lt;/a&gt;
+to compare performance between the five implementations I described
+above. Specifically:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;I tested each algorithm against lists of lengths &lt;span class="math"&gt;\(N=10^2, 10^3,
+  10^4\)&lt;/span&gt; and &lt;span class="math"&gt;\(10^5\)&lt;/span&gt;. On my system, &lt;span class="math"&gt;\(N=10^5\)&lt;/span&gt; was the highest power of 10
+  for which the &lt;code&gt;stdlib&lt;/code&gt; implementation did not fail due to a stack
+  overflow.&lt;/li&gt;
+&lt;li&gt;Each list consisted of integer elements (all 0), and the function
+  mapped onto the list simply added one to each element.&lt;/li&gt;
+&lt;li&gt;I ran these tests on a Lenovo X220, Intel Core i5-2520M CPU (2.50GHz ×
+  4 cores), with 4GB RAM.&lt;/li&gt;
+&lt;li&gt;I used the OCaml 4.03.0 compiler, and compiled to native code
+  without using &lt;code&gt;flambda&lt;/code&gt;. (&lt;a href="https://github.com/jsthomas/ocaml-analysis/blob/master/map/makefile"&gt;This
+  makefile&lt;/a&gt;
+  gives the full specifications.)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1&gt;Results&lt;/h1&gt;
+&lt;p&gt;For each list size, &lt;code&gt;core_bench&lt;/code&gt; produces a table with several metrics besides time:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;mWd&lt;/code&gt; : Words allocated on the minor heap.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;mjWd&lt;/code&gt; : Words allocated on the major heap.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;Prom&lt;/code&gt; : Words promoted from minor to major heap.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The library also allows us to produce 95% confidence intervals and
+&lt;span class="math"&gt;\(R^2\)&lt;/span&gt; values for the time estimates.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Map Benchmark, N = 100&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐
+│ Name       │ Time R^2 │ Time/Run │        95% ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │
+├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤
+│ tail rec.  │     1.00 │ 732.23ns │ -0.21% +0.23% │ 609.01w │    0.53w │    0.53w │    100.00% │
+│ containers │     1.00 │ 427.59ns │ -0.12% +0.13% │ 304.03w │    0.17w │    0.17w │     58.40% │
+│ batteries  │     1.00 │ 578.28ns │ -0.14% +0.15% │ 309.01w │    0.35w │    0.35w │     78.98% │
+│ base       │     1.00 │ 419.16ns │ -0.21% +0.27% │ 304.03w │    0.16w │    0.16w │     57.24% │
+│ stdlib     │     1.00 │ 614.10ns │ -0.24% +0.26% │ 304.01w │    0.17w │    0.17w │     83.87% │
+└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Map Benchmark, N = 1000&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐
+│ Name       │ Time R^2 │ Time/Run │        95% CI │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │
+├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤
+│ tail rec.  │     1.00 │   8.82us │ -0.22% +0.27% │  6.01kw │   52.09w │   52.09w │    100.00% │
+│ containers │     1.00 │   5.08us │ -0.22% +0.26% │  3.00kw │   17.26w │   17.26w │     57.62% │
+│ batteries  │     0.98 │   6.79us │ -1.45% +1.88% │  3.01kw │   34.71w │   34.71w │     76.96% │
+│ base       │     1.00 │   4.96us │ -0.18% +0.19% │  3.00kw │   17.08w │   17.08w │     56.27% │
+│ stdlib     │     0.99 │   6.87us │ -0.99% +1.36% │  3.00kw │   17.25w │   17.25w │     77.84% │
+└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Map Benchmark, N = 10,000&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐
+│ Name       │ Time R^2 │ Time/Run │        95% CI │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │
+├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤
+│ tail rec.  │     1.00 │ 200.15us │ -0.27% +0.29% │ 60.01kw │   5.40kw │   5.40kw │    100.00% │
+│ containers │     0.98 │ 148.02us │ -1.51% +1.81% │ 48.01kw │   3.05kw │   3.05kw │     73.95% │
+│ batteries  │     1.00 │ 134.00us │ -0.46% +0.48% │ 30.01kw │   3.62kw │   3.62kw │     66.95% │
+│ base       │     1.00 │ 132.76us │ -0.53% +0.58% │ 44.98kw │   2.66kw │   2.66kw │     66.33% │
+│ stdlib     │     1.00 │ 120.09us │ -0.43% +0.48% │ 30.00kw │   1.79kw │   1.79kw │     60.00% │
+└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Map Benchmark, N = 100,000&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;┌────────────┬──────────┬──────────┬───────────────┬──────────┬──────────┬──────────┬────────────┐
+│ Name       │ Time R^2 │ Time/Run │        95% CI │  mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │
+├────────────┼──────────┼──────────┼───────────────┼──────────┼──────────┼──────────┼────────────┤
+│ tail rec.  │     0.99 │  10.83ms │ -1.81% +1.61% │ 600.02kw │ 414.00kw │ 414.00kw │     99.85% │
+│ containers │     0.99 │  10.83ms │ -1.73% +1.97% │ 588.02kw │ 405.39kw │ 405.39kw │     99.84% │
+│ batteries  │     0.99 │   7.13ms │ -1.13% +1.05% │ 300.02kw │ 300.35kw │ 300.35kw │     65.77% │
+│ base       │     0.99 │  10.85ms │ -1.93% +1.92% │ 584.99kw │ 399.21kw │ 399.21kw │    100.00% │
+│ stdlib     │     0.99 │   6.57ms │ -1.24% +1.19% │ 300.01kw │ 173.43kw │ 173.43kw │     60.56% │
+└────────────┴──────────┴──────────┴───────────────┴──────────┴──────────┴──────────┴────────────┘
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;I noticed several things about in the data above:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;The tail recursive implementation is consistently slowest. (In the
+  final test &lt;code&gt;base&lt;/code&gt;, &lt;code&gt;containers&lt;/code&gt; and the tail recursive version all
+  appear to be equally slow.) This makes sense, because &lt;code&gt;base&lt;/code&gt; and
+  &lt;code&gt;containers&lt;/code&gt; default to a tail recursive implementation for long
+  lists.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;For short lists, &lt;code&gt;base&lt;/code&gt; and &lt;code&gt;containers&lt;/code&gt; are quite fast, possibly
+  due to the "loop unrolling" (special cases for short lists) in their
+  definitions.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;We can see from the &lt;code&gt;mWd&lt;/code&gt; and &lt;code&gt;mjWd&lt;/code&gt; columns that the tail recursive
+  implementation uses the most heap space, as we would expect.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;As we increase the size of the list, &lt;code&gt;stdlib&lt;/code&gt; gets faster relative
+  to &lt;code&gt;stdlib&lt;/code&gt; (from 83% to 60%); I suspect this can be attributed to
+  the cost of garbage collections.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The &lt;code&gt;batteries&lt;/code&gt; implementation is not the most performant for short
+  lists, but it's performance is pretty close to that of &lt;code&gt;stdlib&lt;/code&gt; for
+  the longest lists tested.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1&gt;Conclusions&lt;/h1&gt;
+&lt;p&gt;The data above suggests two findings:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;The stack-based standard library implementation of &lt;code&gt;map&lt;/code&gt; is faster
+   than the naive tail recursive implementation, taking about 60-84%
+   of the time to do the same work depending on the size of the list.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;There is a benefit to using a more complicated "hybrid"
+   implementation that treats very short lists with special cases, and
+   reverts to tail recursion for long lists.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;We can see in the &lt;span class="math"&gt;\(N = 100\)&lt;/span&gt; data that the &lt;code&gt;base&lt;/code&gt; and &lt;code&gt;containers&lt;/code&gt;
+implementations are significantly faster than &lt;code&gt;stdlib&lt;/code&gt;, but unlike
+&lt;code&gt;stdlib&lt;/code&gt; they cannot cause a stack overflow. Given that these
+implementations are safer &lt;em&gt;and&lt;/em&gt; faster for short lists, it seems
+reasonable to prefer them.&lt;/p&gt;
+&lt;h1&gt;Discussion&lt;/h1&gt;
+&lt;p&gt;A follow up question to this analysis, in the context of the
+discussion of &lt;code&gt;Lwt.map&lt;/code&gt; is: "How significant is the cost of &lt;code&gt;map&lt;/code&gt;
+compared to other operations?" To partially address this, I wrote
+&lt;a href="https://github.com/jsthomas/ocaml-analysis/blob/master/map/bufftest.ml"&gt;another program&lt;/a&gt;
+that measures how long it takes to write 4096 bytes to a Unix pipe
+using &lt;code&gt;Lwt.write&lt;/code&gt;, and then read it back using &lt;code&gt;Lwt.read&lt;/code&gt;. Using
+&lt;code&gt;core_bench&lt;/code&gt;, I found:&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Unix Pipe Write Benchmark&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;┌─────────┬──────────┬───────────────┬─────────┬────────────┐
+│Time R^2 │ Time/Run │          95ci │ mWd/Run │ Percentage │
+├─────────┼──────────┼───────────────┼─────────┼────────────┤
+│    1.00 │ 893.33ns │ -0.16% +0.18% │  56.00w │    100.00% │
+└─────────┴──────────┴───────────────┴─────────┴────────────┘
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;It seems reasonable to estimate that &lt;code&gt;Lwt.map&lt;/code&gt; would primarily be
+applied to IO operations like the ones in this experiment. In that
+case, the data suggest the cost per element of applying the slowest
+map implementation (&lt;code&gt;tail rec.&lt;/code&gt;) is about 0.82% of the cost of one 4KB
+read/write operation on a unix pipe. In the context of &lt;code&gt;Lwt&lt;/code&gt;, it seems
+reasonable to conclude the implementation of &lt;code&gt;map&lt;/code&gt; isn't a significant
+concern; the real cost is performing IO. In light of that, it seems
+preferable to use an implementation that cannot fail due to a stack
+overflow.&lt;/p&gt;
+&lt;p&gt;A second question that might be asked about this analysis is: "Was it
+really necessary to introduce the added complexity of &lt;code&gt;core_bench&lt;/code&gt; to
+measure the performance of &lt;code&gt;map&lt;/code&gt;?" For example, one might set up a
+performance test with just successive calls to &lt;code&gt;Time.now&lt;/code&gt; or &lt;code&gt;Unix.gettimeofday&lt;/code&gt;. In an
+earlier draft of this article, I tried such an
+&lt;a href="https://github.com/jsthomas/ocaml-analysis/blob/master/map/profile.ml"&gt;approach&lt;/a&gt;,
+producing some misleading data. In that test, I did a full garbage
+collection in between runs (applications of &lt;code&gt;map&lt;/code&gt;), which suppressed
+that (nontrivial) cost and made the tail recursive implementation
+appear quite fast. In my view, &lt;code&gt;core_bench&lt;/code&gt; does a much better job of
+accounting for the cost of garbage collection by varying the number of
+test runs performed in a row, and then establishing a trend (with
+linear regression) that can be used to account for the amortized cost
+of garbage collection per run.&lt;/p&gt;
+&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width &lt; 768) ? "left" : align;
+        indent = (screen.width &lt; 768) ? "0em" : indent;
+        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
+    }
+
+    var mathjaxscript = document.createElement('script');
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+&lt;/script&gt;</content></entry></feed>
