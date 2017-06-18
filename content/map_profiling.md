@@ -23,6 +23,15 @@ implementations of `map` in the OCaml ecosystem. I wanted to know more
 about these different implementations and their performance
 characteristics. This article summarizes what I learned.
 
+Part of my motivation to write this post arose from
+[this discussion](https://github.com/ocsigen/lwt/pull/347) of a pull
+request that proposes the default `map` implementation in `lwt` should
+be tail recursive. After reading all of the comments, I wanted to
+develop experiments that would convince me whether this was a good
+idea.
+
+# Introduction
+
 Since I'll be introducing several versions of `map`, I'll refer to the
 the implementation above as `stdlib`. An important aspect of this
 version is that it isn't *tail recursive*. A tail recursive function
@@ -46,13 +55,13 @@ on a long list won't result in a stack overflow.
 
 As we'll see later in the Results section, the naive tail recursive
 implementation is, overall, slower than the `stdlib`
-implementation. There are a couple common tricks we use apply to speed
-them up in practice.
+implementation. There some optimizations we can apply to improve the
+performance of both versions.
 
-The first trick I call "loop-unrolling". Similar to
+The first trick I call "unrolling". Similar to
 [loop unrolling in procedural languages](https://en.wikipedia.org/wiki/Loop_unrolling),
 the idea is to use cases to `map` on groups of list elements so fewer
-function calls are needed to complete the work. For example, a loop
+function calls are needed to complete the work. For example, an
 unrolled version of `stdlib` looks like:
 
 ```ocaml
@@ -87,7 +96,7 @@ implementations of map we find in other libraries. For example, both
 [`base`](https://github.com/janestreet/base/blob/f10483e957206dc6b656a28ffec667d8b068c149/src/list.ml#L311-L345)
 and
 [`containers`](https://github.com/c-cube/ocaml-containers/blob/d659ba677e3dbd95430f59b3794ac2f2a5677d61/src/core/CCList.ml#L20-L37)
-use a loop unrolled `stdlib`-style `map`, hybridized with an
+use an unrolled `stdlib`-style `map`, hybridized with an
 `ntr`-style `map`.
 
 Looking at `ntr`, one might ask: Is it strictly necessary to use
@@ -112,15 +121,8 @@ Both `base` and `containers` decided to hybridize with an `ntr`-style
 map for safety. But the `batteries` implementation is also robust to
 stack overflow. That led to one final question:
 
-* How fast is a loop-unrolled `stdlib`-style `map` hybridized with a
+* How fast is an unrolled `stdlib`-style `map` hybridized with a
   `batteries`-style `map`?
-
-> *Remark*: Part of my motivation to write this post arose from
-> [this discussion](https://github.com/ocsigen/lwt/pull/347) of a pull
-> request, which proposes the default `map` implementation in `lwt`
-> should be tail recursive. After reading all of the comments, I
-> wanted to develop some experiments that would convince me whether a
-> tail recursive `map` really is too slow to be used.
 
 # Experimental Setup
 
@@ -241,7 +243,7 @@ I noticed several things about in the data above:
   behavior after a prefix of the list.
 
 * For short lists, `base`, `containers`, and `batt-hybr` are fastest,
-  likely because of "loop unrolling".
+  likely because of unrolling.
 
 * We can see from the `mWd` and `mjWd` columns that `ntr` uses the
   most heap space, as we would expect.
@@ -251,7 +253,7 @@ I noticed several things about in the data above:
   collection.
 
 * Overall, `batt-hybr` appears to have the best performance (though in
-  the $N=10^5$ case, the confidence interval is large enought that we
+  the $N=10^5$ case, the confidence interval is large enough that we
   can't conclude `batt-hybr` is faster than `stdlib`, and the $R^2$
   value is a bit low).
 
@@ -263,7 +265,7 @@ The data above suggests three main findings:
    than the naive tail recursive implementation, taking about 60-80%
    of the time to do the same work depending on the size of the list.
 
-2. There are clear benefits to both loop-unrolling and
+2. There are clear benefits to both unrolling and
    hybridizing. Hybridizing lets us take an implementation that
    performs well on long lists (`batteries`), and make it even better
    by combining it with one that's fast on short lists, to produce
@@ -318,10 +320,12 @@ performed in a row and then establishing a trend (with linear
 regression) that reflects the amortized cost of garbage collection per
 run.
 
-One interesting finding did arise from my earlier tests. Since those
-tests perform a full garbage collection between test runs, the timings
-show the cost of allocating space on the heap in isolation. This
-produced timing data like the following:
+One interesting finding did arise from my earlier tests: for short
+lists, allocating memory on the heap actually appears to be faster
+than creating frames on the stack. Since the tests perform a full
+garbage collection between test runs, the timings show only the cost
+of allocating space on the heap. This produced data like the
+following:
 
 **Summary Statistics, $N=10^3$ Garbage Collected Map Benchmark Times (μs)**
 
@@ -453,6 +457,7 @@ produced timing data like the following:
 </table>
 
 When we ignore the time spent on garbage collection, we see that `ntr`
-is surprisingly competitive, especially in comparison with
-`stdlib`. For short lists, allocating memory on the heap actually
-appears to be faster than creating frames on the stack.
+is surprisingly competitive, especially in comparison with `stdlib`;
+the difference between the two implementations, of course, is that
+`ntr` allocates more memory on the heap while `stdlib` creates more
+stack frames.
