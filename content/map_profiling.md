@@ -286,7 +286,7 @@ that measures how long it takes to write 4096 bytes to a Unix pipe
 using `Lwt_unix.write`, and then read it back using `Lwt_unix.read`. Using
 `core_bench`, I found:
 
-**Unix Pipe Write Benchmark**
+**Unix Pipe Read/Write Benchmark**
 ```
 ┌─────────┬──────────┬───────────────┬─────────┬────────────┐
 │Time R^2 │ Time/Run │          95ci │ mWd/Run │ Percentage │
