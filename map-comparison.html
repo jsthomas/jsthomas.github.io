@@ -312,7 +312,7 @@ wrote
 that measures how long it takes to write 4096 bytes to a Unix pipe
 using <code>Lwt_unix.write</code>, and then read it back using <code>Lwt_unix.read</code>. Using
 <code>core_bench</code>, I found:</p>
-<p><strong>Unix Pipe Write Benchmark</strong></p>
+<p><strong>Unix Pipe Read/Write Benchmark</strong></p>
 <div class="highlight"><pre><span></span>┌─────────┬──────────┬───────────────┬─────────┬────────────┐
 │Time R^2 │ Time/Run │          95ci │ mWd/Run │ Percentage │
 ├─────────┼──────────┼───────────────┼─────────┼────────────┤
