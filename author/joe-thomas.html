@@ -38,7 +38,7 @@
 
             <article class="post">
                 <h2 class="title">
-                    <a href="https://jsthomas.github.io/map-comparison.html" rel="bookmark" title="Permanent Link to &quot;On the Implementation of Map&quot;">On the Implementation of Map</a>
+                    <a href="https://jsthomas.github.io/map-comparison.html" rel="bookmark" title="Permanent Link to &quot;Microbenchmarking Implementations of Map in OCaml&quot;">Microbenchmarking Implementations of Map in OCaml</a>
                 </h2>
 
                 
@@ -66,29 +66,29 @@ be tail recursive. After reading all of the comments, I wanted to
 develop experiments that would convince me whether this was a good
 idea.</p>
 <h1>Introduction</h1>
-<p>Since I'll be introducing several versions of <code>map</code>, I'll refer to the
-the implementation above as <code>stdlib</code>. An important aspect of this
-version is that it isn't <em>tail recursive</em>. A tail recursive function
-uses recursion in a specific way; it only calls itself as the final
+<p>Since I'll introduce several versions of <code>map</code>, I'll refer to the
+implementation above as <code>stdlib</code>. An important aspect of this version
+is that it isn't <em>tail recursive</em>. A tail recursive function uses
+recursion in a specific way; it only calls itself as the final
 operation in the function. In OCaml, tail recursive functions get the
-benefit of tail-call optimization, so that they only use one frame on
-the stack. In contrast, the <code>stdlib</code> implementation above takes space
-on the stack proportional to the length of the input list. For long
-enough lists, this causes a stack overflow.</p>
+benefit of tail-call optimization so that they only use one frame on
+the stack. In contrast, the <code>stdlib</code> implementation takes space on the
+stack proportional to the length of the input list. For long enough
+lists, this causes a stack overflow.</p>
 <p>We can make a basic tail-recursive version of <code>map</code> by composing two
-standard library functions that are tail recursive, <code>List.rev_map</code>
-(which creates the output of map, but in reversed order), and
-<code>List.rev</code> which reverses lists; I'll call this naive implementation
-<code>ntr</code> (naive tail recursive). <code>ntr</code> won't cause a stack overflow, but
-at two costs: we allocate twice as much space on the heap (one list
-for the output of <code>List.rev_map</code>, and a second equally long list for
-<code>List.rev</code>) and we spend additional time performing a list
-traversal. The benefit is that with this implementation, calling <code>map</code>
-on a long list won't result in a stack overflow.</p>
+standard library functions that are tail recursive: <code>List.rev_map</code>
+(which creates the output of <code>map</code>, but in reversed order) and
+<code>List.rev</code> which reverses lists. I'll call this naive implementation
+<code>ntr</code> (naive tail recursive). Compared to <code>stdlib</code>, <code>ntr</code> allocates
+twice as much space on the heap (one list for the output of
+<code>List.rev_map</code>, and a second equally long list for <code>List.rev</code>) and
+spends additional time performing a list traversal. The benefit is
+that with this implementation, calling <code>map</code> on a long list won't
+result in a stack overflow.</p>
 <p>As we'll see later in the Results section, the naive tail recursive
 implementation is, overall, slower than the <code>stdlib</code>
-implementation. There some optimizations we can apply to improve the
-performance of both versions.</p>
+implementation. However, there are some optimizations we can apply to
+improve the performance of both versions.</p>
 <p>The first trick I call "unrolling". Similar to
 <a href="https://en.wikipedia.org/wiki/Loop_unrolling">loop unrolling in procedural languages</a>,
 the idea is to use cases to <code>map</code> on groups of list elements so fewer
@@ -118,7 +118,7 @@ slow, but safe for all lists. When we "hybridize" the two, we use the
 faster version up to some fixed number of elements (e.g. 1000), and
 then switch to the safe version for the remainder of the list.</p>
 <p>These two optimizations are useful for understanding the
-implementations of map we find in other libraries. For example, both
+implementations of <code>map</code> we find in other libraries. For example, both
 <a href="https://github.com/janestreet/base/blob/f10483e957206dc6b656a28ffec667d8b068c149/src/list.ml#L311-L345"><code>base</code></a>
 and
 <a href="https://github.com/c-cube/ocaml-containers/blob/d659ba677e3dbd95430f59b3794ac2f2a5677d61/src/core/CCList.ml#L20-L37"><code>containers</code></a>
@@ -145,7 +145,7 @@ use. I wanted to know:</p>
 </li>
 </ul>
 <p>Both <code>base</code> and <code>containers</code> decided to hybridize with an <code>ntr</code>-style
-map for safety. But the <code>batteries</code> implementation is also robust to
+<code>map</code> for safety. But the <code>batteries</code> implementation is also robust to
 stack overflow. That led to one final question:</p>
 <ul>
 <li>How fast is an unrolled <code>stdlib</code>-style <code>map</code> hybridized with a
@@ -159,7 +159,7 @@ microbenchmarking called <code>core_bench</code>. As they explain
 <code>core_bench</code> is intended to measure the performance of small pieces of
 OCaml code. This library helps developers to better understand the
 cost of individual operations, like <code>map</code>.</p>
-<p>There are a couple benefits to measuring map implementations with
+<p>There are a couple benefits to measuring <code>map</code> implementations with
 <code>core_bench</code>.</p>
 <ol>
 <li>
@@ -254,7 +254,7 @@ which I'll refer to as <code>batt-hybr</code>. Other test details:</p>
 │ batt-hybr  │     0.93 │   6.09ms │ -4.30% +4.63% │ 300.02kw │ 285.46kw │ 285.46kw │     55.93% │
 └────────────┴──────────┴──────────┴───────────────┴──────────┴──────────┴──────────┴────────────┘
 </pre></div>
-<p>I noticed several things about in the data above:</p>
+<p>A few things I noticed about the data:</p>
 <ul>
 <li>
 <p>The tail recursive implementation is slow, but not always the
@@ -283,7 +283,7 @@ which I'll refer to as <code>batt-hybr</code>. Other test details:</p>
 </li>
 </ul>
 <h1>Conclusions</h1>
-<p>The data above suggests three main findings:</p>
+<p>The data above suggest three main findings:</p>
 <ol>
 <li>
 <p>The stack-based standard library implementation of <code>map</code> is faster
@@ -305,11 +305,12 @@ which I'll refer to as <code>batt-hybr</code>. Other test details:</p>
 </ol>
 <h1>Discussion</h1>
 <p>A follow up question to this analysis, in the context of the
-discussion of <code>Lwt.map</code> is: "How significant is the cost of <code>map</code>
-compared to other operations?" To partially address this, I wrote
+discussion of <code>Lwt_list.map_p</code> is: "How significant is the cost of
+<code>map</code> compared to other operations?" To partially address this, I
+wrote
 <a href="https://github.com/jsthomas/ocaml-analysis/blob/master/map/bufftest.ml">another program</a>
 that measures how long it takes to write 4096 bytes to a Unix pipe
-using <code>Lwt.write</code>, and then read it back using <code>Lwt.read</code>. Using
+using <code>Lwt_unix.write</code>, and then read it back using <code>Lwt_unix.read</code>. Using
 <code>core_bench</code>, I found:</p>
 <p><strong>Unix Pipe Write Benchmark</strong></p>
 <div class="highlight"><pre><span></span>┌─────────┬──────────┬───────────────┬─────────┬────────────┐
@@ -318,14 +319,14 @@ using <code>Lwt.write</code>, and then read it back using <code>Lwt.read</code>.
 │    1.00 │ 893.33ns │ -0.16% +0.18% │  56.00w │    100.00% │
 └─────────┴──────────┴───────────────┴─────────┴────────────┘
 </pre></div>
-<p>It seems reasonable to estimate that <code>Lwt.map</code> would primarily be
-applied to IO operations like the ones in this experiment. In that
+<p>It seems reasonable to estimate that <code>Lwt_list.map_p</code> would primarily
+be applied to IO operations like the ones in this experiment. In that
 case, the data suggest the cost per element of applying the slowest
-map implementation (<code>ntr</code>) is about 0.82% of the cost of one 4KB
+<code>map</code> implementation (<code>ntr</code>) is about 0.82% of the cost of one 4KB
 read/write operation on a unix pipe. In the context of <code>Lwt</code>, it seems
 reasonable to conclude the implementation of <code>map</code> isn't a significant
 concern; the real cost is performing IO. In light of that, it seems
-preferable to use an implementation that cannot fail due to a stack
+preferable to use an implementation that cannot cause a stack
 overflow.</p>
 <p>A second question that might be asked about this analysis is: "Was it
 necessary to introduce the added complexity of <code>core_bench</code> to measure
@@ -479,6 +480,10 @@ is surprisingly competitive, especially in comparison with <code>stdlib</code>;
 the difference between the two implementations, of course, is that
 <code>ntr</code> allocates more memory on the heap while <code>stdlib</code> creates more
 stack frames.</p>
+<h2>Notes</h2>
+<p>Thanks to <a href="https://github.com/aantron">Anton Bachin</a> and
+<a href="https://github.com/c-cube/">Simon Cruanes</a> for reading drafts of this
+post.</p>
 <script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
     var align = "center",
         indent = "0em",

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Joe Thomas - OCaml, Profiling</title><link href="https://jsthomas.github.io/" rel="alternate"></link><link href="https://jsthomas.github.io/feeds/ocaml-profiling.atom.xml" rel="self"></link><id>https://jsthomas.github.io/</id><updated>2017-06-06T00:00:00-04:00</updated><entry><title>On the Implementation of Map</title><link href="https://jsthomas.github.io/map-comparison.html" rel="alternate"></link><published>2017-06-06T00:00:00-04:00</published><updated>2017-06-06T00:00:00-04:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2017-06-06:/map-comparison.html</id><summary type="html">&lt;p&gt;A comparison of different implementations of map in OCaml&lt;/p&gt;</summary><content type="html">&lt;p&gt;&lt;code&gt;Map&lt;/code&gt; is one of the first higher-order functions I remember
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Joe Thomas - OCaml, Profiling</title><link href="https://jsthomas.github.io/" rel="alternate"></link><link href="https://jsthomas.github.io/feeds/ocaml-profiling.atom.xml" rel="self"></link><id>https://jsthomas.github.io/</id><updated>2017-06-06T00:00:00-04:00</updated><entry><title>Microbenchmarking Implementations of Map in OCaml</title><link href="https://jsthomas.github.io/map-comparison.html" rel="alternate"></link><published>2017-06-06T00:00:00-04:00</published><updated>2017-06-06T00:00:00-04:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2017-06-06:/map-comparison.html</id><summary type="html">&lt;p&gt;A comparison of different implementations of map in OCaml&lt;/p&gt;</summary><content type="html">&lt;p&gt;&lt;code&gt;Map&lt;/code&gt; is one of the first higher-order functions I remember
 encountering when I learned some rudimentary functional programming
 topics as an undergraduate. More recently I began learning OCaml. The
 &lt;code&gt;map&lt;/code&gt;
@@ -21,29 +21,29 @@ be tail recursive. After reading all of the comments, I wanted to
 develop experiments that would convince me whether this was a good
 idea.&lt;/p&gt;
 &lt;h1&gt;Introduction&lt;/h1&gt;
-&lt;p&gt;Since I'll be introducing several versions of &lt;code&gt;map&lt;/code&gt;, I'll refer to the
-the implementation above as &lt;code&gt;stdlib&lt;/code&gt;. An important aspect of this
-version is that it isn't &lt;em&gt;tail recursive&lt;/em&gt;. A tail recursive function
-uses recursion in a specific way; it only calls itself as the final
+&lt;p&gt;Since I'll introduce several versions of &lt;code&gt;map&lt;/code&gt;, I'll refer to the
+implementation above as &lt;code&gt;stdlib&lt;/code&gt;. An important aspect of this version
+is that it isn't &lt;em&gt;tail recursive&lt;/em&gt;. A tail recursive function uses
+recursion in a specific way; it only calls itself as the final
 operation in the function. In OCaml, tail recursive functions get the
-benefit of tail-call optimization, so that they only use one frame on
-the stack. In contrast, the &lt;code&gt;stdlib&lt;/code&gt; implementation above takes space
-on the stack proportional to the length of the input list. For long
-enough lists, this causes a stack overflow.&lt;/p&gt;
+benefit of tail-call optimization so that they only use one frame on
+the stack. In contrast, the &lt;code&gt;stdlib&lt;/code&gt; implementation takes space on the
+stack proportional to the length of the input list. For long enough
+lists, this causes a stack overflow.&lt;/p&gt;
 &lt;p&gt;We can make a basic tail-recursive version of &lt;code&gt;map&lt;/code&gt; by composing two
-standard library functions that are tail recursive, &lt;code&gt;List.rev_map&lt;/code&gt;
-(which creates the output of map, but in reversed order), and
-&lt;code&gt;List.rev&lt;/code&gt; which reverses lists; I'll call this naive implementation
-&lt;code&gt;ntr&lt;/code&gt; (naive tail recursive). &lt;code&gt;ntr&lt;/code&gt; won't cause a stack overflow, but
-at two costs: we allocate twice as much space on the heap (one list
-for the output of &lt;code&gt;List.rev_map&lt;/code&gt;, and a second equally long list for
-&lt;code&gt;List.rev&lt;/code&gt;) and we spend additional time performing a list
-traversal. The benefit is that with this implementation, calling &lt;code&gt;map&lt;/code&gt;
-on a long list won't result in a stack overflow.&lt;/p&gt;
+standard library functions that are tail recursive: &lt;code&gt;List.rev_map&lt;/code&gt;
+(which creates the output of &lt;code&gt;map&lt;/code&gt;, but in reversed order) and
+&lt;code&gt;List.rev&lt;/code&gt; which reverses lists. I'll call this naive implementation
+&lt;code&gt;ntr&lt;/code&gt; (naive tail recursive). Compared to &lt;code&gt;stdlib&lt;/code&gt;, &lt;code&gt;ntr&lt;/code&gt; allocates
+twice as much space on the heap (one list for the output of
+&lt;code&gt;List.rev_map&lt;/code&gt;, and a second equally long list for &lt;code&gt;List.rev&lt;/code&gt;) and
+spends additional time performing a list traversal. The benefit is
+that with this implementation, calling &lt;code&gt;map&lt;/code&gt; on a long list won't
+result in a stack overflow.&lt;/p&gt;
 &lt;p&gt;As we'll see later in the Results section, the naive tail recursive
 implementation is, overall, slower than the &lt;code&gt;stdlib&lt;/code&gt;
-implementation. There some optimizations we can apply to improve the
-performance of both versions.&lt;/p&gt;
+implementation. However, there are some optimizations we can apply to
+improve the performance of both versions.&lt;/p&gt;
 &lt;p&gt;The first trick I call "unrolling". Similar to
 &lt;a href="https://en.wikipedia.org/wiki/Loop_unrolling"&gt;loop unrolling in procedural languages&lt;/a&gt;,
 the idea is to use cases to &lt;code&gt;map&lt;/code&gt; on groups of list elements so fewer
@@ -73,7 +73,7 @@ slow, but safe for all lists. When we "hybridize" the two, we use the
 faster version up to some fixed number of elements (e.g. 1000), and
 then switch to the safe version for the remainder of the list.&lt;/p&gt;
 &lt;p&gt;These two optimizations are useful for understanding the
-implementations of map we find in other libraries. For example, both
+implementations of &lt;code&gt;map&lt;/code&gt; we find in other libraries. For example, both
 &lt;a href="https://github.com/janestreet/base/blob/f10483e957206dc6b656a28ffec667d8b068c149/src/list.ml#L311-L345"&gt;&lt;code&gt;base&lt;/code&gt;&lt;/a&gt;
 and
 &lt;a href="https://github.com/c-cube/ocaml-containers/blob/d659ba677e3dbd95430f59b3794ac2f2a5677d61/src/core/CCList.ml#L20-L37"&gt;&lt;code&gt;containers&lt;/code&gt;&lt;/a&gt;
@@ -100,7 +100,7 @@ use. I wanted to know:&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;Both &lt;code&gt;base&lt;/code&gt; and &lt;code&gt;containers&lt;/code&gt; decided to hybridize with an &lt;code&gt;ntr&lt;/code&gt;-style
-map for safety. But the &lt;code&gt;batteries&lt;/code&gt; implementation is also robust to
+&lt;code&gt;map&lt;/code&gt; for safety. But the &lt;code&gt;batteries&lt;/code&gt; implementation is also robust to
 stack overflow. That led to one final question:&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;How fast is an unrolled &lt;code&gt;stdlib&lt;/code&gt;-style &lt;code&gt;map&lt;/code&gt; hybridized with a
@@ -114,7 +114,7 @@ microbenchmarking called &lt;code&gt;core_bench&lt;/code&gt;. As they explain
 &lt;code&gt;core_bench&lt;/code&gt; is intended to measure the performance of small pieces of
 OCaml code. This library helps developers to better understand the
 cost of individual operations, like &lt;code&gt;map&lt;/code&gt;.&lt;/p&gt;
-&lt;p&gt;There are a couple benefits to measuring map implementations with
+&lt;p&gt;There are a couple benefits to measuring &lt;code&gt;map&lt;/code&gt; implementations with
 &lt;code&gt;core_bench&lt;/code&gt;.&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;
@@ -209,7 +209,7 @@ which I'll refer to as &lt;code&gt;batt-hybr&lt;/code&gt;. Other test details:&l
 │ batt-hybr  │     0.93 │   6.09ms │ -4.30% +4.63% │ 300.02kw │ 285.46kw │ 285.46kw │     55.93% │
 └────────────┴──────────┴──────────┴───────────────┴──────────┴──────────┴──────────┴────────────┘
 &lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;I noticed several things about in the data above:&lt;/p&gt;
+&lt;p&gt;A few things I noticed about the data:&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;
 &lt;p&gt;The tail recursive implementation is slow, but not always the
@@ -238,7 +238,7 @@ which I'll refer to as &lt;code&gt;batt-hybr&lt;/code&gt;. Other test details:&l
 &lt;/li&gt;
 &lt;/ul&gt;
 &lt;h1&gt;Conclusions&lt;/h1&gt;
-&lt;p&gt;The data above suggests three main findings:&lt;/p&gt;
+&lt;p&gt;The data above suggest three main findings:&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;
 &lt;p&gt;The stack-based standard library implementation of &lt;code&gt;map&lt;/code&gt; is faster
@@ -260,11 +260,12 @@ which I'll refer to as &lt;code&gt;batt-hybr&lt;/code&gt;. Other test details:&l
 &lt;/ol&gt;
 &lt;h1&gt;Discussion&lt;/h1&gt;
 &lt;p&gt;A follow up question to this analysis, in the context of the
-discussion of &lt;code&gt;Lwt.map&lt;/code&gt; is: "How significant is the cost of &lt;code&gt;map&lt;/code&gt;
-compared to other operations?" To partially address this, I wrote
+discussion of &lt;code&gt;Lwt_list.map_p&lt;/code&gt; is: "How significant is the cost of
+&lt;code&gt;map&lt;/code&gt; compared to other operations?" To partially address this, I
+wrote
 &lt;a href="https://github.com/jsthomas/ocaml-analysis/blob/master/map/bufftest.ml"&gt;another program&lt;/a&gt;
 that measures how long it takes to write 4096 bytes to a Unix pipe
-using &lt;code&gt;Lwt.write&lt;/code&gt;, and then read it back using &lt;code&gt;Lwt.read&lt;/code&gt;. Using
+using &lt;code&gt;Lwt_unix.write&lt;/code&gt;, and then read it back using &lt;code&gt;Lwt_unix.read&lt;/code&gt;. Using
 &lt;code&gt;core_bench&lt;/code&gt;, I found:&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;Unix Pipe Write Benchmark&lt;/strong&gt;&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;┌─────────┬──────────┬───────────────┬─────────┬────────────┐
@@ -273,14 +274,14 @@ using &lt;code&gt;Lwt.write&lt;/code&gt;, and then read it back using &lt;code&g
 │    1.00 │ 893.33ns │ -0.16% +0.18% │  56.00w │    100.00% │
 └─────────┴──────────┴───────────────┴─────────┴────────────┘
 &lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;It seems reasonable to estimate that &lt;code&gt;Lwt.map&lt;/code&gt; would primarily be
-applied to IO operations like the ones in this experiment. In that
+&lt;p&gt;It seems reasonable to estimate that &lt;code&gt;Lwt_list.map_p&lt;/code&gt; would primarily
+be applied to IO operations like the ones in this experiment. In that
 case, the data suggest the cost per element of applying the slowest
-map implementation (&lt;code&gt;ntr&lt;/code&gt;) is about 0.82% of the cost of one 4KB
+&lt;code&gt;map&lt;/code&gt; implementation (&lt;code&gt;ntr&lt;/code&gt;) is about 0.82% of the cost of one 4KB
 read/write operation on a unix pipe. In the context of &lt;code&gt;Lwt&lt;/code&gt;, it seems
 reasonable to conclude the implementation of &lt;code&gt;map&lt;/code&gt; isn't a significant
 concern; the real cost is performing IO. In light of that, it seems
-preferable to use an implementation that cannot fail due to a stack
+preferable to use an implementation that cannot cause a stack
 overflow.&lt;/p&gt;
 &lt;p&gt;A second question that might be asked about this analysis is: "Was it
 necessary to introduce the added complexity of &lt;code&gt;core_bench&lt;/code&gt; to measure
@@ -434,6 +435,10 @@ is surprisingly competitive, especially in comparison with &lt;code&gt;stdlib&lt
 the difference between the two implementations, of course, is that
 &lt;code&gt;ntr&lt;/code&gt; allocates more memory on the heap while &lt;code&gt;stdlib&lt;/code&gt; creates more
 stack frames.&lt;/p&gt;
+&lt;h2&gt;Notes&lt;/h2&gt;
+&lt;p&gt;Thanks to &lt;a href="https://github.com/aantron"&gt;Anton Bachin&lt;/a&gt; and
+&lt;a href="https://github.com/c-cube/"&gt;Simon Cruanes&lt;/a&gt; for reading drafts of this
+post.&lt;/p&gt;
 &lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
     var align = "center",
         indent = "0em",
