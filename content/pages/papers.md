@@ -2,6 +2,8 @@ Title: Papers
 Date: 2017-04-30
 Author: Joe Thomas
 
+* (With David Glickenstein) : [Duality structures and discrete conformal variations of piecewise constant curvature surfaces](http://www.sciencedirect.com/science/article/pii/S0001870816314682) : Advances in Mathematics, Volume 320, 7 November 2017.
+
 * [Conformal Variations of Piecewise Constant Curvature Two and Three Dimensional Manifolds]({filename}/docs/geometry/dissertation.pdf) (Spring 2015) : My PhD dissertation.
 
 * [Source Unfolding Convex Polytopes]({filename}/docs/geometry/unfolding.pdf) (Spring 2013) : My comprehensive exam paper.

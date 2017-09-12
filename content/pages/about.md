@@ -10,8 +10,8 @@ Hello! This blog consists of articles about new things I've learned
 and topics I'm excited about.
 
 I studied mathematics and computer science at the University of
-Arizona, in Tucson. Currently I live in Boston, Massachusetts, where I
-work as a software developer. I'm interested in programming languages,
+Arizona, in Tucson. Currently I live in Colorado, where I work as a
+software developer. I'm interested in programming languages,
 functional programming, data science, and mathematics.
 
 ## Contact
