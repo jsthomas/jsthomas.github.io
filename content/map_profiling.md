@@ -15,9 +15,10 @@ expecting
 
 ```ocaml
 let rec map f = function
-    [] -> []
+   [] -> []
   | a::l -> let r = f a in r :: map f l
 ```
+
 but I was surprised to learn there are actually several
 implementations of `map` in the OCaml ecosystem. I wanted to know more
 about these different implementations and their performance

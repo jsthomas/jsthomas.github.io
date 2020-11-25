@@ -23,7 +23,7 @@ using python.
 After reading the steps below, you should be able to produce a picture
 like the one below.
 
-![A genealogical tree]({filename}/images/mgptree/gauss.png)
+![A genealogical tree]({static}/images/mgptree/gauss.png)
 
 Naturally, the real purpose of the tool is to make much bigger graphs
 than this!
@@ -89,7 +89,7 @@ data to the graphviz program `dot`, which converts it to a PNG image
 file named `gf.png`. (Many other file formats are available.)
 
 
-![Genealogical trees of Gauss and Fourier]({filename}/images/mgptree/gf.png)
+![Genealogical trees of Gauss and Fourier]({static}/images/mgptree/gf.png)
 
 Creating the intermediate database `gf.mgp` allows us to work with the
 data offline, without having to query the web while we are figuring
@@ -103,7 +103,7 @@ type
 and we wouldn't have to retrieve any information from the web. The
 result, `gf_tiny.png` looks like this:
 
-![A small genealogical tree of Gauss and Fourier.]({filename}/images/mgptree/gf_tiny.png)
+![A small genealogical tree of Gauss and Fourier.]({static}/images/mgptree/gf_tiny.png)
 
 This feature can be pretty useful if you're trying to work with very
 large sets of data and don't know how much information you want to

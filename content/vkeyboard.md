@@ -43,7 +43,7 @@ counterclockwise. Places where $\gamma$ has high curvature (the
 places where $\gamma$ bends the most sharply) typically correspond to
 fingertips.
 
-![Virtual keyboard processing steps.]({filename}/images/vkeyboard/kb_processing.png)
+![Virtual keyboard processing steps.]({static}/images/vkeyboard/kb_processing.png)
 
 I addressed the second problem using a technique called *shadow
 analysis*, which is discussed in [1]. With this technique, we perform
@@ -88,9 +88,9 @@ development, so if you examine my code you may have to adapt it to
 work with your particular hardware and copy of OpenCV.
 
 * Paper:
-  [A Camera Based Virtual Keyboard with Touch Detection by Shadow Analysis]({filename}/docs/vkeyboard/vkeyboard.pdf)
+  [A Camera Based Virtual Keyboard with Touch Detection by Shadow Analysis]({static}/docs/vkeyboard/vkeyboard.pdf)
 
-* Project Code: [vkeyboard.zip]({filename}/docs/vkeyboard/vkeyboard.zip)
+* Project Code: [vkeyboard.zip]({static}/docs/vkeyboard/vkeyboard.zip)
 
 References
 ----------
