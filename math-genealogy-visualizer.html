@@ -6,11 +6,8 @@
     <title>Joe Thomas | A Mathematics Geneaology Project Visualizer</title>
     <link rel="shortcut icon" type="image/png" href="https://jsthomas.github.io/favicon.png">
     <link rel="shortcut icon" type="image/x-icon" href="https://jsthomas.github.io/favicon.ico">
-    <link href="https://jsthomas.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Joe Thomas Full Atom Feed" />
-    <link href="https://jsthomas.github.io/feeds/python-projects.atom.xml" type="application/atom+xml" rel="alternate" title="Joe Thomas Categories Atom Feed" />
-    <link rel="stylesheet" href="https://jsthomas.github.io/theme/css/screen.css" type="text/css" />
+    <link rel="stylesheet" href="https://jsthomas.github.io/theme/css/main.css" type="text/css" />
     <link rel="stylesheet" href="https://jsthomas.github.io/theme/css/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="https://jsthomas.github.io/theme/css/print.css" type="text/css" media="print" />
     <meta name="generator" content="Pelican" />
     <meta name="description" content="" />
     <meta name="author" content="Joe Thomas" />
@@ -21,11 +18,7 @@
         <nav>
             <ul>
                 <li><a href="https://jsthomas.github.io/">About</a></li>
-                <li><a href="https://jsthomas.github.io/pages/papers.html">Papers</a></li>
-                <li><a href="https://jsthomas.github.io/pages/projects.html">Projects</a></li>
-                <li><a href="https://jsthomas.github.io/pages/talks.html">Talks</a></li>
-                <li><a href="https://github.com/jsthomas/">GitHub</a></li>
-                <li><a href="https://www.linkedin.com/in/joseph-thomas-539bb969/">LinkedIn</a></li>
+                <li><a href="https://jsthomas.github.io/pages/works.html">Works</a></li>
                 <li><a href="https://jsthomas.github.io/blog">Blog</a></li>
             </ul>
         </nav>
@@ -78,11 +71,11 @@ program takes care of the actual graph drawing).</p>
 </ol>
 <p>On an Ubuntu machine, these dependencies (<code>graphviz</code> and <code>requests</code>)
 can be installed via:</p>
-<div class="highlight"><pre><span></span>$ sudo apt install virtualenv graphviz
+<div class="highlight"><pre><span></span><code>$ sudo apt install virtualenv graphviz
 $ virtualenv venv
 $ venv/bin/activate
 <span class="o">(</span>venv<span class="o">)</span> $ pip install requirements.txt
-</pre></div>
+</code></pre></div>
 <h2>Usage Example</h2>
 <p>The easiest way to learn how to use this tool is by way of an
 example. Place the <code>mgptree</code> script in a convenient folder (the
@@ -92,23 +85,23 @@ script so that you can execute it.</p>
 5 generations. The first step is to prepare a file of names for our
 search:</p>
 <p>So, we create a unicode text file:</p>
-<div class="highlight"><pre><span></span>Gauß, Carl, Friedrich
-Fourier, Jean-Baptiste, Joseph
-</pre></div>
+<div class="highlight"><pre><span></span><code><span class="err">Gauß, Carl, Friedrich</span>
+<span class="err">Fourier, Jean-Baptiste, Joseph</span>
+</code></pre></div>
 <p>I'll call the file <code>gf.txt</code>. Now we need to get some data from the
 web. We do this as follows:</p>
-<div class="highlight"><pre><span></span>(venv) $ python mgptree.py -g 5 -s -i gf.txt -o gf.mgp
-Saved 25 records to file gf.mgp.
-</pre></div>
+<div class="highlight"><pre><span></span><code><span class="err">(venv) $ python mgptree.py -g 5 -s -i gf.txt -o gf.mgp</span>
+<span class="err">Saved 25 records to file gf.mgp.</span>
+</code></pre></div>
 <p>The <code>-s</code> option indicates we want to "scrape" data from the MGP
 website. The <code>-g</code> option indicates how many generations backward we
 want to search. The <code>-i</code> denotes our input file, the <code>-o gf.mgp</code>
 indicates that we want to save our results in a database named
 <code>gf.mgp</code>.</p>
 <p>Now we need to graph the data, so we type the following:</p>
-<div class="highlight"><pre><span></span>(venv) $ python mgptree.py -p -i gf.mgp -o gf.dot
-(venv) $ dot -Tpng gf.dot -o gf.png
-</pre></div>
+<div class="highlight"><pre><span></span><code><span class="err">(venv) $ python mgptree.py -p -i gf.mgp -o gf.dot</span>
+<span class="err">(venv) $ dot -Tpng gf.dot -o gf.png</span>
+</code></pre></div>
 <p>In the first line, the <code>-p</code> indicates we are now in "plotting mode"
 where we want to convert the input database <code>gf.mgp</code> to a textual
 format, which we'll save as <code>gf.dot</code>. The next line hands the textual
@@ -120,9 +113,9 @@ data offline, without having to query the web while we are figuring
 out how we want to plot the data.  For example, suppose we only want
 to present two generations of the data we just downloaded. Then we'd
 type</p>
-<div class="highlight"><pre><span></span>(venv) $ python mgptree.py -p -g2 -i gf.mgp -o gf_tiny.dot
-(venv) $ dot -Tpng gf_tiny.dot -o gf_tiny.png
-</pre></div>
+<div class="highlight"><pre><span></span><code><span class="err">(venv) $ python mgptree.py -p -g2 -i gf.mgp -o gf_tiny.dot</span>
+<span class="err">(venv) $ dot -Tpng gf_tiny.dot -o gf_tiny.png</span>
+</code></pre></div>
 <p>and we wouldn't have to retrieve any information from the web. The
 result, <code>gf_tiny.png</code> looks like this:</p>
 <p><img alt="A small genealogical tree of Gauss and Fourier." src="https://jsthomas.github.io/images/mgptree/gf_tiny.png" style="width: 907px; height: auto;"/></p>
@@ -169,15 +162,6 @@ graphviz is very useful for tasks like this.</p>
                     &nbsp;&middot;&nbsp;<a href="https://jsthomas.github.io/category/python-projects.html" rel="tag">Python, Projects</a>
                 </div>
             </article>
-            <div class="clear"></div>
-            <footer>
-                <p>
-                <a href="https://github.com/jody-frankowski/blue-penguin">Blue Penguin</a> Theme
-                &middot;
-                Powered by <a href="http://getpelican.com">Pelican</a>
-                &middot;
-                <a href="https://jsthomas.github.io/feeds/all.atom.xml" rel="alternate">Atom Feed</a>
-            </footer>
         </div>
         <div class="clear"></div>
     </div>

@@ -3,14 +3,11 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Joe Thomas | articles in the "OCaml, Profiling" category</title>
+    <title>Joe Thomas | articles in the "OCaml" category</title>
     <link rel="shortcut icon" type="image/png" href="https://jsthomas.github.io/favicon.png">
     <link rel="shortcut icon" type="image/x-icon" href="https://jsthomas.github.io/favicon.ico">
-    <link href="https://jsthomas.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Joe Thomas Full Atom Feed" />
-    <link href="https://jsthomas.github.io/feeds/ocaml-profiling.atom.xml" type="application/atom+xml" rel="alternate" title="Joe Thomas Categories Atom Feed" />
-    <link rel="stylesheet" href="https://jsthomas.github.io/theme/css/screen.css" type="text/css" />
+    <link rel="stylesheet" href="https://jsthomas.github.io/theme/css/main.css" type="text/css" />
     <link rel="stylesheet" href="https://jsthomas.github.io/theme/css/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="https://jsthomas.github.io/theme/css/print.css" type="text/css" media="print" />
     <meta name="generator" content="Pelican" />
     <meta name="description" content="" />
     <meta name="author" content="Joe Thomas" />
@@ -20,13 +17,9 @@
         <nav>
             <ul>
 
-                <li class="ephemeral selected"><a href="https://jsthomas.github.io/category/ocaml-profiling.html">OCaml, Profiling</a></li>
+                <li class="ephemeral selected"><a href="https://jsthomas.github.io/category/ocaml.html">OCaml</a></li>
                 <li><a href="https://jsthomas.github.io/">About</a></li>
-                <li><a href="https://jsthomas.github.io/pages/papers.html">Papers</a></li>
-                <li><a href="https://jsthomas.github.io/pages/projects.html">Projects</a></li>
-                <li><a href="https://jsthomas.github.io/pages/talks.html">Talks</a></li>
-                <li><a href="https://github.com/jsthomas/">GitHub</a></li>
-                <li><a href="https://www.linkedin.com/in/joseph-thomas-539bb969/">LinkedIn</a></li>
+                <li><a href="https://jsthomas.github.io/pages/works.html">Works</a></li>
                 <li><a href="https://jsthomas.github.io/blog">Blog</a></li>
             </ul>
         </nav>
@@ -52,10 +45,10 @@ topics as an undergraduate. More recently I began learning OCaml. The
 <a href="https://github.com/ocaml/ocaml/blob/2691c40f2ff9bc34912db39bc1f17045c9241473/stdlib/list.ml#L80-L82">implementation</a>
 I found in the standard library was the textbook definition I was
 expecting</p>
-<div class="highlight"><pre><span></span><span class="k">let</span> <span class="k">rec</span> <span class="n">map</span> <span class="n">f</span> <span class="o">=</span> <span class="k">function</span>
-    <span class="bp">[]</span> <span class="o">-&gt;</span> <span class="bp">[]</span>
+<div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="k">rec</span> <span class="n">map</span> <span class="n">f</span> <span class="o">=</span> <span class="k">function</span>
+   <span class="bp">[]</span> <span class="o">-&gt;</span> <span class="bp">[]</span>
   <span class="o">|</span> <span class="n">a</span><span class="o">::</span><span class="n">l</span> <span class="o">-&gt;</span> <span class="k">let</span> <span class="n">r</span> <span class="o">=</span> <span class="n">f</span> <span class="n">a</span> <span class="k">in</span> <span class="n">r</span> <span class="o">::</span> <span class="n">map</span> <span class="n">f</span> <span class="n">l</span>
-</pre></div>
+</code></pre></div>
 <p>but I was surprised to learn there are actually several
 implementations of <code>map</code> in the OCaml ecosystem. I wanted to know more
 about these different implementations and their performance
@@ -95,7 +88,7 @@ improve the performance of both versions.</p>
 the idea is to use cases to <code>map</code> on groups of list elements so fewer
 function calls are needed to complete the work. For example, an
 unrolled version of <code>stdlib</code> looks like:</p>
-<div class="highlight"><pre><span></span><span class="k">let</span> <span class="k">rec</span> <span class="n">map</span> <span class="n">f</span> <span class="n">l</span> <span class="o">=</span>
+<div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="k">rec</span> <span class="n">map</span> <span class="n">f</span> <span class="n">l</span> <span class="o">=</span>
   <span class="k">match</span> <span class="n">l</span> <span class="k">with</span>
   <span class="o">|</span> <span class="bp">[]</span> <span class="o">-&gt;</span> <span class="bp">[]</span>
   <span class="o">|</span> <span class="o">[</span><span class="n">x1</span><span class="o">]</span> <span class="o">-&gt;</span>
@@ -110,7 +103,7 @@ unrolled version of <code>stdlib</code> looks like:</p>
     <span class="k">let</span> <span class="n">f2</span> <span class="o">=</span> <span class="n">f</span> <span class="n">x2</span> <span class="k">in</span>
     <span class="k">let</span> <span class="n">f3</span> <span class="o">=</span> <span class="n">f</span> <span class="n">x3</span> <span class="k">in</span>
     <span class="n">f1</span> <span class="o">::</span> <span class="n">f2</span> <span class="o">::</span> <span class="n">f3</span> <span class="o">::</span> <span class="n">map</span> <span class="n">tl</span>
-</pre></div>
+</code></pre></div>
 <p>We get to choose how many elements to unroll (here I picked 3); some
 profiling is needed to decide the most appropriate number.</p>
 <p>The second trick I call "hybridizing". The <code>stdlib</code> version is faster,
@@ -208,53 +201,53 @@ which I'll refer to as <code>batt-hybr</code>. Other test details:</p>
 <p>The library also allows us to produce 95% confidence intervals and
 <span class="math">\(R^2\)</span> values for the time estimates.</p>
 <p><strong>Map Benchmark, N = 100</strong></p>
-<div class="highlight"><pre><span></span>┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐
-│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │
-├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤
-│ ntr        │     1.00 │ 741.20ns │ -0.23% +0.22% │ 609.01w │    0.53w │    0.53w │    100.00% │
-│ containers │     1.00 │ 439.55ns │ -0.64% +0.67% │ 304.03w │    0.17w │    0.17w │     59.30% │
-│ batteries  │     1.00 │ 581.65ns │ -0.14% +0.16% │ 309.01w │    0.35w │    0.35w │     78.47% │
-│ base       │     1.00 │ 438.63ns │ -0.19% +0.20% │ 304.03w │    0.16w │    0.16w │     59.18% │
-│ stdlib     │     1.00 │ 610.45ns │ -0.10% +0.11% │ 304.01w │    0.17w │    0.17w │     82.36% │
-│ batt-hybr  │     1.00 │ 426.76ns │ -0.15% +0.17% │ 304.03w │    0.17w │    0.17w │     57.58% │
-└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘
-</pre></div>
+<div class="highlight"><pre><span></span><code><span class="err">┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐</span>
+<span class="err">│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │</span>
+<span class="err">├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤</span>
+<span class="err">│ ntr        │     1.00 │ 741.20ns │ -0.23% +0.22% │ 609.01w │    0.53w │    0.53w │    100.00% │</span>
+<span class="err">│ containers │     1.00 │ 439.55ns │ -0.64% +0.67% │ 304.03w │    0.17w │    0.17w │     59.30% │</span>
+<span class="err">│ batteries  │     1.00 │ 581.65ns │ -0.14% +0.16% │ 309.01w │    0.35w │    0.35w │     78.47% │</span>
+<span class="err">│ base       │     1.00 │ 438.63ns │ -0.19% +0.20% │ 304.03w │    0.16w │    0.16w │     59.18% │</span>
+<span class="err">│ stdlib     │     1.00 │ 610.45ns │ -0.10% +0.11% │ 304.01w │    0.17w │    0.17w │     82.36% │</span>
+<span class="err">│ batt-hybr  │     1.00 │ 426.76ns │ -0.15% +0.17% │ 304.03w │    0.17w │    0.17w │     57.58% │</span>
+<span class="err">└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘</span>
+</code></pre></div>
 <p><strong>Map Benchmark, N = 1000</strong></p>
-<div class="highlight"><pre><span></span>┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐
-│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │
-├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤
-│ ntr        │     1.00 │   8.84us │ -0.14% +0.15% │  6.01kw │   52.08w │   52.08w │    100.00% │
-│ containers │     1.00 │   5.07us │ -0.13% +0.15% │  3.00kw │   17.23w │   17.23w │     57.34% │
-│ batteries  │     1.00 │   6.57us │ -0.14% +0.14% │  3.01kw │   34.71w │   34.71w │     74.32% │
-│ base       │     1.00 │   4.99us │ -0.20% +0.24% │  3.00kw │   17.08w │   17.08w │     56.44% │
-│ stdlib     │     1.00 │   6.84us │ -0.10% +0.10% │  3.00kw │   17.22w │   17.22w │     77.34% │
-│ batt-hybr  │     1.00 │   4.96us │ -0.13% +0.13% │  3.00kw │   17.07w │   17.07w │     56.10% │
-└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘
-</pre></div>
+<div class="highlight"><pre><span></span><code><span class="err">┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐</span>
+<span class="err">│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │</span>
+<span class="err">├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤</span>
+<span class="err">│ ntr        │     1.00 │   8.84us │ -0.14% +0.15% │  6.01kw │   52.08w │   52.08w │    100.00% │</span>
+<span class="err">│ containers │     1.00 │   5.07us │ -0.13% +0.15% │  3.00kw │   17.23w │   17.23w │     57.34% │</span>
+<span class="err">│ batteries  │     1.00 │   6.57us │ -0.14% +0.14% │  3.01kw │   34.71w │   34.71w │     74.32% │</span>
+<span class="err">│ base       │     1.00 │   4.99us │ -0.20% +0.24% │  3.00kw │   17.08w │   17.08w │     56.44% │</span>
+<span class="err">│ stdlib     │     1.00 │   6.84us │ -0.10% +0.10% │  3.00kw │   17.22w │   17.22w │     77.34% │</span>
+<span class="err">│ batt-hybr  │     1.00 │   4.96us │ -0.13% +0.13% │  3.00kw │   17.07w │   17.07w │     56.10% │</span>
+<span class="err">└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘</span>
+</code></pre></div>
 <p><strong>Map Benchmark, N = 10,000</strong></p>
-<div class="highlight"><pre><span></span>┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐
-│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │
-├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤
-│ ntr        │     0.99 │ 203.11us │ -0.45% +0.53% │ 60.01kw │   5.40kw │   5.40kw │    100.00% │
-│ containers │     1.00 │ 144.95us │ -0.50% +0.60% │ 48.01kw │   3.04kw │   3.04kw │     71.37% │
-│ batteries  │     1.00 │ 136.87us │ -0.51% +0.63% │ 30.01kw │   3.64kw │   3.64kw │     67.39% │
-│ base       │     1.00 │ 130.85us │ -0.34% +0.39% │ 44.98kw │   2.66kw │   2.66kw │     64.42% │
-│ stdlib     │     1.00 │ 118.70us │ -0.30% +0.29% │ 30.00kw │   1.80kw │   1.80kw │     58.44% │
-│ batt-hybr  │     1.00 │ 106.91us │ -0.42% +0.52% │ 30.01kw │   2.22kw │   2.22kw │     52.64% │
-└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘
-</pre></div>
+<div class="highlight"><pre><span></span><code><span class="err">┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐</span>
+<span class="err">│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │</span>
+<span class="err">├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤</span>
+<span class="err">│ ntr        │     0.99 │ 203.11us │ -0.45% +0.53% │ 60.01kw │   5.40kw │   5.40kw │    100.00% │</span>
+<span class="err">│ containers │     1.00 │ 144.95us │ -0.50% +0.60% │ 48.01kw │   3.04kw │   3.04kw │     71.37% │</span>
+<span class="err">│ batteries  │     1.00 │ 136.87us │ -0.51% +0.63% │ 30.01kw │   3.64kw │   3.64kw │     67.39% │</span>
+<span class="err">│ base       │     1.00 │ 130.85us │ -0.34% +0.39% │ 44.98kw │   2.66kw │   2.66kw │     64.42% │</span>
+<span class="err">│ stdlib     │     1.00 │ 118.70us │ -0.30% +0.29% │ 30.00kw │   1.80kw │   1.80kw │     58.44% │</span>
+<span class="err">│ batt-hybr  │     1.00 │ 106.91us │ -0.42% +0.52% │ 30.01kw │   2.22kw │   2.22kw │     52.64% │</span>
+<span class="err">└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘</span>
+</code></pre></div>
 <p><strong>Map Benchmark, N = 100,000</strong></p>
-<div class="highlight"><pre><span></span>┌────────────┬──────────┬──────────┬───────────────┬──────────┬──────────┬──────────┬────────────┐
-│ Name       │ Time R^2 │ Time/Run │          95ci │  mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │
-├────────────┼──────────┼──────────┼───────────────┼──────────┼──────────┼──────────┼────────────┤
-│ ntr        │     0.98 │  10.27ms │ -2.39% +2.32% │ 600.02kw │ 411.83kw │ 411.83kw │     94.33% │
-│ containers │     0.99 │  10.62ms │ -2.19% +1.83% │ 588.02kw │ 404.91kw │ 404.91kw │     97.61% │
-│ batteries  │     1.00 │   7.19ms │ -0.78% +0.79% │ 300.02kw │ 300.35kw │ 300.35kw │     66.02% │
-│ base       │     0.99 │  10.88ms │ -1.54% +1.41% │ 584.99kw │ 397.60kw │ 397.60kw │    100.00% │
-│ stdlib     │     0.99 │   6.33ms │ -1.08% +1.07% │ 300.01kw │ 171.73kw │ 171.73kw │     58.18% │
-│ batt-hybr  │     0.93 │   6.09ms │ -4.30% +4.63% │ 300.02kw │ 285.46kw │ 285.46kw │     55.93% │
-└────────────┴──────────┴──────────┴───────────────┴──────────┴──────────┴──────────┴────────────┘
-</pre></div>
+<div class="highlight"><pre><span></span><code><span class="err">┌────────────┬──────────┬──────────┬───────────────┬──────────┬──────────┬──────────┬────────────┐</span>
+<span class="err">│ Name       │ Time R^2 │ Time/Run │          95ci │  mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │</span>
+<span class="err">├────────────┼──────────┼──────────┼───────────────┼──────────┼──────────┼──────────┼────────────┤</span>
+<span class="err">│ ntr        │     0.98 │  10.27ms │ -2.39% +2.32% │ 600.02kw │ 411.83kw │ 411.83kw │     94.33% │</span>
+<span class="err">│ containers │     0.99 │  10.62ms │ -2.19% +1.83% │ 588.02kw │ 404.91kw │ 404.91kw │     97.61% │</span>
+<span class="err">│ batteries  │     1.00 │   7.19ms │ -0.78% +0.79% │ 300.02kw │ 300.35kw │ 300.35kw │     66.02% │</span>
+<span class="err">│ base       │     0.99 │  10.88ms │ -1.54% +1.41% │ 584.99kw │ 397.60kw │ 397.60kw │    100.00% │</span>
+<span class="err">│ stdlib     │     0.99 │   6.33ms │ -1.08% +1.07% │ 300.01kw │ 171.73kw │ 171.73kw │     58.18% │</span>
+<span class="err">│ batt-hybr  │     0.93 │   6.09ms │ -4.30% +4.63% │ 300.02kw │ 285.46kw │ 285.46kw │     55.93% │</span>
+<span class="err">└────────────┴──────────┴──────────┴───────────────┴──────────┴──────────┴──────────┴────────────┘</span>
+</code></pre></div>
 <p>A few things I noticed about the data:</p>
 <ul>
 <li>
@@ -314,12 +307,12 @@ that measures how long it takes to write 4096 bytes to a Unix pipe
 using <code>Lwt_unix.write</code>, and then read it back using <code>Lwt_unix.read</code>. Using
 <code>core_bench</code>, I found:</p>
 <p><strong>Unix Pipe Read/Write Benchmark</strong></p>
-<div class="highlight"><pre><span></span>┌─────────┬──────────┬───────────────┬─────────┬────────────┐
-│Time R^2 │ Time/Run │          95ci │ mWd/Run │ Percentage │
-├─────────┼──────────┼───────────────┼─────────┼────────────┤
-│    1.00 │ 893.33ns │ -0.16% +0.18% │  56.00w │    100.00% │
-└─────────┴──────────┴───────────────┴─────────┴────────────┘
-</pre></div>
+<div class="highlight"><pre><span></span><code><span class="err">┌─────────┬──────────┬───────────────┬─────────┬────────────┐</span>
+<span class="err">│Time R^2 │ Time/Run │          95ci │ mWd/Run │ Percentage │</span>
+<span class="err">├─────────┼──────────┼───────────────┼─────────┼────────────┤</span>
+<span class="err">│    1.00 │ 893.33ns │ -0.16% +0.18% │  56.00w │    100.00% │</span>
+<span class="err">└─────────┴──────────┴───────────────┴─────────┴────────────┘</span>
+</code></pre></div>
 <p>It seems reasonable to estimate that <code>Lwt_list.map_p</code> would primarily
 be applied to IO operations like the ones in this experiment. In that
 case, the data suggest the cost per element of applying the slowest
@@ -413,7 +406,7 @@ following:</p>
 </tr>
 </tbody>
 </table>
-<p><strong>Summary Statistics, <span class="math">\(N=10^4\)</span> Garbage Collected Map Benchmark Times (μs)</strong>
+<p><strong>Summary Statistics, <span class="math">\(N=10^4\)</span> Garbage Collected Map Benchmark Times (μs)</strong></p>
 <table class="dataframe">
 <thead>
 <tr>
@@ -475,7 +468,7 @@ following:</p>
 <td>13603.93</td>
 </tr>
 </tbody>
-</table></p>
+</table>
 <p>When we ignore the time spent on garbage collection, we see that <code>ntr</code>
 is surprisingly competitive, especially in comparison with <code>stdlib</code>;
 the difference between the two implementations, of course, is that
@@ -499,11 +492,14 @@ post.</p>
     var mathjaxscript = document.createElement('script');
     mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
     mathjaxscript.type = 'text/javascript';
-    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
-    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
+
+    var configscript = document.createElement('script');
+    configscript.type = 'text/x-mathjax-config';
+    configscript[(window.opera ? "innerHTML" : "text")] =
         "MathJax.Hub.Config({" +
         "    config: ['MMLorHTML.js']," +
-        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'none' } }," +
         "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
         "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
         "    displayAlign: '"+ align +"'," +
@@ -517,6 +513,8 @@ post.</p>
         "        preview: 'TeX'," +
         "    }, " +
         "    'HTML-CSS': { " +
+        "        availableFonts: ['STIX', 'TeX']," +
+        "        preferredFont: 'STIX'," +
         "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
         "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
         "    }, " +
@@ -537,6 +535,8 @@ post.</p>
                 "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
             "});" +
         "}";
+
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
     (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
 }
 </script>
@@ -544,20 +544,10 @@ post.</p>
 
                 <div class="info">
                     <a href="https://jsthomas.github.io/map-comparison.html">posted at 00:00</a>
-                    &nbsp;&middot;&nbsp;<a href="https://jsthomas.github.io/category/ocaml-profiling.html" rel="tag">OCaml, Profiling</a>
+                    &nbsp;&middot;&nbsp;<a href="https://jsthomas.github.io/category/ocaml.html" rel="tag">OCaml</a>
                 </div>
-		<a href="https://jsthomas.github.io/map-comparison.html#disqus_thread">Click to read and post comments</a>
             </article>
 
-            <div class="clear"></div>
-            <footer>
-                <p>
-                <a href="https://github.com/jody-frankowski/blue-penguin">Blue Penguin</a> Theme
-                &middot;
-                Powered by <a href="http://getpelican.com">Pelican</a>
-                &middot;
-                <a href="https://jsthomas.github.io/feeds/all.atom.xml" rel="alternate">Atom Feed</a>
-            </footer>
         </div>
         <div class="clear"></div>
     </div>

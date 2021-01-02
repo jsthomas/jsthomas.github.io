@@ -6,10 +6,8 @@
     <title>Joe Thomas | Articles by Joe Thomas</title>
     <link rel="shortcut icon" type="image/png" href="https://jsthomas.github.io/favicon.png">
     <link rel="shortcut icon" type="image/x-icon" href="https://jsthomas.github.io/favicon.ico">
-    <link href="https://jsthomas.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Joe Thomas Full Atom Feed" />
-    <link rel="stylesheet" href="https://jsthomas.github.io/theme/css/screen.css" type="text/css" />
+    <link rel="stylesheet" href="https://jsthomas.github.io/theme/css/main.css" type="text/css" />
     <link rel="stylesheet" href="https://jsthomas.github.io/theme/css/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="https://jsthomas.github.io/theme/css/print.css" type="text/css" media="print" />
     <meta name="generator" content="Pelican" />
     <meta name="description" content="" />
     <meta name="author" content="Joe Thomas" />
@@ -21,11 +19,7 @@
 
                 <li class="ephemeral selected"><a href="https://jsthomas.github.io/author/joe-thomas.html">Joe Thomas</a></li>
                 <li><a href="https://jsthomas.github.io/">About</a></li>
-                <li><a href="https://jsthomas.github.io/pages/papers.html">Papers</a></li>
-                <li><a href="https://jsthomas.github.io/pages/projects.html">Projects</a></li>
-                <li><a href="https://jsthomas.github.io/pages/talks.html">Talks</a></li>
-                <li><a href="https://github.com/jsthomas/">GitHub</a></li>
-                <li><a href="https://www.linkedin.com/in/joseph-thomas-539bb969/">LinkedIn</a></li>
+                <li><a href="https://jsthomas.github.io/pages/works.html">Works</a></li>
                 <li><a href="https://jsthomas.github.io/blog">Blog</a></li>
             </ul>
         </nav>
@@ -51,10 +45,10 @@ topics as an undergraduate. More recently I began learning OCaml. The
 <a href="https://github.com/ocaml/ocaml/blob/2691c40f2ff9bc34912db39bc1f17045c9241473/stdlib/list.ml#L80-L82">implementation</a>
 I found in the standard library was the textbook definition I was
 expecting</p>
-<div class="highlight"><pre><span></span><span class="k">let</span> <span class="k">rec</span> <span class="n">map</span> <span class="n">f</span> <span class="o">=</span> <span class="k">function</span>
-    <span class="bp">[]</span> <span class="o">-&gt;</span> <span class="bp">[]</span>
+<div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="k">rec</span> <span class="n">map</span> <span class="n">f</span> <span class="o">=</span> <span class="k">function</span>
+   <span class="bp">[]</span> <span class="o">-&gt;</span> <span class="bp">[]</span>
   <span class="o">|</span> <span class="n">a</span><span class="o">::</span><span class="n">l</span> <span class="o">-&gt;</span> <span class="k">let</span> <span class="n">r</span> <span class="o">=</span> <span class="n">f</span> <span class="n">a</span> <span class="k">in</span> <span class="n">r</span> <span class="o">::</span> <span class="n">map</span> <span class="n">f</span> <span class="n">l</span>
-</pre></div>
+</code></pre></div>
 <p>but I was surprised to learn there are actually several
 implementations of <code>map</code> in the OCaml ecosystem. I wanted to know more
 about these different implementations and their performance
@@ -94,7 +88,7 @@ improve the performance of both versions.</p>
 the idea is to use cases to <code>map</code> on groups of list elements so fewer
 function calls are needed to complete the work. For example, an
 unrolled version of <code>stdlib</code> looks like:</p>
-<div class="highlight"><pre><span></span><span class="k">let</span> <span class="k">rec</span> <span class="n">map</span> <span class="n">f</span> <span class="n">l</span> <span class="o">=</span>
+<div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="k">rec</span> <span class="n">map</span> <span class="n">f</span> <span class="n">l</span> <span class="o">=</span>
   <span class="k">match</span> <span class="n">l</span> <span class="k">with</span>
   <span class="o">|</span> <span class="bp">[]</span> <span class="o">-&gt;</span> <span class="bp">[]</span>
   <span class="o">|</span> <span class="o">[</span><span class="n">x1</span><span class="o">]</span> <span class="o">-&gt;</span>
@@ -109,7 +103,7 @@ unrolled version of <code>stdlib</code> looks like:</p>
     <span class="k">let</span> <span class="n">f2</span> <span class="o">=</span> <span class="n">f</span> <span class="n">x2</span> <span class="k">in</span>
     <span class="k">let</span> <span class="n">f3</span> <span class="o">=</span> <span class="n">f</span> <span class="n">x3</span> <span class="k">in</span>
     <span class="n">f1</span> <span class="o">::</span> <span class="n">f2</span> <span class="o">::</span> <span class="n">f3</span> <span class="o">::</span> <span class="n">map</span> <span class="n">tl</span>
-</pre></div>
+</code></pre></div>
 <p>We get to choose how many elements to unroll (here I picked 3); some
 profiling is needed to decide the most appropriate number.</p>
 <p>The second trick I call "hybridizing". The <code>stdlib</code> version is faster,
@@ -207,53 +201,53 @@ which I'll refer to as <code>batt-hybr</code>. Other test details:</p>
 <p>The library also allows us to produce 95% confidence intervals and
 <span class="math">\(R^2\)</span> values for the time estimates.</p>
 <p><strong>Map Benchmark, N = 100</strong></p>
-<div class="highlight"><pre><span></span>┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐
-│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │
-├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤
-│ ntr        │     1.00 │ 741.20ns │ -0.23% +0.22% │ 609.01w │    0.53w │    0.53w │    100.00% │
-│ containers │     1.00 │ 439.55ns │ -0.64% +0.67% │ 304.03w │    0.17w │    0.17w │     59.30% │
-│ batteries  │     1.00 │ 581.65ns │ -0.14% +0.16% │ 309.01w │    0.35w │    0.35w │     78.47% │
-│ base       │     1.00 │ 438.63ns │ -0.19% +0.20% │ 304.03w │    0.16w │    0.16w │     59.18% │
-│ stdlib     │     1.00 │ 610.45ns │ -0.10% +0.11% │ 304.01w │    0.17w │    0.17w │     82.36% │
-│ batt-hybr  │     1.00 │ 426.76ns │ -0.15% +0.17% │ 304.03w │    0.17w │    0.17w │     57.58% │
-└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘
-</pre></div>
+<div class="highlight"><pre><span></span><code><span class="err">┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐</span>
+<span class="err">│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │</span>
+<span class="err">├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤</span>
+<span class="err">│ ntr        │     1.00 │ 741.20ns │ -0.23% +0.22% │ 609.01w │    0.53w │    0.53w │    100.00% │</span>
+<span class="err">│ containers │     1.00 │ 439.55ns │ -0.64% +0.67% │ 304.03w │    0.17w │    0.17w │     59.30% │</span>
+<span class="err">│ batteries  │     1.00 │ 581.65ns │ -0.14% +0.16% │ 309.01w │    0.35w │    0.35w │     78.47% │</span>
+<span class="err">│ base       │     1.00 │ 438.63ns │ -0.19% +0.20% │ 304.03w │    0.16w │    0.16w │     59.18% │</span>
+<span class="err">│ stdlib     │     1.00 │ 610.45ns │ -0.10% +0.11% │ 304.01w │    0.17w │    0.17w │     82.36% │</span>
+<span class="err">│ batt-hybr  │     1.00 │ 426.76ns │ -0.15% +0.17% │ 304.03w │    0.17w │    0.17w │     57.58% │</span>
+<span class="err">└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘</span>
+</code></pre></div>
 <p><strong>Map Benchmark, N = 1000</strong></p>
-<div class="highlight"><pre><span></span>┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐
-│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │
-├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤
-│ ntr        │     1.00 │   8.84us │ -0.14% +0.15% │  6.01kw │   52.08w │   52.08w │    100.00% │
-│ containers │     1.00 │   5.07us │ -0.13% +0.15% │  3.00kw │   17.23w │   17.23w │     57.34% │
-│ batteries  │     1.00 │   6.57us │ -0.14% +0.14% │  3.01kw │   34.71w │   34.71w │     74.32% │
-│ base       │     1.00 │   4.99us │ -0.20% +0.24% │  3.00kw │   17.08w │   17.08w │     56.44% │
-│ stdlib     │     1.00 │   6.84us │ -0.10% +0.10% │  3.00kw │   17.22w │   17.22w │     77.34% │
-│ batt-hybr  │     1.00 │   4.96us │ -0.13% +0.13% │  3.00kw │   17.07w │   17.07w │     56.10% │
-└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘
-</pre></div>
+<div class="highlight"><pre><span></span><code><span class="err">┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐</span>
+<span class="err">│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │</span>
+<span class="err">├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤</span>
+<span class="err">│ ntr        │     1.00 │   8.84us │ -0.14% +0.15% │  6.01kw │   52.08w │   52.08w │    100.00% │</span>
+<span class="err">│ containers │     1.00 │   5.07us │ -0.13% +0.15% │  3.00kw │   17.23w │   17.23w │     57.34% │</span>
+<span class="err">│ batteries  │     1.00 │   6.57us │ -0.14% +0.14% │  3.01kw │   34.71w │   34.71w │     74.32% │</span>
+<span class="err">│ base       │     1.00 │   4.99us │ -0.20% +0.24% │  3.00kw │   17.08w │   17.08w │     56.44% │</span>
+<span class="err">│ stdlib     │     1.00 │   6.84us │ -0.10% +0.10% │  3.00kw │   17.22w │   17.22w │     77.34% │</span>
+<span class="err">│ batt-hybr  │     1.00 │   4.96us │ -0.13% +0.13% │  3.00kw │   17.07w │   17.07w │     56.10% │</span>
+<span class="err">└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘</span>
+</code></pre></div>
 <p><strong>Map Benchmark, N = 10,000</strong></p>
-<div class="highlight"><pre><span></span>┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐
-│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │
-├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤
-│ ntr        │     0.99 │ 203.11us │ -0.45% +0.53% │ 60.01kw │   5.40kw │   5.40kw │    100.00% │
-│ containers │     1.00 │ 144.95us │ -0.50% +0.60% │ 48.01kw │   3.04kw │   3.04kw │     71.37% │
-│ batteries  │     1.00 │ 136.87us │ -0.51% +0.63% │ 30.01kw │   3.64kw │   3.64kw │     67.39% │
-│ base       │     1.00 │ 130.85us │ -0.34% +0.39% │ 44.98kw │   2.66kw │   2.66kw │     64.42% │
-│ stdlib     │     1.00 │ 118.70us │ -0.30% +0.29% │ 30.00kw │   1.80kw │   1.80kw │     58.44% │
-│ batt-hybr  │     1.00 │ 106.91us │ -0.42% +0.52% │ 30.01kw │   2.22kw │   2.22kw │     52.64% │
-└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘
-</pre></div>
+<div class="highlight"><pre><span></span><code><span class="err">┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐</span>
+<span class="err">│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │</span>
+<span class="err">├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤</span>
+<span class="err">│ ntr        │     0.99 │ 203.11us │ -0.45% +0.53% │ 60.01kw │   5.40kw │   5.40kw │    100.00% │</span>
+<span class="err">│ containers │     1.00 │ 144.95us │ -0.50% +0.60% │ 48.01kw │   3.04kw │   3.04kw │     71.37% │</span>
+<span class="err">│ batteries  │     1.00 │ 136.87us │ -0.51% +0.63% │ 30.01kw │   3.64kw │   3.64kw │     67.39% │</span>
+<span class="err">│ base       │     1.00 │ 130.85us │ -0.34% +0.39% │ 44.98kw │   2.66kw │   2.66kw │     64.42% │</span>
+<span class="err">│ stdlib     │     1.00 │ 118.70us │ -0.30% +0.29% │ 30.00kw │   1.80kw │   1.80kw │     58.44% │</span>
+<span class="err">│ batt-hybr  │     1.00 │ 106.91us │ -0.42% +0.52% │ 30.01kw │   2.22kw │   2.22kw │     52.64% │</span>
+<span class="err">└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘</span>
+</code></pre></div>
 <p><strong>Map Benchmark, N = 100,000</strong></p>
-<div class="highlight"><pre><span></span>┌────────────┬──────────┬──────────┬───────────────┬──────────┬──────────┬──────────┬────────────┐
-│ Name       │ Time R^2 │ Time/Run │          95ci │  mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │
-├────────────┼──────────┼──────────┼───────────────┼──────────┼──────────┼──────────┼────────────┤
-│ ntr        │     0.98 │  10.27ms │ -2.39% +2.32% │ 600.02kw │ 411.83kw │ 411.83kw │     94.33% │
-│ containers │     0.99 │  10.62ms │ -2.19% +1.83% │ 588.02kw │ 404.91kw │ 404.91kw │     97.61% │
-│ batteries  │     1.00 │   7.19ms │ -0.78% +0.79% │ 300.02kw │ 300.35kw │ 300.35kw │     66.02% │
-│ base       │     0.99 │  10.88ms │ -1.54% +1.41% │ 584.99kw │ 397.60kw │ 397.60kw │    100.00% │
-│ stdlib     │     0.99 │   6.33ms │ -1.08% +1.07% │ 300.01kw │ 171.73kw │ 171.73kw │     58.18% │
-│ batt-hybr  │     0.93 │   6.09ms │ -4.30% +4.63% │ 300.02kw │ 285.46kw │ 285.46kw │     55.93% │
-└────────────┴──────────┴──────────┴───────────────┴──────────┴──────────┴──────────┴────────────┘
-</pre></div>
+<div class="highlight"><pre><span></span><code><span class="err">┌────────────┬──────────┬──────────┬───────────────┬──────────┬──────────┬──────────┬────────────┐</span>
+<span class="err">│ Name       │ Time R^2 │ Time/Run │          95ci │  mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │</span>
+<span class="err">├────────────┼──────────┼──────────┼───────────────┼──────────┼──────────┼──────────┼────────────┤</span>
+<span class="err">│ ntr        │     0.98 │  10.27ms │ -2.39% +2.32% │ 600.02kw │ 411.83kw │ 411.83kw │     94.33% │</span>
+<span class="err">│ containers │     0.99 │  10.62ms │ -2.19% +1.83% │ 588.02kw │ 404.91kw │ 404.91kw │     97.61% │</span>
+<span class="err">│ batteries  │     1.00 │   7.19ms │ -0.78% +0.79% │ 300.02kw │ 300.35kw │ 300.35kw │     66.02% │</span>
+<span class="err">│ base       │     0.99 │  10.88ms │ -1.54% +1.41% │ 584.99kw │ 397.60kw │ 397.60kw │    100.00% │</span>
+<span class="err">│ stdlib     │     0.99 │   6.33ms │ -1.08% +1.07% │ 300.01kw │ 171.73kw │ 171.73kw │     58.18% │</span>
+<span class="err">│ batt-hybr  │     0.93 │   6.09ms │ -4.30% +4.63% │ 300.02kw │ 285.46kw │ 285.46kw │     55.93% │</span>
+<span class="err">└────────────┴──────────┴──────────┴───────────────┴──────────┴──────────┴──────────┴────────────┘</span>
+</code></pre></div>
 <p>A few things I noticed about the data:</p>
 <ul>
 <li>
@@ -313,12 +307,12 @@ that measures how long it takes to write 4096 bytes to a Unix pipe
 using <code>Lwt_unix.write</code>, and then read it back using <code>Lwt_unix.read</code>. Using
 <code>core_bench</code>, I found:</p>
 <p><strong>Unix Pipe Read/Write Benchmark</strong></p>
-<div class="highlight"><pre><span></span>┌─────────┬──────────┬───────────────┬─────────┬────────────┐
-│Time R^2 │ Time/Run │          95ci │ mWd/Run │ Percentage │
-├─────────┼──────────┼───────────────┼─────────┼────────────┤
-│    1.00 │ 893.33ns │ -0.16% +0.18% │  56.00w │    100.00% │
-└─────────┴──────────┴───────────────┴─────────┴────────────┘
-</pre></div>
+<div class="highlight"><pre><span></span><code><span class="err">┌─────────┬──────────┬───────────────┬─────────┬────────────┐</span>
+<span class="err">│Time R^2 │ Time/Run │          95ci │ mWd/Run │ Percentage │</span>
+<span class="err">├─────────┼──────────┼───────────────┼─────────┼────────────┤</span>
+<span class="err">│    1.00 │ 893.33ns │ -0.16% +0.18% │  56.00w │    100.00% │</span>
+<span class="err">└─────────┴──────────┴───────────────┴─────────┴────────────┘</span>
+</code></pre></div>
 <p>It seems reasonable to estimate that <code>Lwt_list.map_p</code> would primarily
 be applied to IO operations like the ones in this experiment. In that
 case, the data suggest the cost per element of applying the slowest
@@ -412,7 +406,7 @@ following:</p>
 </tr>
 </tbody>
 </table>
-<p><strong>Summary Statistics, <span class="math">\(N=10^4\)</span> Garbage Collected Map Benchmark Times (μs)</strong>
+<p><strong>Summary Statistics, <span class="math">\(N=10^4\)</span> Garbage Collected Map Benchmark Times (μs)</strong></p>
 <table class="dataframe">
 <thead>
 <tr>
@@ -474,7 +468,7 @@ following:</p>
 <td>13603.93</td>
 </tr>
 </tbody>
-</table></p>
+</table>
 <p>When we ignore the time spent on garbage collection, we see that <code>ntr</code>
 is surprisingly competitive, especially in comparison with <code>stdlib</code>;
 the difference between the two implementations, of course, is that
@@ -498,11 +492,14 @@ post.</p>
     var mathjaxscript = document.createElement('script');
     mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
     mathjaxscript.type = 'text/javascript';
-    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
-    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
+
+    var configscript = document.createElement('script');
+    configscript.type = 'text/x-mathjax-config';
+    configscript[(window.opera ? "innerHTML" : "text")] =
         "MathJax.Hub.Config({" +
         "    config: ['MMLorHTML.js']," +
-        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'none' } }," +
         "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
         "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
         "    displayAlign: '"+ align +"'," +
@@ -516,6 +513,8 @@ post.</p>
         "        preview: 'TeX'," +
         "    }, " +
         "    'HTML-CSS': { " +
+        "        availableFonts: ['STIX', 'TeX']," +
+        "        preferredFont: 'STIX'," +
         "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
         "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
         "    }, " +
@@ -536,6 +535,8 @@ post.</p>
                 "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
             "});" +
         "}";
+
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
     (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
 }
 </script>
@@ -543,9 +544,8 @@ post.</p>
 
                 <div class="info">
                     <a href="https://jsthomas.github.io/map-comparison.html">posted at 00:00</a>
-                    &nbsp;&middot;&nbsp;<a href="https://jsthomas.github.io/category/ocaml-profiling.html" rel="tag">OCaml, Profiling</a>
+                    &nbsp;&middot;&nbsp;<a href="https://jsthomas.github.io/category/ocaml.html" rel="tag">OCaml</a>
                 </div>
-		<a href="https://jsthomas.github.io/map-comparison.html#disqus_thread">Click to read and post comments</a>
             </article>            <h4 class="date">May 01, 2017</h4>
 
             <article class="post">
@@ -610,21 +610,21 @@ didn't know:</p>
 <h2>Phase 1: Cleaning up lint issues.</h2>
 <p>Whenever I'm starting on unfamiliar python code, I like to begin with
 <code>pylint</code>'s suggestions.</p>
-<div class="highlight"><pre><span></span>```
-...
-C:384, 4: Invalid method name "extractPersonalData" (invalid-name)
-C:384, 4: Missing method docstring (missing-docstring)
-C:391,11: Do not use `len(SEQUENCE)` as condition value (len-as-condition)
-C:395,11: Do not use `len(SEQUENCE)` as condition value (len-as-condition)
-C:399,11: Do not use `len(SEQUENCE)` as condition value (len-as-condition)
-C:402, 4: Missing method docstring (missing-docstring)
-C:405, 4: Missing method docstring (missing-docstring)
-W:408,12: Unused variable 'name' (unused-variable)
+<div class="highlight"><pre><span></span><code><span class="o">```</span>
+<span class="p">...</span>
+<span class="k">C</span><span class="p">:</span><span class="mi">384</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="n">Invalid</span> <span class="k">method</span> <span class="n">name</span> <span class="ss">"extractPersonalData"</span> <span class="p">(</span><span class="n">invalid</span><span class="o">-</span><span class="n">name</span><span class="p">)</span>
+<span class="k">C</span><span class="p">:</span><span class="mi">384</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="n">Missing</span> <span class="k">method</span> <span class="n">docstring</span> <span class="p">(</span><span class="n">missing</span><span class="o">-</span><span class="n">docstring</span><span class="p">)</span>
+<span class="k">C</span><span class="p">:</span><span class="mi">391</span><span class="p">,</span><span class="mi">11</span><span class="p">:</span> <span class="k">Do</span> <span class="k">not</span> <span class="n">use</span> <span class="o">`</span><span class="n">len</span><span class="p">(</span><span class="n">SEQUENCE</span><span class="p">)</span><span class="o">`</span> <span class="k">as</span> <span class="n">condition</span> <span class="n">value</span> <span class="p">(</span><span class="n">len</span><span class="o">-</span><span class="k">as</span><span class="o">-</span><span class="n">condition</span><span class="p">)</span>
+<span class="k">C</span><span class="p">:</span><span class="mi">395</span><span class="p">,</span><span class="mi">11</span><span class="p">:</span> <span class="k">Do</span> <span class="k">not</span> <span class="n">use</span> <span class="o">`</span><span class="n">len</span><span class="p">(</span><span class="n">SEQUENCE</span><span class="p">)</span><span class="o">`</span> <span class="k">as</span> <span class="n">condition</span> <span class="n">value</span> <span class="p">(</span><span class="n">len</span><span class="o">-</span><span class="k">as</span><span class="o">-</span><span class="n">condition</span><span class="p">)</span>
+<span class="k">C</span><span class="p">:</span><span class="mi">399</span><span class="p">,</span><span class="mi">11</span><span class="p">:</span> <span class="k">Do</span> <span class="k">not</span> <span class="n">use</span> <span class="o">`</span><span class="n">len</span><span class="p">(</span><span class="n">SEQUENCE</span><span class="p">)</span><span class="o">`</span> <span class="k">as</span> <span class="n">condition</span> <span class="n">value</span> <span class="p">(</span><span class="n">len</span><span class="o">-</span><span class="k">as</span><span class="o">-</span><span class="n">condition</span><span class="p">)</span>
+<span class="k">C</span><span class="p">:</span><span class="mi">402</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="n">Missing</span> <span class="k">method</span> <span class="n">docstring</span> <span class="p">(</span><span class="n">missing</span><span class="o">-</span><span class="n">docstring</span><span class="p">)</span>
+<span class="k">C</span><span class="p">:</span><span class="mi">405</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="n">Missing</span> <span class="k">method</span> <span class="n">docstring</span> <span class="p">(</span><span class="n">missing</span><span class="o">-</span><span class="n">docstring</span><span class="p">)</span>
+<span class="n">W</span><span class="p">:</span><span class="mi">408</span><span class="p">,</span><span class="mi">12</span><span class="p">:</span> <span class="n">Unused</span> <span class="k">variable</span> <span class="s1">'name'</span> <span class="p">(</span><span class="n">unused</span><span class="o">-</span><span class="k">variable</span><span class="p">)</span>
 
----------------------------------------------------------------------
-Your code has been rated at -1.83/10
-```
-</pre></div>
+<span class="c1">---------------------------------------------------------------------</span>
+<span class="n">Your</span> <span class="n">code</span> <span class="n">has</span> <span class="n">been</span> <span class="n">rated</span> <span class="k">at</span> <span class="o">-</span><span class="mi">1</span><span class="p">.</span><span class="mi">83</span><span class="o">/</span><span class="mi">10</span>
+<span class="o">```</span>
+</code></pre></div>
 <p>Pylint scored my original code -1.83/10. D'oh. It turns out one of the
 things I wasn't following in 2012 was PEP8, which means I had a lot of
 formatting/whitespace issues. Fixing these, my score rose to
@@ -637,7 +637,7 @@ get rid of the variables I'd planned to eliminate. It turns out I had
 four unused variables in 430 lines of code, all easy to fix.</p>
 <p>Another convention I wasn't following in 2012 is the use of
 docstrings. Instead, I was writing big block comments, like:</p>
-<div class="highlight"><pre><span></span><span class="c1">################################################################################</span>
+<div class="highlight"><pre><span></span><code><span class="c1">################################################################################</span>
 <span class="c1"># Procedure: validate_scrape</span>
 <span class="c1">#</span>
 <span class="c1"># Input: Parser and options objects from optparse</span>
@@ -647,7 +647,7 @@ docstrings. Instead, I was writing big block comments, like:</p>
 <span class="c1"># Effects: Checks the options object to confirm the inputs are well formed.</span>
 <span class="c1">#</span>
 <span class="c1">################################################################################</span>
-</pre></div>
+</code></pre></div>
 <p>Now that I work with jupyter and ipython more often, I have a better
 appreciation for docstrings. It's really helpful to be able to do
 <code>function_i_dont_remember ?</code> at a REPL and immediately pull up
@@ -658,30 +658,30 @@ script's lack of logging. For some reason, I'd thought it would be a
 good idea to send everything directly to <code>stdout</code> or <code>stderr</code>. I even
 added a <code>verbose</code> command line flag, and then introduced conditionals
 in my code, like:</p>
-<div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">OPTIONS</span><span class="o">.</span><span class="n">verbose_on</span><span class="p">:</span>
+<div class="highlight"><pre><span></span><code><span class="k">if</span> <span class="n">OPTIONS</span><span class="o">.</span><span class="n">verbose_on</span><span class="p">:</span>
     <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"Searching MGP for </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">.</span><span class="se">\n</span><span class="s2">"</span> <span class="o">%</span> <span class="p">(</span><span class="n">last</span><span class="p">,</span> <span class="n">first</span><span class="p">,</span> <span class="n">middle</span><span class="p">))</span>
-</pre></div>
+</code></pre></div>
 <p>To simplify this, I introduced the <code>logging</code> package with a simple
 configuration:</p>
-<div class="highlight"><pre><span></span><span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
-                    <span class="n">format</span><span class="o">=</span><span class="s1">'</span><span class="si">%(asctime)s</span><span class="s1"> </span><span class="si">%(message)s</span><span class="s1">'</span><span class="p">,</span>
+<div class="highlight"><pre><span></span><code><span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
+                    <span class="nb">format</span><span class="o">=</span><span class="s1">'</span><span class="si">%(asctime)s</span><span class="s1"> </span><span class="si">%(message)s</span><span class="s1">'</span><span class="p">,</span>
                     <span class="n">datefmt</span><span class="o">=</span><span class="s1">'%m/</span><span class="si">%d</span><span class="s1">/%Y %I:%M:%S %p'</span><span class="p">)</span>
-</pre></div>
+</code></pre></div>
 <p>which let me write logs at several different levels whose visibility
 can be adjusted in the configuration.</p>
 <h2>Phase 3: Fixing bugs.</h2>
 <p>At this point, I'd resolved most of the obvious issues I wanted to
 fix, and narrowed down <code>pylint</code>'s suggestions to four issues, two of
 which were TODOs I'd notice while addressing other issues:</p>
-<div class="highlight"><pre><span></span>************* Module mgptree
-W: 58, 0: TODO: Refactor options to be either completely global or not. (fixme)
-W:158, 0: TODO: Consider refactor here. (fixme)
-W: 36, 4: Using the global statement (global-statement)
-R:208, 0: Too many instance attributes (8/7) (too-many-instance-attributes)
+<div class="highlight"><pre><span></span><code><span class="o">*************</span> <span class="n">Module</span> <span class="n">mgptree</span>
+<span class="n">W</span><span class="p">:</span> <span class="mi">58</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span> <span class="n">TODO</span><span class="p">:</span> <span class="n">Refactor</span> <span class="k">options</span> <span class="k">to</span> <span class="n">be</span> <span class="n">either</span> <span class="n">completely</span> <span class="k">global</span> <span class="k">or</span> <span class="k">not</span><span class="p">.</span> <span class="p">(</span><span class="n">fixme</span><span class="p">)</span>
+<span class="n">W</span><span class="p">:</span><span class="mi">158</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span> <span class="n">TODO</span><span class="p">:</span> <span class="n">Consider</span> <span class="n">refactor</span> <span class="n">here</span><span class="p">.</span> <span class="p">(</span><span class="n">fixme</span><span class="p">)</span>
+<span class="n">W</span><span class="p">:</span> <span class="mi">36</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="k">Using</span> <span class="n">the</span> <span class="k">global</span> <span class="k">statement</span> <span class="p">(</span><span class="k">global</span><span class="o">-</span><span class="k">statement</span><span class="p">)</span>
+<span class="n">R</span><span class="p">:</span><span class="mi">208</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span> <span class="n">Too</span> <span class="n">many</span> <span class="n">instance</span> <span class="n">attributes</span> <span class="p">(</span><span class="mi">8</span><span class="o">/</span><span class="mi">7</span><span class="p">)</span> <span class="p">(</span><span class="n">too</span><span class="o">-</span><span class="n">many</span><span class="o">-</span><span class="n">instance</span><span class="o">-</span><span class="n">attributes</span><span class="p">)</span>
 
---------------------------------------------------------------------
-Your code has been rated at 9.77/10
-</pre></div>
+<span class="c1">--------------------------------------------------------------------</span>
+<span class="n">Your</span> <span class="n">code</span> <span class="n">has</span> <span class="n">been</span> <span class="n">rated</span> <span class="k">at</span> <span class="mi">9</span><span class="p">.</span><span class="mi">77</span><span class="o">/</span><span class="mi">10</span>
+</code></pre></div>
 <p>Fixing the whitespace/formatting issues turned out to be a good way to
 re-familiarize myself with the code before attempting to fix the
 functional issues.</p>
@@ -746,11 +746,14 @@ can generate their own graphs.</p>
     var mathjaxscript = document.createElement('script');
     mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
     mathjaxscript.type = 'text/javascript';
-    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
-    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
+
+    var configscript = document.createElement('script');
+    configscript.type = 'text/x-mathjax-config';
+    configscript[(window.opera ? "innerHTML" : "text")] =
         "MathJax.Hub.Config({" +
         "    config: ['MMLorHTML.js']," +
-        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'none' } }," +
         "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
         "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
         "    displayAlign: '"+ align +"'," +
@@ -764,6 +767,8 @@ can generate their own graphs.</p>
         "        preview: 'TeX'," +
         "    }, " +
         "    'HTML-CSS': { " +
+        "        availableFonts: ['STIX', 'TeX']," +
+        "        preferredFont: 'STIX'," +
         "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
         "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
         "    }, " +
@@ -784,6 +789,8 @@ can generate their own graphs.</p>
                 "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
             "});" +
         "}";
+
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
     (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
 }
 </script>
@@ -793,7 +800,6 @@ can generate their own graphs.</p>
                     <a href="https://jsthomas.github.io/mgptree-refactor.html">posted at 00:00</a>
                     &nbsp;&middot;&nbsp;<a href="https://jsthomas.github.io/category/python-projects-refactoring.html" rel="tag">Python, Projects, Refactoring</a>
                 </div>
-		<a href="https://jsthomas.github.io/mgptree-refactor.html#disqus_thread">Click to read and post comments</a>
             </article>            <h4 class="date">Apr 02, 2014</h4>
 
             <article class="post">
@@ -838,11 +844,11 @@ program takes care of the actual graph drawing).</p>
 </ol>
 <p>On an Ubuntu machine, these dependencies (<code>graphviz</code> and <code>requests</code>)
 can be installed via:</p>
-<div class="highlight"><pre><span></span>$ sudo apt install virtualenv graphviz
+<div class="highlight"><pre><span></span><code>$ sudo apt install virtualenv graphviz
 $ virtualenv venv
 $ venv/bin/activate
 <span class="o">(</span>venv<span class="o">)</span> $ pip install requirements.txt
-</pre></div>
+</code></pre></div>
 <h2>Usage Example</h2>
 <p>The easiest way to learn how to use this tool is by way of an
 example. Place the <code>mgptree</code> script in a convenient folder (the
@@ -852,23 +858,23 @@ script so that you can execute it.</p>
 5 generations. The first step is to prepare a file of names for our
 search:</p>
 <p>So, we create a unicode text file:</p>
-<div class="highlight"><pre><span></span>Gauß, Carl, Friedrich
-Fourier, Jean-Baptiste, Joseph
-</pre></div>
+<div class="highlight"><pre><span></span><code><span class="err">Gauß, Carl, Friedrich</span>
+<span class="err">Fourier, Jean-Baptiste, Joseph</span>
+</code></pre></div>
 <p>I'll call the file <code>gf.txt</code>. Now we need to get some data from the
 web. We do this as follows:</p>
-<div class="highlight"><pre><span></span>(venv) $ python mgptree.py -g 5 -s -i gf.txt -o gf.mgp
-Saved 25 records to file gf.mgp.
-</pre></div>
+<div class="highlight"><pre><span></span><code><span class="err">(venv) $ python mgptree.py -g 5 -s -i gf.txt -o gf.mgp</span>
+<span class="err">Saved 25 records to file gf.mgp.</span>
+</code></pre></div>
 <p>The <code>-s</code> option indicates we want to "scrape" data from the MGP
 website. The <code>-g</code> option indicates how many generations backward we
 want to search. The <code>-i</code> denotes our input file, the <code>-o gf.mgp</code>
 indicates that we want to save our results in a database named
 <code>gf.mgp</code>.</p>
 <p>Now we need to graph the data, so we type the following:</p>
-<div class="highlight"><pre><span></span>(venv) $ python mgptree.py -p -i gf.mgp -o gf.dot
-(venv) $ dot -Tpng gf.dot -o gf.png
-</pre></div>
+<div class="highlight"><pre><span></span><code><span class="err">(venv) $ python mgptree.py -p -i gf.mgp -o gf.dot</span>
+<span class="err">(venv) $ dot -Tpng gf.dot -o gf.png</span>
+</code></pre></div>
 <p>In the first line, the <code>-p</code> indicates we are now in "plotting mode"
 where we want to convert the input database <code>gf.mgp</code> to a textual
 format, which we'll save as <code>gf.dot</code>. The next line hands the textual
@@ -880,9 +886,9 @@ data offline, without having to query the web while we are figuring
 out how we want to plot the data.  For example, suppose we only want
 to present two generations of the data we just downloaded. Then we'd
 type</p>
-<div class="highlight"><pre><span></span>(venv) $ python mgptree.py -p -g2 -i gf.mgp -o gf_tiny.dot
-(venv) $ dot -Tpng gf_tiny.dot -o gf_tiny.png
-</pre></div>
+<div class="highlight"><pre><span></span><code><span class="err">(venv) $ python mgptree.py -p -g2 -i gf.mgp -o gf_tiny.dot</span>
+<span class="err">(venv) $ dot -Tpng gf_tiny.dot -o gf_tiny.png</span>
+</code></pre></div>
 <p>and we wouldn't have to retrieve any information from the web. The
 result, <code>gf_tiny.png</code> looks like this:</p>
 <p><img alt="A small genealogical tree of Gauss and Fourier." src="https://jsthomas.github.io/images/mgptree/gf_tiny.png" style="width: 907px; height: auto;"/></p>
@@ -928,7 +934,6 @@ graphviz is very useful for tasks like this.</p>
                     <a href="https://jsthomas.github.io/math-genealogy-visualizer.html">posted at 00:00</a>
                     &nbsp;&middot;&nbsp;<a href="https://jsthomas.github.io/category/python-projects.html" rel="tag">Python, Projects</a>
                 </div>
-		<a href="https://jsthomas.github.io/math-genealogy-visualizer.html#disqus_thread">Click to read and post comments</a>
             </article>            <h4 class="date">Dec 10, 2013</h4>
 
             <article class="post">
@@ -1056,11 +1061,14 @@ International Conference, page 356 to 360, 2013.</p>
     var mathjaxscript = document.createElement('script');
     mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
     mathjaxscript.type = 'text/javascript';
-    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
-    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
+
+    var configscript = document.createElement('script');
+    configscript.type = 'text/x-mathjax-config';
+    configscript[(window.opera ? "innerHTML" : "text")] =
         "MathJax.Hub.Config({" +
         "    config: ['MMLorHTML.js']," +
-        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'none' } }," +
         "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
         "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
         "    displayAlign: '"+ align +"'," +
@@ -1074,6 +1082,8 @@ International Conference, page 356 to 360, 2013.</p>
         "        preview: 'TeX'," +
         "    }, " +
         "    'HTML-CSS': { " +
+        "        availableFonts: ['STIX', 'TeX']," +
+        "        preferredFont: 'STIX'," +
         "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
         "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
         "    }, " +
@@ -1094,6 +1104,8 @@ International Conference, page 356 to 360, 2013.</p>
                 "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
             "});" +
         "}";
+
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
     (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
 }
 </script>
@@ -1103,18 +1115,8 @@ International Conference, page 356 to 360, 2013.</p>
                     <a href="https://jsthomas.github.io/vkeyboard.html">posted at 00:00</a>
                     &nbsp;&middot;&nbsp;<a href="https://jsthomas.github.io/category/python.html" rel="tag">Python</a>
                 </div>
-		<a href="https://jsthomas.github.io/vkeyboard.html#disqus_thread">Click to read and post comments</a>
             </article>
 
-            <div class="clear"></div>
-            <footer>
-                <p>
-                <a href="https://github.com/jody-frankowski/blue-penguin">Blue Penguin</a> Theme
-                &middot;
-                Powered by <a href="http://getpelican.com">Pelican</a>
-                &middot;
-                <a href="https://jsthomas.github.io/feeds/all.atom.xml" rel="alternate">Atom Feed</a>
-            </footer>
         </div>
         <div class="clear"></div>
     </div>

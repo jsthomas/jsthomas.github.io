@@ -6,11 +6,8 @@
     <title>Joe Thomas | Refactoring Python Code</title>
     <link rel="shortcut icon" type="image/png" href="https://jsthomas.github.io/favicon.png">
     <link rel="shortcut icon" type="image/x-icon" href="https://jsthomas.github.io/favicon.ico">
-    <link href="https://jsthomas.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Joe Thomas Full Atom Feed" />
-    <link href="https://jsthomas.github.io/feeds/python-projects-refactoring.atom.xml" type="application/atom+xml" rel="alternate" title="Joe Thomas Categories Atom Feed" />
-    <link rel="stylesheet" href="https://jsthomas.github.io/theme/css/screen.css" type="text/css" />
+    <link rel="stylesheet" href="https://jsthomas.github.io/theme/css/main.css" type="text/css" />
     <link rel="stylesheet" href="https://jsthomas.github.io/theme/css/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="https://jsthomas.github.io/theme/css/print.css" type="text/css" media="print" />
     <meta name="generator" content="Pelican" />
     <meta name="description" content="" />
     <meta name="author" content="Joe Thomas" />
@@ -21,11 +18,7 @@
         <nav>
             <ul>
                 <li><a href="https://jsthomas.github.io/">About</a></li>
-                <li><a href="https://jsthomas.github.io/pages/papers.html">Papers</a></li>
-                <li><a href="https://jsthomas.github.io/pages/projects.html">Projects</a></li>
-                <li><a href="https://jsthomas.github.io/pages/talks.html">Talks</a></li>
-                <li><a href="https://github.com/jsthomas/">GitHub</a></li>
-                <li><a href="https://www.linkedin.com/in/joseph-thomas-539bb969/">LinkedIn</a></li>
+                <li><a href="https://jsthomas.github.io/pages/works.html">Works</a></li>
                 <li><a href="https://jsthomas.github.io/blog">Blog</a></li>
             </ul>
         </nav>
@@ -98,21 +91,21 @@ didn't know:</p>
 <h2>Phase 1: Cleaning up lint issues.</h2>
 <p>Whenever I'm starting on unfamiliar python code, I like to begin with
 <code>pylint</code>'s suggestions.</p>
-<div class="highlight"><pre><span></span>```
-...
-C:384, 4: Invalid method name "extractPersonalData" (invalid-name)
-C:384, 4: Missing method docstring (missing-docstring)
-C:391,11: Do not use `len(SEQUENCE)` as condition value (len-as-condition)
-C:395,11: Do not use `len(SEQUENCE)` as condition value (len-as-condition)
-C:399,11: Do not use `len(SEQUENCE)` as condition value (len-as-condition)
-C:402, 4: Missing method docstring (missing-docstring)
-C:405, 4: Missing method docstring (missing-docstring)
-W:408,12: Unused variable 'name' (unused-variable)
+<div class="highlight"><pre><span></span><code><span class="o">```</span>
+<span class="p">...</span>
+<span class="k">C</span><span class="p">:</span><span class="mi">384</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="n">Invalid</span> <span class="k">method</span> <span class="n">name</span> <span class="ss">"extractPersonalData"</span> <span class="p">(</span><span class="n">invalid</span><span class="o">-</span><span class="n">name</span><span class="p">)</span>
+<span class="k">C</span><span class="p">:</span><span class="mi">384</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="n">Missing</span> <span class="k">method</span> <span class="n">docstring</span> <span class="p">(</span><span class="n">missing</span><span class="o">-</span><span class="n">docstring</span><span class="p">)</span>
+<span class="k">C</span><span class="p">:</span><span class="mi">391</span><span class="p">,</span><span class="mi">11</span><span class="p">:</span> <span class="k">Do</span> <span class="k">not</span> <span class="n">use</span> <span class="o">`</span><span class="n">len</span><span class="p">(</span><span class="n">SEQUENCE</span><span class="p">)</span><span class="o">`</span> <span class="k">as</span> <span class="n">condition</span> <span class="n">value</span> <span class="p">(</span><span class="n">len</span><span class="o">-</span><span class="k">as</span><span class="o">-</span><span class="n">condition</span><span class="p">)</span>
+<span class="k">C</span><span class="p">:</span><span class="mi">395</span><span class="p">,</span><span class="mi">11</span><span class="p">:</span> <span class="k">Do</span> <span class="k">not</span> <span class="n">use</span> <span class="o">`</span><span class="n">len</span><span class="p">(</span><span class="n">SEQUENCE</span><span class="p">)</span><span class="o">`</span> <span class="k">as</span> <span class="n">condition</span> <span class="n">value</span> <span class="p">(</span><span class="n">len</span><span class="o">-</span><span class="k">as</span><span class="o">-</span><span class="n">condition</span><span class="p">)</span>
+<span class="k">C</span><span class="p">:</span><span class="mi">399</span><span class="p">,</span><span class="mi">11</span><span class="p">:</span> <span class="k">Do</span> <span class="k">not</span> <span class="n">use</span> <span class="o">`</span><span class="n">len</span><span class="p">(</span><span class="n">SEQUENCE</span><span class="p">)</span><span class="o">`</span> <span class="k">as</span> <span class="n">condition</span> <span class="n">value</span> <span class="p">(</span><span class="n">len</span><span class="o">-</span><span class="k">as</span><span class="o">-</span><span class="n">condition</span><span class="p">)</span>
+<span class="k">C</span><span class="p">:</span><span class="mi">402</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="n">Missing</span> <span class="k">method</span> <span class="n">docstring</span> <span class="p">(</span><span class="n">missing</span><span class="o">-</span><span class="n">docstring</span><span class="p">)</span>
+<span class="k">C</span><span class="p">:</span><span class="mi">405</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="n">Missing</span> <span class="k">method</span> <span class="n">docstring</span> <span class="p">(</span><span class="n">missing</span><span class="o">-</span><span class="n">docstring</span><span class="p">)</span>
+<span class="n">W</span><span class="p">:</span><span class="mi">408</span><span class="p">,</span><span class="mi">12</span><span class="p">:</span> <span class="n">Unused</span> <span class="k">variable</span> <span class="s1">'name'</span> <span class="p">(</span><span class="n">unused</span><span class="o">-</span><span class="k">variable</span><span class="p">)</span>
 
----------------------------------------------------------------------
-Your code has been rated at -1.83/10
-```
-</pre></div>
+<span class="c1">---------------------------------------------------------------------</span>
+<span class="n">Your</span> <span class="n">code</span> <span class="n">has</span> <span class="n">been</span> <span class="n">rated</span> <span class="k">at</span> <span class="o">-</span><span class="mi">1</span><span class="p">.</span><span class="mi">83</span><span class="o">/</span><span class="mi">10</span>
+<span class="o">```</span>
+</code></pre></div>
 <p>Pylint scored my original code -1.83/10. D'oh. It turns out one of the
 things I wasn't following in 2012 was PEP8, which means I had a lot of
 formatting/whitespace issues. Fixing these, my score rose to
@@ -125,7 +118,7 @@ get rid of the variables I'd planned to eliminate. It turns out I had
 four unused variables in 430 lines of code, all easy to fix.</p>
 <p>Another convention I wasn't following in 2012 is the use of
 docstrings. Instead, I was writing big block comments, like:</p>
-<div class="highlight"><pre><span></span><span class="c1">################################################################################</span>
+<div class="highlight"><pre><span></span><code><span class="c1">################################################################################</span>
 <span class="c1"># Procedure: validate_scrape</span>
 <span class="c1">#</span>
 <span class="c1"># Input: Parser and options objects from optparse</span>
@@ -135,7 +128,7 @@ docstrings. Instead, I was writing big block comments, like:</p>
 <span class="c1"># Effects: Checks the options object to confirm the inputs are well formed.</span>
 <span class="c1">#</span>
 <span class="c1">################################################################################</span>
-</pre></div>
+</code></pre></div>
 <p>Now that I work with jupyter and ipython more often, I have a better
 appreciation for docstrings. It's really helpful to be able to do
 <code>function_i_dont_remember ?</code> at a REPL and immediately pull up
@@ -146,30 +139,30 @@ script's lack of logging. For some reason, I'd thought it would be a
 good idea to send everything directly to <code>stdout</code> or <code>stderr</code>. I even
 added a <code>verbose</code> command line flag, and then introduced conditionals
 in my code, like:</p>
-<div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">OPTIONS</span><span class="o">.</span><span class="n">verbose_on</span><span class="p">:</span>
+<div class="highlight"><pre><span></span><code><span class="k">if</span> <span class="n">OPTIONS</span><span class="o">.</span><span class="n">verbose_on</span><span class="p">:</span>
     <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"Searching MGP for </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">.</span><span class="se">\n</span><span class="s2">"</span> <span class="o">%</span> <span class="p">(</span><span class="n">last</span><span class="p">,</span> <span class="n">first</span><span class="p">,</span> <span class="n">middle</span><span class="p">))</span>
-</pre></div>
+</code></pre></div>
 <p>To simplify this, I introduced the <code>logging</code> package with a simple
 configuration:</p>
-<div class="highlight"><pre><span></span><span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
-                    <span class="n">format</span><span class="o">=</span><span class="s1">'</span><span class="si">%(asctime)s</span><span class="s1"> </span><span class="si">%(message)s</span><span class="s1">'</span><span class="p">,</span>
+<div class="highlight"><pre><span></span><code><span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
+                    <span class="nb">format</span><span class="o">=</span><span class="s1">'</span><span class="si">%(asctime)s</span><span class="s1"> </span><span class="si">%(message)s</span><span class="s1">'</span><span class="p">,</span>
                     <span class="n">datefmt</span><span class="o">=</span><span class="s1">'%m/</span><span class="si">%d</span><span class="s1">/%Y %I:%M:%S %p'</span><span class="p">)</span>
-</pre></div>
+</code></pre></div>
 <p>which let me write logs at several different levels whose visibility
 can be adjusted in the configuration.</p>
 <h2>Phase 3: Fixing bugs.</h2>
 <p>At this point, I'd resolved most of the obvious issues I wanted to
 fix, and narrowed down <code>pylint</code>'s suggestions to four issues, two of
 which were TODOs I'd notice while addressing other issues:</p>
-<div class="highlight"><pre><span></span>************* Module mgptree
-W: 58, 0: TODO: Refactor options to be either completely global or not. (fixme)
-W:158, 0: TODO: Consider refactor here. (fixme)
-W: 36, 4: Using the global statement (global-statement)
-R:208, 0: Too many instance attributes (8/7) (too-many-instance-attributes)
+<div class="highlight"><pre><span></span><code><span class="o">*************</span> <span class="n">Module</span> <span class="n">mgptree</span>
+<span class="n">W</span><span class="p">:</span> <span class="mi">58</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span> <span class="n">TODO</span><span class="p">:</span> <span class="n">Refactor</span> <span class="k">options</span> <span class="k">to</span> <span class="n">be</span> <span class="n">either</span> <span class="n">completely</span> <span class="k">global</span> <span class="k">or</span> <span class="k">not</span><span class="p">.</span> <span class="p">(</span><span class="n">fixme</span><span class="p">)</span>
+<span class="n">W</span><span class="p">:</span><span class="mi">158</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span> <span class="n">TODO</span><span class="p">:</span> <span class="n">Consider</span> <span class="n">refactor</span> <span class="n">here</span><span class="p">.</span> <span class="p">(</span><span class="n">fixme</span><span class="p">)</span>
+<span class="n">W</span><span class="p">:</span> <span class="mi">36</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="k">Using</span> <span class="n">the</span> <span class="k">global</span> <span class="k">statement</span> <span class="p">(</span><span class="k">global</span><span class="o">-</span><span class="k">statement</span><span class="p">)</span>
+<span class="n">R</span><span class="p">:</span><span class="mi">208</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span> <span class="n">Too</span> <span class="n">many</span> <span class="n">instance</span> <span class="n">attributes</span> <span class="p">(</span><span class="mi">8</span><span class="o">/</span><span class="mi">7</span><span class="p">)</span> <span class="p">(</span><span class="n">too</span><span class="o">-</span><span class="n">many</span><span class="o">-</span><span class="n">instance</span><span class="o">-</span><span class="n">attributes</span><span class="p">)</span>
 
---------------------------------------------------------------------
-Your code has been rated at 9.77/10
-</pre></div>
+<span class="c1">--------------------------------------------------------------------</span>
+<span class="n">Your</span> <span class="n">code</span> <span class="n">has</span> <span class="n">been</span> <span class="n">rated</span> <span class="k">at</span> <span class="mi">9</span><span class="p">.</span><span class="mi">77</span><span class="o">/</span><span class="mi">10</span>
+</code></pre></div>
 <p>Fixing the whitespace/formatting issues turned out to be a good way to
 re-familiarize myself with the code before attempting to fix the
 functional issues.</p>
@@ -234,11 +227,14 @@ can generate their own graphs.</p>
     var mathjaxscript = document.createElement('script');
     mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
     mathjaxscript.type = 'text/javascript';
-    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
-    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
+
+    var configscript = document.createElement('script');
+    configscript.type = 'text/x-mathjax-config';
+    configscript[(window.opera ? "innerHTML" : "text")] =
         "MathJax.Hub.Config({" +
         "    config: ['MMLorHTML.js']," +
-        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'none' } }," +
         "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
         "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
         "    displayAlign: '"+ align +"'," +
@@ -252,6 +248,8 @@ can generate their own graphs.</p>
         "        preview: 'TeX'," +
         "    }, " +
         "    'HTML-CSS': { " +
+        "        availableFonts: ['STIX', 'TeX']," +
+        "        preferredFont: 'STIX'," +
         "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
         "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
         "    }, " +
@@ -272,6 +270,8 @@ can generate their own graphs.</p>
                 "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
             "});" +
         "}";
+
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
     (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
 }
 </script>
@@ -282,15 +282,6 @@ can generate their own graphs.</p>
                     &nbsp;&middot;&nbsp;<a href="https://jsthomas.github.io/category/python-projects-refactoring.html" rel="tag">Python, Projects, Refactoring</a>
                 </div>
             </article>
-            <div class="clear"></div>
-            <footer>
-                <p>
-                <a href="https://github.com/jody-frankowski/blue-penguin">Blue Penguin</a> Theme
-                &middot;
-                Powered by <a href="http://getpelican.com">Pelican</a>
-                &middot;
-                <a href="https://jsthomas.github.io/feeds/all.atom.xml" rel="alternate">Atom Feed</a>
-            </footer>
         </div>
         <div class="clear"></div>
     </div>
