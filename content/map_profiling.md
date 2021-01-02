@@ -1,6 +1,6 @@
 Title: Microbenchmarking Implementations of Map in OCaml
 Date: 2017-06-06
-Category: OCaml, Profiling
+Category: OCaml
 Slug: map-comparison
 Summary: A comparison of different implementations of map in OCaml
 

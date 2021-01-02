@@ -39,7 +39,7 @@ DEFAULT_PAGINATION = 10
 STATIC_PATHS = ['images', 'docs']
 
 SHOW_ARTICLE_AUTHOR = False
-DISPLAY_FOOTER = True
+DISPLAY_FOOTER = False
 DISPLAY_HOME = False
 
 # provided as examples, they make ‘clean’ urls. used by MENU_INTERNAL_PAGES.
@@ -59,8 +59,6 @@ MENU_INTERNAL_PAGES = (
 
 # additional menu items
 MENUITEMS = (
-    ('GitHub', 'https://github.com/jsthomas/'),
-    ('LinkedIn', 'https://www.linkedin.com/in/joseph-thomas-539bb969/')
 )
 
 # Uncomment following line if you want document-relative URLs when developing
