@@ -1,0 +1,503 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Joe Thomas - OCaml</title><link href="https://jsthomas.github.io/" rel="alternate"></link><link href="https://jsthomas.github.io/feeds/ocaml.atom.xml" rel="self"></link><id>https://jsthomas.github.io/</id><updated>2017-06-06T00:00:00-04:00</updated><entry><title>Microbenchmarking Implementations of Map in OCaml</title><link href="https://jsthomas.github.io/map-comparison.html" rel="alternate"></link><published>2017-06-06T00:00:00-04:00</published><updated>2017-06-06T00:00:00-04:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2017-06-06:/map-comparison.html</id><summary type="html">&lt;p&gt;A comparison of different implementations of map in OCaml&lt;/p&gt;</summary><content type="html">&lt;p&gt;&lt;code&gt;Map&lt;/code&gt; is one of the first higher-order functions I remember
+encountering when I learned some rudimentary functional programming
+topics as an undergraduate. More recently I began learning OCaml. The
+&lt;code&gt;map&lt;/code&gt;
+&lt;a href="https://github.com/ocaml/ocaml/blob/2691c40f2ff9bc34912db39bc1f17045c9241473/stdlib/list.ml#L80-L82"&gt;implementation&lt;/a&gt;
+I found in the standard library was the textbook definition I was
+expecting&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="k"&gt;rec&lt;/span&gt; &lt;span class="n"&gt;map&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;function&lt;/span&gt;
+   &lt;span class="bp"&gt;[]&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="bp"&gt;[]&lt;/span&gt;
+  &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;l&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;r&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt; &lt;span class="n"&gt;r&lt;/span&gt; &lt;span class="o"&gt;::&lt;/span&gt; &lt;span class="n"&gt;map&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="n"&gt;l&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;but I was surprised to learn there are actually several
+implementations of &lt;code&gt;map&lt;/code&gt; in the OCaml ecosystem. I wanted to know more
+about these different implementations and their performance
+characteristics. This article summarizes what I learned.&lt;/p&gt;
+&lt;p&gt;Part of my motivation to write this post arose from
+&lt;a href="https://github.com/ocsigen/lwt/pull/347"&gt;this discussion&lt;/a&gt; of a pull
+request that proposes the default &lt;code&gt;map&lt;/code&gt; implementation in &lt;code&gt;lwt&lt;/code&gt; should
+be tail recursive. After reading all of the comments, I wanted to
+develop experiments that would convince me whether this was a good
+idea.&lt;/p&gt;
+&lt;h1&gt;Introduction&lt;/h1&gt;
+&lt;p&gt;Since I'll introduce several versions of &lt;code&gt;map&lt;/code&gt;, I'll refer to the
+implementation above as &lt;code&gt;stdlib&lt;/code&gt;. An important aspect of this version
+is that it isn't &lt;em&gt;tail recursive&lt;/em&gt;. A tail recursive function uses
+recursion in a specific way; it only calls itself as the final
+operation in the function. In OCaml, tail recursive functions get the
+benefit of tail-call optimization so that they only use one frame on
+the stack. In contrast, the &lt;code&gt;stdlib&lt;/code&gt; implementation takes space on the
+stack proportional to the length of the input list. For long enough
+lists, this causes a stack overflow.&lt;/p&gt;
+&lt;p&gt;We can make a basic tail-recursive version of &lt;code&gt;map&lt;/code&gt; by composing two
+standard library functions that are tail recursive: &lt;code&gt;List.rev_map&lt;/code&gt;
+(which creates the output of &lt;code&gt;map&lt;/code&gt;, but in reversed order) and
+&lt;code&gt;List.rev&lt;/code&gt; which reverses lists. I'll call this naive implementation
+&lt;code&gt;ntr&lt;/code&gt; (naive tail recursive). Compared to &lt;code&gt;stdlib&lt;/code&gt;, &lt;code&gt;ntr&lt;/code&gt; allocates
+twice as much space on the heap (one list for the output of
+&lt;code&gt;List.rev_map&lt;/code&gt;, and a second equally long list for &lt;code&gt;List.rev&lt;/code&gt;) and
+spends additional time performing a list traversal. The benefit is
+that with this implementation, calling &lt;code&gt;map&lt;/code&gt; on a long list won't
+result in a stack overflow.&lt;/p&gt;
+&lt;p&gt;As we'll see later in the Results section, the naive tail recursive
+implementation is, overall, slower than the &lt;code&gt;stdlib&lt;/code&gt;
+implementation. However, there are some optimizations we can apply to
+improve the performance of both versions.&lt;/p&gt;
+&lt;p&gt;The first trick I call "unrolling". Similar to
+&lt;a href="https://en.wikipedia.org/wiki/Loop_unrolling"&gt;loop unrolling in procedural languages&lt;/a&gt;,
+the idea is to use cases to &lt;code&gt;map&lt;/code&gt; on groups of list elements so fewer
+function calls are needed to complete the work. For example, an
+unrolled version of &lt;code&gt;stdlib&lt;/code&gt; looks like:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="k"&gt;rec&lt;/span&gt; &lt;span class="n"&gt;map&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="n"&gt;l&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+  &lt;span class="k"&gt;match&lt;/span&gt; &lt;span class="n"&gt;l&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt;
+  &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="bp"&gt;[]&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="bp"&gt;[]&lt;/span&gt;
+  &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;x1&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
+    &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;f1&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="n"&gt;x1&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+    &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;f1&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;
+  &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;x1&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="n"&gt;x2&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
+    &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;f1&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="n"&gt;x1&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+    &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;f2&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="n"&gt;x2&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+    &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;f1&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="n"&gt;f2&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;
+  &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="n"&gt;x1&lt;/span&gt; &lt;span class="o"&gt;::&lt;/span&gt; &lt;span class="n"&gt;x2&lt;/span&gt; &lt;span class="o"&gt;::&lt;/span&gt; &lt;span class="n"&gt;x3&lt;/span&gt; &lt;span class="o"&gt;::&lt;/span&gt; &lt;span class="n"&gt;tl&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
+    &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;f1&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="n"&gt;x1&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+    &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;f2&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="n"&gt;x2&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+    &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;f3&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="n"&gt;x3&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+    &lt;span class="n"&gt;f1&lt;/span&gt; &lt;span class="o"&gt;::&lt;/span&gt; &lt;span class="n"&gt;f2&lt;/span&gt; &lt;span class="o"&gt;::&lt;/span&gt; &lt;span class="n"&gt;f3&lt;/span&gt; &lt;span class="o"&gt;::&lt;/span&gt; &lt;span class="n"&gt;map&lt;/span&gt; &lt;span class="n"&gt;tl&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;We get to choose how many elements to unroll (here I picked 3); some
+profiling is needed to decide the most appropriate number.&lt;/p&gt;
+&lt;p&gt;The second trick I call "hybridizing". The &lt;code&gt;stdlib&lt;/code&gt; version is faster,
+but isn't safe for long lists. The tail recursive implementation is
+slow, but safe for all lists. When we "hybridize" the two, we use the
+faster version up to some fixed number of elements (e.g. 1000), and
+then switch to the safe version for the remainder of the list.&lt;/p&gt;
+&lt;p&gt;These two optimizations are useful for understanding the
+implementations of &lt;code&gt;map&lt;/code&gt; we find in other libraries. For example, both
+&lt;a href="https://github.com/janestreet/base/blob/f10483e957206dc6b656a28ffec667d8b068c149/src/list.ml#L311-L345"&gt;&lt;code&gt;base&lt;/code&gt;&lt;/a&gt;
+and
+&lt;a href="https://github.com/c-cube/ocaml-containers/blob/d659ba677e3dbd95430f59b3794ac2f2a5677d61/src/core/CCList.ml#L20-L37"&gt;&lt;code&gt;containers&lt;/code&gt;&lt;/a&gt;
+use an unrolled &lt;code&gt;stdlib&lt;/code&gt;-style &lt;code&gt;map&lt;/code&gt;, hybridized with an
+&lt;code&gt;ntr&lt;/code&gt;-style &lt;code&gt;map&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Looking at &lt;code&gt;ntr&lt;/code&gt;, one might ask: Is it strictly necessary to use
+additional heap space to get the implementation to be tail recursive?
+The answer is no. The &lt;code&gt;batteries&lt;/code&gt; package
+&lt;a href="https://github.com/ocaml-batteries-team/batteries-included/blob/c10c65a203a7590b15b9a370f66e8c2884817428/src/batList.mlv#L163-L173"&gt;implements &lt;code&gt;map&lt;/code&gt;&lt;/a&gt;
+so that the work is done by a single tail recursive function, creating
+one new list on the heap. To achieve this, the implementation uses
+mutable state and casting to avoid a second list traversal
+(specifically,
+&lt;a href="https://github.com/ocaml-batteries-team/batteries-included/blob/c10c65a203a7590b15b9a370f66e8c2884817428/src/batList.mlv#L69"&gt;here&lt;/a&gt;).&lt;/p&gt;
+&lt;p&gt;As with any optimization, one makes tradeoffs between elegance,
+performance, and the language features one considers acceptable to
+use. I wanted to know:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Which version is the fastest in practice?&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;How much speed does one lose using the safer tail recursive version?&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Both &lt;code&gt;base&lt;/code&gt; and &lt;code&gt;containers&lt;/code&gt; decided to hybridize with an &lt;code&gt;ntr&lt;/code&gt;-style
+&lt;code&gt;map&lt;/code&gt; for safety. But the &lt;code&gt;batteries&lt;/code&gt; implementation is also robust to
+stack overflow. That led to one final question:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;How fast is an unrolled &lt;code&gt;stdlib&lt;/code&gt;-style &lt;code&gt;map&lt;/code&gt; hybridized with a
+  &lt;code&gt;batteries&lt;/code&gt;-style &lt;code&gt;map&lt;/code&gt;?&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1&gt;Experimental Setup&lt;/h1&gt;
+&lt;p&gt;In 2014, Jane Street introduced a
+&lt;a href="https://github.com/janestreet/core_bench"&gt;library&lt;/a&gt; for
+microbenchmarking called &lt;code&gt;core_bench&lt;/code&gt;. As they explain
+&lt;a href="https://blogs.janestreet.com/core_bench-micro-benchmarking-for-ocaml/"&gt;on their blog&lt;/a&gt;,
+&lt;code&gt;core_bench&lt;/code&gt; is intended to measure the performance of small pieces of
+OCaml code. This library helps developers to better understand the
+cost of individual operations, like &lt;code&gt;map&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;There are a couple benefits to measuring &lt;code&gt;map&lt;/code&gt; implementations with
+&lt;code&gt;core_bench&lt;/code&gt;.&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;The library makes it easy to track both time and use of the heap.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Once you specify your test, &lt;code&gt;core_bench&lt;/code&gt; automatically provides
+   many &lt;a href="https://github.com/janestreet/core_bench/wiki/Getting-Started-with-Core_bench"&gt;command line
+   options&lt;/a&gt;
+   to help you present your test data in different ways.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The library uses statistical techniques (bootstrapping and linear
+   regression) to reduce many runs worth of data to a small number of
+   meaningful performance metrics that account for the amortized cost
+   of garbage collection and error introduced by system activity.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;I wrote
+&lt;a href="https://github.com/jsthomas/ocaml-analysis/blob/master/map/maptest.ml"&gt;this program&lt;/a&gt;
+to compare performance between the six implementations I described
+above. The program includes the batteries-hybrid I described above,
+which I'll refer to as &lt;code&gt;batt-hybr&lt;/code&gt;. Other test details:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;I tested each algorithm against lists of lengths &lt;span class="math"&gt;\(N=10^2, 10^3,
+  10^4\)&lt;/span&gt; and &lt;span class="math"&gt;\(10^5\)&lt;/span&gt;. On my system, &lt;span class="math"&gt;\(N=10^5\)&lt;/span&gt; was the highest power of 10
+  for which the &lt;code&gt;stdlib&lt;/code&gt; implementation did not fail due to a stack
+  overflow.&lt;/li&gt;
+&lt;li&gt;Each list consisted of integer elements (all 0), and the function
+  mapped onto the list simply added one to each element.&lt;/li&gt;
+&lt;li&gt;I ran these tests on a Lenovo X220, Intel Core i5-2520M CPU (2.50GHz ×
+  4 cores), with 4GB RAM.&lt;/li&gt;
+&lt;li&gt;I used the OCaml 4.03.0 compiler, and compiled to native code
+  without using &lt;code&gt;flambda&lt;/code&gt;. (&lt;a href="https://github.com/jsthomas/ocaml-analysis/blob/master/map/makefile"&gt;This
+  makefile&lt;/a&gt;
+  gives the full specifications.)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1&gt;Results&lt;/h1&gt;
+&lt;p&gt;For each list size, &lt;code&gt;core_bench&lt;/code&gt; produces a table with several metrics besides time:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;mWd&lt;/code&gt; : Words allocated on the minor heap.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;mjWd&lt;/code&gt; : Words allocated on the major heap.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;Prom&lt;/code&gt; : Words promoted from minor to major heap.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The library also allows us to produce 95% confidence intervals and
+&lt;span class="math"&gt;\(R^2\)&lt;/span&gt; values for the time estimates.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Map Benchmark, N = 100&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="err"&gt;┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐&lt;/span&gt;
+&lt;span class="err"&gt;│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │&lt;/span&gt;
+&lt;span class="err"&gt;├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤&lt;/span&gt;
+&lt;span class="err"&gt;│ ntr        │     1.00 │ 741.20ns │ -0.23% +0.22% │ 609.01w │    0.53w │    0.53w │    100.00% │&lt;/span&gt;
+&lt;span class="err"&gt;│ containers │     1.00 │ 439.55ns │ -0.64% +0.67% │ 304.03w │    0.17w │    0.17w │     59.30% │&lt;/span&gt;
+&lt;span class="err"&gt;│ batteries  │     1.00 │ 581.65ns │ -0.14% +0.16% │ 309.01w │    0.35w │    0.35w │     78.47% │&lt;/span&gt;
+&lt;span class="err"&gt;│ base       │     1.00 │ 438.63ns │ -0.19% +0.20% │ 304.03w │    0.16w │    0.16w │     59.18% │&lt;/span&gt;
+&lt;span class="err"&gt;│ stdlib     │     1.00 │ 610.45ns │ -0.10% +0.11% │ 304.01w │    0.17w │    0.17w │     82.36% │&lt;/span&gt;
+&lt;span class="err"&gt;│ batt-hybr  │     1.00 │ 426.76ns │ -0.15% +0.17% │ 304.03w │    0.17w │    0.17w │     57.58% │&lt;/span&gt;
+&lt;span class="err"&gt;└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Map Benchmark, N = 1000&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="err"&gt;┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐&lt;/span&gt;
+&lt;span class="err"&gt;│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │&lt;/span&gt;
+&lt;span class="err"&gt;├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤&lt;/span&gt;
+&lt;span class="err"&gt;│ ntr        │     1.00 │   8.84us │ -0.14% +0.15% │  6.01kw │   52.08w │   52.08w │    100.00% │&lt;/span&gt;
+&lt;span class="err"&gt;│ containers │     1.00 │   5.07us │ -0.13% +0.15% │  3.00kw │   17.23w │   17.23w │     57.34% │&lt;/span&gt;
+&lt;span class="err"&gt;│ batteries  │     1.00 │   6.57us │ -0.14% +0.14% │  3.01kw │   34.71w │   34.71w │     74.32% │&lt;/span&gt;
+&lt;span class="err"&gt;│ base       │     1.00 │   4.99us │ -0.20% +0.24% │  3.00kw │   17.08w │   17.08w │     56.44% │&lt;/span&gt;
+&lt;span class="err"&gt;│ stdlib     │     1.00 │   6.84us │ -0.10% +0.10% │  3.00kw │   17.22w │   17.22w │     77.34% │&lt;/span&gt;
+&lt;span class="err"&gt;│ batt-hybr  │     1.00 │   4.96us │ -0.13% +0.13% │  3.00kw │   17.07w │   17.07w │     56.10% │&lt;/span&gt;
+&lt;span class="err"&gt;└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Map Benchmark, N = 10,000&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="err"&gt;┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐&lt;/span&gt;
+&lt;span class="err"&gt;│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │&lt;/span&gt;
+&lt;span class="err"&gt;├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤&lt;/span&gt;
+&lt;span class="err"&gt;│ ntr        │     0.99 │ 203.11us │ -0.45% +0.53% │ 60.01kw │   5.40kw │   5.40kw │    100.00% │&lt;/span&gt;
+&lt;span class="err"&gt;│ containers │     1.00 │ 144.95us │ -0.50% +0.60% │ 48.01kw │   3.04kw │   3.04kw │     71.37% │&lt;/span&gt;
+&lt;span class="err"&gt;│ batteries  │     1.00 │ 136.87us │ -0.51% +0.63% │ 30.01kw │   3.64kw │   3.64kw │     67.39% │&lt;/span&gt;
+&lt;span class="err"&gt;│ base       │     1.00 │ 130.85us │ -0.34% +0.39% │ 44.98kw │   2.66kw │   2.66kw │     64.42% │&lt;/span&gt;
+&lt;span class="err"&gt;│ stdlib     │     1.00 │ 118.70us │ -0.30% +0.29% │ 30.00kw │   1.80kw │   1.80kw │     58.44% │&lt;/span&gt;
+&lt;span class="err"&gt;│ batt-hybr  │     1.00 │ 106.91us │ -0.42% +0.52% │ 30.01kw │   2.22kw │   2.22kw │     52.64% │&lt;/span&gt;
+&lt;span class="err"&gt;└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Map Benchmark, N = 100,000&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="err"&gt;┌────────────┬──────────┬──────────┬───────────────┬──────────┬──────────┬──────────┬────────────┐&lt;/span&gt;
+&lt;span class="err"&gt;│ Name       │ Time R^2 │ Time/Run │          95ci │  mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │&lt;/span&gt;
+&lt;span class="err"&gt;├────────────┼──────────┼──────────┼───────────────┼──────────┼──────────┼──────────┼────────────┤&lt;/span&gt;
+&lt;span class="err"&gt;│ ntr        │     0.98 │  10.27ms │ -2.39% +2.32% │ 600.02kw │ 411.83kw │ 411.83kw │     94.33% │&lt;/span&gt;
+&lt;span class="err"&gt;│ containers │     0.99 │  10.62ms │ -2.19% +1.83% │ 588.02kw │ 404.91kw │ 404.91kw │     97.61% │&lt;/span&gt;
+&lt;span class="err"&gt;│ batteries  │     1.00 │   7.19ms │ -0.78% +0.79% │ 300.02kw │ 300.35kw │ 300.35kw │     66.02% │&lt;/span&gt;
+&lt;span class="err"&gt;│ base       │     0.99 │  10.88ms │ -1.54% +1.41% │ 584.99kw │ 397.60kw │ 397.60kw │    100.00% │&lt;/span&gt;
+&lt;span class="err"&gt;│ stdlib     │     0.99 │   6.33ms │ -1.08% +1.07% │ 300.01kw │ 171.73kw │ 171.73kw │     58.18% │&lt;/span&gt;
+&lt;span class="err"&gt;│ batt-hybr  │     0.93 │   6.09ms │ -4.30% +4.63% │ 300.02kw │ 285.46kw │ 285.46kw │     55.93% │&lt;/span&gt;
+&lt;span class="err"&gt;└────────────┴──────────┴──────────┴───────────────┴──────────┴──────────┴──────────┴────────────┘&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;A few things I noticed about the data:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;The tail recursive implementation is slow, but not always the
+  slowest. In the &lt;span class="math"&gt;\(N=10^5\)&lt;/span&gt; case, &lt;code&gt;ntr&lt;/code&gt;,&lt;code&gt;base&lt;/code&gt;, and &lt;code&gt;containers&lt;/code&gt; show
+  similar performance; this makes sense given they have the same
+  behavior after a prefix of the list.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;For short lists, &lt;code&gt;base&lt;/code&gt;, &lt;code&gt;containers&lt;/code&gt;, and &lt;code&gt;batt-hybr&lt;/code&gt; are fastest,
+  likely because of unrolling.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;We can see from the &lt;code&gt;mWd&lt;/code&gt; and &lt;code&gt;mjWd&lt;/code&gt; columns that &lt;code&gt;ntr&lt;/code&gt; uses the
+  most heap space, as we would expect.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;As we increase the size of the list, &lt;code&gt;stdlib&lt;/code&gt; gets faster relative
+  to &lt;code&gt;ntr&lt;/code&gt;; I suspect this can be attributed to the cost of garbage
+  collection.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Overall, &lt;code&gt;batt-hybr&lt;/code&gt; appears to have the best performance (though in
+  the &lt;span class="math"&gt;\(N=10^5\)&lt;/span&gt; case, the confidence interval is large enough that we
+  can't conclude &lt;code&gt;batt-hybr&lt;/code&gt; is faster than &lt;code&gt;stdlib&lt;/code&gt;, and the &lt;span class="math"&gt;\(R^2\)&lt;/span&gt;
+  value is a bit low).&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1&gt;Conclusions&lt;/h1&gt;
+&lt;p&gt;The data above suggest three main findings:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;The stack-based standard library implementation of &lt;code&gt;map&lt;/code&gt; is faster
+   than the naive tail recursive implementation, taking about 60-80%
+   of the time to do the same work depending on the size of the list.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;There are clear benefits to both unrolling and
+   hybridizing. Hybridizing lets us take an implementation that
+   performs well on long lists (&lt;code&gt;batteries&lt;/code&gt;), and make it even better
+   by combining it with one that's fast on short lists, to produce
+   &lt;code&gt;batt-hybr&lt;/code&gt;.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Overall, the data show we don't have to give up safety (resistance
+   to stack overflow) to get better performance. A tail recursive
+   implementation can be quite competitive, albeit more complex.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h1&gt;Discussion&lt;/h1&gt;
+&lt;p&gt;A follow up question to this analysis, in the context of the
+discussion of &lt;code&gt;Lwt_list.map_p&lt;/code&gt; is: "How significant is the cost of
+&lt;code&gt;map&lt;/code&gt; compared to other operations?" To partially address this, I
+wrote
+&lt;a href="https://github.com/jsthomas/ocaml-analysis/blob/master/map/bufftest.ml"&gt;another program&lt;/a&gt;
+that measures how long it takes to write 4096 bytes to a Unix pipe
+using &lt;code&gt;Lwt_unix.write&lt;/code&gt;, and then read it back using &lt;code&gt;Lwt_unix.read&lt;/code&gt;. Using
+&lt;code&gt;core_bench&lt;/code&gt;, I found:&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Unix Pipe Read/Write Benchmark&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="err"&gt;┌─────────┬──────────┬───────────────┬─────────┬────────────┐&lt;/span&gt;
+&lt;span class="err"&gt;│Time R^2 │ Time/Run │          95ci │ mWd/Run │ Percentage │&lt;/span&gt;
+&lt;span class="err"&gt;├─────────┼──────────┼───────────────┼─────────┼────────────┤&lt;/span&gt;
+&lt;span class="err"&gt;│    1.00 │ 893.33ns │ -0.16% +0.18% │  56.00w │    100.00% │&lt;/span&gt;
+&lt;span class="err"&gt;└─────────┴──────────┴───────────────┴─────────┴────────────┘&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;It seems reasonable to estimate that &lt;code&gt;Lwt_list.map_p&lt;/code&gt; would primarily
+be applied to IO operations like the ones in this experiment. In that
+case, the data suggest the cost per element of applying the slowest
+&lt;code&gt;map&lt;/code&gt; implementation (&lt;code&gt;ntr&lt;/code&gt;) is about 0.82% of the cost of one 4KB
+read/write operation on a unix pipe. In the context of &lt;code&gt;Lwt&lt;/code&gt;, it seems
+reasonable to conclude the implementation of &lt;code&gt;map&lt;/code&gt; isn't a significant
+concern; the real cost is performing IO. In light of that, it seems
+preferable to use an implementation that cannot cause a stack
+overflow.&lt;/p&gt;
+&lt;p&gt;A second question that might be asked about this analysis is: "Was it
+necessary to introduce the added complexity of &lt;code&gt;core_bench&lt;/code&gt; to measure
+the performance of &lt;code&gt;map&lt;/code&gt;?" For example, one might set up a performance
+test with just successive calls to &lt;code&gt;Time.now&lt;/code&gt; or
+&lt;code&gt;Unix.gettimeofday&lt;/code&gt;. In an earlier draft of this article, I tried such
+an
+&lt;a href="https://github.com/jsthomas/ocaml-analysis/blob/master/map/profile.ml"&gt;approach&lt;/a&gt;,
+producing some misleading data. In that test, I did a full garbage
+collection in between runs (applications of &lt;code&gt;map&lt;/code&gt;), which suppressed
+that (nontrivial) cost and made the tail recursive implementation
+appear quite fast. &lt;code&gt;core_bench&lt;/code&gt; does a much better job incorporating
+the cost of garbage collection by varying the number of test runs
+performed in a row and then establishing a trend (with linear
+regression) that reflects the amortized cost of garbage collection per
+run.&lt;/p&gt;
+&lt;p&gt;One interesting finding did arise from my earlier tests: for short
+lists, allocating memory on the heap actually appears to be faster
+than creating frames on the stack. Since the tests perform a full
+garbage collection between test runs, the timings show only the cost
+of allocating space on the heap. This produced data like the
+following:&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Summary Statistics, &lt;span class="math"&gt;\(N=10^3\)&lt;/span&gt; Garbage Collected Map Benchmark Times (μs)&lt;/strong&gt;&lt;/p&gt;
+&lt;table class="dataframe"&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;&lt;/th&gt;
+&lt;th&gt;Std. Lib.&lt;/th&gt;
+&lt;th&gt;NTR&lt;/th&gt;
+&lt;th&gt;Base&lt;/th&gt;
+&lt;th&gt;Batteries&lt;/th&gt;
+&lt;th&gt;Containers&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;th&gt;Mean&lt;/th&gt;
+&lt;td&gt;27.18&lt;/td&gt;
+&lt;td&gt;27.21&lt;/td&gt;
+&lt;td&gt;11.23&lt;/td&gt;
+&lt;td&gt;19.03&lt;/td&gt;
+&lt;td&gt;13.06&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;Min&lt;/th&gt;
+&lt;td&gt;15.97&lt;/td&gt;
+&lt;td&gt;14.07&lt;/td&gt;
+&lt;td&gt;6.91&lt;/td&gt;
+&lt;td&gt;9.06&lt;/td&gt;
+&lt;td&gt;7.87&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;25%&lt;/th&gt;
+&lt;td&gt;18.84&lt;/td&gt;
+&lt;td&gt;17.88&lt;/td&gt;
+&lt;td&gt;7.15&lt;/td&gt;
+&lt;td&gt;10.97&lt;/td&gt;
+&lt;td&gt;10.01&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;50%&lt;/th&gt;
+&lt;td&gt;20.03&lt;/td&gt;
+&lt;td&gt;19.07&lt;/td&gt;
+&lt;td&gt;8.11&lt;/td&gt;
+&lt;td&gt;15.50&lt;/td&gt;
+&lt;td&gt;10.01&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;75%&lt;/th&gt;
+&lt;td&gt;23.13&lt;/td&gt;
+&lt;td&gt;22.17&lt;/td&gt;
+&lt;td&gt;12.87&lt;/td&gt;
+&lt;td&gt;18.84&lt;/td&gt;
+&lt;td&gt;10.97&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;Max&lt;/th&gt;
+&lt;td&gt;849.01&lt;/td&gt;
+&lt;td&gt;576.02&lt;/td&gt;
+&lt;td&gt;379.80&lt;/td&gt;
+&lt;td&gt;622.03&lt;/td&gt;
+&lt;td&gt;434.88&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;&lt;strong&gt;Summary Statistics, &lt;span class="math"&gt;\(N=10^4\)&lt;/span&gt; Garbage Collected Map Benchmark Times (μs)&lt;/strong&gt;&lt;/p&gt;
+&lt;table class="dataframe"&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;&lt;/th&gt;
+&lt;th&gt;Std. Lib.&lt;/th&gt;
+&lt;th&gt;NTR&lt;/th&gt;
+&lt;th&gt;Base&lt;/th&gt;
+&lt;th&gt;Batteries&lt;/th&gt;
+&lt;th&gt;Containers&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;th&gt;Mean&lt;/th&gt;
+&lt;td&gt;230.23&lt;/td&gt;
+&lt;td&gt;216.60&lt;/td&gt;
+&lt;td&gt;141.39&lt;/td&gt;
+&lt;td&gt;144.59&lt;/td&gt;
+&lt;td&gt;161.56&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;Min&lt;/th&gt;
+&lt;td&gt;77.01&lt;/td&gt;
+&lt;td&gt;73.91&lt;/td&gt;
+&lt;td&gt;61.04&lt;/td&gt;
+&lt;td&gt;54.84&lt;/td&gt;
+&lt;td&gt;63.18&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;25%&lt;/th&gt;
+&lt;td&gt;97.04&lt;/td&gt;
+&lt;td&gt;86.07&lt;/td&gt;
+&lt;td&gt;67.95&lt;/td&gt;
+&lt;td&gt;58.89&lt;/td&gt;
+&lt;td&gt;70.81&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;50%&lt;/th&gt;
+&lt;td&gt;121.95&lt;/td&gt;
+&lt;td&gt;99.90&lt;/td&gt;
+&lt;td&gt;75.10&lt;/td&gt;
+&lt;td&gt;61.99&lt;/td&gt;
+&lt;td&gt;77.01&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;75%&lt;/th&gt;
+&lt;td&gt;193.83&lt;/td&gt;
+&lt;td&gt;284.91&lt;/td&gt;
+&lt;td&gt;148.59&lt;/td&gt;
+&lt;td&gt;118.26&lt;/td&gt;
+&lt;td&gt;175.24&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;Max&lt;/th&gt;
+&lt;td&gt;12719.87&lt;/td&gt;
+&lt;td&gt;2753.97&lt;/td&gt;
+&lt;td&gt;2960.21&lt;/td&gt;
+&lt;td&gt;3616.09&lt;/td&gt;
+&lt;td&gt;13603.93&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;When we ignore the time spent on garbage collection, we see that &lt;code&gt;ntr&lt;/code&gt;
+is surprisingly competitive, especially in comparison with &lt;code&gt;stdlib&lt;/code&gt;;
+the difference between the two implementations, of course, is that
+&lt;code&gt;ntr&lt;/code&gt; allocates more memory on the heap while &lt;code&gt;stdlib&lt;/code&gt; creates more
+stack frames.&lt;/p&gt;
+&lt;h2&gt;Notes&lt;/h2&gt;
+&lt;p&gt;Thanks to &lt;a href="https://github.com/aantron"&gt;Anton Bachin&lt;/a&gt; and
+&lt;a href="https://github.com/c-cube/"&gt;Simon Cruanes&lt;/a&gt; for reading drafts of this
+post.&lt;/p&gt;
+&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width &lt; 768) ? "left" : align;
+        indent = (screen.width &lt; 768) ? "0em" : indent;
+        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
+    }
+
+    var mathjaxscript = document.createElement('script');
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
+
+    var configscript = document.createElement('script');
+    configscript.type = 'text/x-mathjax-config';
+    configscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'none' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        availableFonts: ['STIX', 'TeX']," +
+        "        preferredFont: 'STIX'," +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+&lt;/script&gt;</content><category term="OCaml"></category></entry></feed>
