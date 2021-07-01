@@ -4,8 +4,8 @@ Center&lt;/a&gt;. Currently I'm reading the
 delightful book &lt;a href="https://pages.cs.wisc.edu/~remzi/OSTEP/"&gt;&lt;em&gt;Operating Systems: Three Easy
 Pieces&lt;/em&gt;&lt;/a&gt; by Remzi
 Arpaci-Dusseau and Andrea Arpaci-Dusseau. Besides great exposition,
-the materials for this book include a number of interesting projects,
-one of which is to &lt;a href="https://github.com/remzi-arpacidusseau/ostep-projects/tree/master/processes-shell"&gt;write a
+the book includes several interesting projects, one of which is to
+&lt;a href="https://github.com/remzi-arpacidusseau/ostep-projects/tree/master/processes-shell"&gt;write a
 shell&lt;/a&gt;.&lt;/p&gt;
 &lt;p&gt;The project materials, a set of shell scripts that define tests, are
 language agnostic. I believe the authors intended for students to use
@@ -35,8 +35,8 @@ scaffolding for your studies.&lt;/p&gt;
 &lt;p&gt;Other niceties, like tab completion and pipes, aren't supported. To
 facilitate testing, the shell can run in a batch mode (&lt;code&gt;osh &amp;lt;my file
 of commands&amp;gt;&lt;/code&gt;) as well as an interactive mode. A final simplifying
-assumption is that the project will only provide a basic error message
-when inputs are malformed.&lt;/p&gt;
+assumption is that &lt;code&gt;osh&lt;/code&gt; only provides a basic error message when
+inputs are malformed.&lt;/p&gt;
 &lt;h2&gt;Concepts&lt;/h2&gt;
 &lt;p&gt;There are three main topics I studied while working on this project:&lt;/p&gt;
 &lt;ol&gt;
@@ -71,10 +71,9 @@ library provides. I also spent a fair amount of time experimenting in
 &lt;code&gt;utop&lt;/code&gt; as I put my parser together.&lt;/p&gt;
 &lt;h2&gt;Steps&lt;/h2&gt;
 &lt;p&gt;Here is a rough outline for how I built my shell.&lt;/p&gt;
-&lt;p&gt;First, I defined a main function and worked on getting a line of text
-from &lt;code&gt;stdin&lt;/code&gt; and echoing it back to the user. Shortly after that, I
-added the ability to represent either interactive or batch input with
-a &lt;code&gt;Stream&lt;/code&gt;:&lt;/p&gt;
+&lt;p&gt;First, I defined a main function that would fetch a line of text from
+&lt;code&gt;stdin&lt;/code&gt; and echo it back to the user. Then I added the ability to
+represent either interactive or batch input with a &lt;code&gt;Stream&lt;/code&gt;:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;prompt_stream&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
     &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;"osh&amp;gt; "&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
@@ -93,13 +92,12 @@ a &lt;code&gt;Stream&lt;/code&gt;:&lt;/p&gt;
   &lt;span class="k"&gt;in&lt;/span&gt;
   &lt;span class="nn"&gt;Stream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;from&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;It's useful to do this part first, since batch input will allow you to
-start running the tests.&lt;/p&gt;
+&lt;p&gt;It's useful to do this part as early as possible, since batch input
+allows you to run the tests.&lt;/p&gt;
 &lt;p&gt;Once I could get &lt;code&gt;osh&lt;/code&gt; to fail all 22 test cases, I started adding the
-simpler built-in commands &lt;code&gt;cd&lt;/code&gt; and &lt;code&gt;exit&lt;/code&gt;. (It may be useful to know
-that &lt;code&gt;./test-osh.sh -c&lt;/code&gt; will run all 22 tests, without stopping at the
-first one that fails.)&lt;/p&gt;
-&lt;p&gt;My first version of &lt;code&gt;main&lt;/code&gt; just treated user input as a list of strings, like this:&lt;/p&gt;
+simpler built-in commands &lt;code&gt;cd&lt;/code&gt; and &lt;code&gt;exit&lt;/code&gt;. (Note &lt;code&gt;./test-osh.sh -c&lt;/code&gt;
+will run all 22 tests, without stopping at the first one that fails.)&lt;/p&gt;
+&lt;p&gt;My first version of &lt;code&gt;main&lt;/code&gt; just treated user input as &lt;code&gt;string list&lt;/code&gt;:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="k"&gt;rec&lt;/span&gt; &lt;span class="n"&gt;main&lt;/span&gt; &lt;span class="n"&gt;stream&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;parse&lt;/span&gt; &lt;span class="n"&gt;text&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;String&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split_on_char&lt;/span&gt; &lt;span class="sc"&gt;' '&lt;/span&gt; &lt;span class="n"&gt;text&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;process&lt;/span&gt; &lt;span class="n"&gt;text&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
@@ -119,10 +117,9 @@ first one that fails.)&lt;/p&gt;
   &lt;span class="k"&gt;in&lt;/span&gt;
   &lt;span class="nn"&gt;Stream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;iter&lt;/span&gt; &lt;span class="n"&gt;process&lt;/span&gt; &lt;span class="n"&gt;stream&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;I found that this worked well enough for getting started and running
-some simple commands like &lt;code&gt;/usr/bin/ls -lah&lt;/code&gt;.&lt;/p&gt;
-&lt;p&gt;In order to get output redirection and &lt;code&gt;&amp;amp;&lt;/code&gt; to work, I realized I would
-need to upgrade the program's parsing capabilities. I switched from
+&lt;p&gt;This worked well enough for running simple commands like &lt;code&gt;/usr/bin/ls
+-lah&lt;/code&gt;. In order to get output redirection and &lt;code&gt;&amp;amp;&lt;/code&gt; to work, I needed to
+upgrade the program's parsing capabilities. I switched from
 representing user input with a &lt;code&gt;string list&lt;/code&gt; to a variant type:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;type&lt;/span&gt; &lt;span class="n"&gt;exec&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
   &lt;span class="n"&gt;executable&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
@@ -139,22 +136,17 @@ representing user input with a &lt;code&gt;string list&lt;/code&gt; to a variant
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;I found the OCaml compiler (and its emacs integrations, &lt;code&gt;merlin&lt;/code&gt; and
 &lt;code&gt;tuareg&lt;/code&gt;) very helpful for refactoring. When I revised my types to
-make them better reflect the data I wanted to model, the compiler
-helpfully pointed out all of the things I needed to revise. At this
-point, I introduced an Angstrom parser and re-implemented support for
-&lt;code&gt;cd&lt;/code&gt;, &lt;code&gt;exit&lt;/code&gt;, and &lt;code&gt;path&lt;/code&gt;. That allowed me to get familiar with the
-parser combinators &lt;code&gt;*&amp;gt;&lt;/code&gt;, &lt;code&gt;many&lt;/code&gt;, and &lt;code&gt;choice&lt;/code&gt;, before attempting the
-(slightly) more complicated parsers needed to support &lt;code&gt;&amp;amp;&lt;/code&gt; and &lt;code&gt;&amp;gt;&lt;/code&gt;.&lt;/p&gt;
-&lt;p&gt;The type system will protected me from a number of silly mistakes, but
-it isn't a silver bullet. I spent an hour confused about why one of my
+make them better reflect the data I wanted to model, type errors
+identified all of the places I needed to update. At this point, I
+introduced an Angstrom parser and re-implemented support for &lt;code&gt;cd&lt;/code&gt;,
+&lt;code&gt;exit&lt;/code&gt;, and &lt;code&gt;path&lt;/code&gt;. That allowed me to get familiar with the parser
+combinators &lt;code&gt;*&amp;gt;&lt;/code&gt;, &lt;code&gt;many&lt;/code&gt;, and &lt;code&gt;choice&lt;/code&gt;, before attempting the more
+complicated parsers needed to support &lt;code&gt;&amp;amp;&lt;/code&gt; and &lt;code&gt;&amp;gt;&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;The type system protected me from a number of silly mistakes, but it
+wasn't a silver bullet. I spent an hour confused about why one of my
 parsers would go into an infinite loop before realizing I needed to
 use &lt;code&gt;many1&lt;/code&gt; instead of &lt;code&gt;many&lt;/code&gt;. I think this is the sort of mistake I
-would learn to avoid if I spend more time working with Angstrom.&lt;/p&gt;
-&lt;p&gt;The compiler also didn't prevent me from making dumb API mistakes. At
-one point I couldn't figure out why output redirection wasn't working,
-then I realized I had mis-ordered the arguments to &lt;code&gt;dup2&lt;/code&gt;. Again, I
-suspect this is something I'll spend less time on as I get more
-familiar with the Unix API.&lt;/p&gt;
+would learn to avoid if I spent more time working with Angstrom.&lt;/p&gt;
 &lt;h2&gt;Discussion&lt;/h2&gt;
 &lt;p&gt;As I worked through this project, I started to appreciate how OCaml
 chooses "good defaults" for my code (especially immutable data)
@@ -209,8 +201,7 @@ function like:&lt;/p&gt;
   &lt;span class="k"&gt;in&lt;/span&gt;
   &lt;span class="nn"&gt;Stream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;iter&lt;/span&gt; &lt;span class="n"&gt;process&lt;/span&gt; &lt;span class="n"&gt;stream&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;and quickly understand all of the different commands &lt;code&gt;osh&lt;/code&gt; can
-process.&lt;/p&gt;
+&lt;p&gt;and quickly understand all of the different commands &lt;code&gt;osh&lt;/code&gt; supports.&lt;/p&gt;
 &lt;p&gt;Although it took me some time to get up and running with Angstrom, I
 strongly prefer working with parser combinators to writing an
 imperative parser (as I've had to do in Python and Java). Angstrom
