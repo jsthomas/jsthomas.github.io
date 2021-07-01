@@ -30,7 +30,251 @@
         </div>
     </header>
     <div id="wrapper">
-        <div id="content">            <h4 class="date">Jun 06, 2017</h4>
+        <div id="content">            <h4 class="date">Jul 01, 2021</h4>
+
+            <article class="post">
+                <h2 class="title">
+                    <a href="https://jsthomas.github.io/ocaml-shell.html" rel="bookmark" title="Permanent Link to &quot;Let's write a shell in OCaml!&quot;">Let's write a shell in OCaml!</a>
+                </h2>
+
+                
+                
+
+                <p>This Summer I'm studying OCaml and systems programming at the <a href="https://www.recurse.com/">Recurse
+Center</a>. Currently I'm reading the
+delightful book <a href="https://pages.cs.wisc.edu/~remzi/OSTEP/"><em>Operating Systems: Three Easy
+Pieces</em></a> by Remzi
+Arpaci-Dusseau and Andrea Arpaci-Dusseau. Besides great exposition,
+the materials for this book include a number of interesting projects,
+one of which is to <a href="https://github.com/remzi-arpacidusseau/ostep-projects/tree/master/processes-shell">build a
+shell</a>.</p>
+<p>The project materials, a set of shell scripts that define tests, are
+language agnostic. I believe the authors intended for students to use
+C, but I worked through the exercise in OCaml; you can find the final
+result <a href="https://github.com/jsthomas/simple-ocaml-shell">in this
+repo</a>. This blog post
+is a short experience report; if you're interested in working on a
+beginner OCaml project, hopefully it can provides some useful
+scaffolding for your studies.</p>
+<h2>Shell features</h2>
+<p>The shell I built (<code>osh</code>) has a somewhat limited feature set. It:</p>
+<ul>
+<li>
+<p>Allows several commands to be run in parallel (e.g. <code>program1 arg1 &amp;
+  program2 arg2 arg3</code>)</p>
+</li>
+<li>
+<p>Supports simple output redirection (e.g. <code>echo "hello" &gt;
+  hello.txt</code>). Both <code>stdout</code> and <code>stderr</code> go to the same file.</p>
+</li>
+<li>
+<p>Has three builtin functions, <code>cd</code>, <code>exit</code>, and <code>path</code>. <code>path</code> allows
+  you to define a list of directories to search for executables; we
+  need this because environment variables aren't supported.</p>
+</li>
+</ul>
+<p>Other niceties, like tab completion and pipes, aren't supported. To
+facilitate testing, the shell can run in a batch mode (<code>osh &lt;my file
+of commands&gt;</code>) as well as an interactive mode. A final simplifying
+assumption is that the project will only provide a basic error message
+when inputs are malformed.</p>
+<h2>Concepts</h2>
+<p>There are three topics things I learned working through this project:</p>
+<ol>
+<li>
+<p>The <code>Unix</code> module, especially <code>fork</code> and
+    <code>execv</code>. <a href="https://ocaml.github.io/ocamlunix/ocamlunix.html">This
+    page</a>, from
+    Xavier Leroy and Didier Rémy, was helpful for getting up to
+    speed. The man-pages were also useful.</p>
+</li>
+<li>
+<p>The <a href="https://ocaml.org/api/Stream.html"><code>Stream</code></a> module. Streams
+   in OCaml are roughly analogous to generators in Python; they allowed
+   me to use a single type (a <code>string Stream.t</code>) to represent commands
+   coming from an interactive session or a batch file.</p>
+</li>
+<li>
+<p>The <a href="https://github.com/inhabitedtype/angstrom">Angstrom</a>
+   parser-combinator library. I used this library to determine whether
+   a given line of user input is well formed.</p>
+</li>
+</ol>
+<p>I suspect you could implement the parser without Angstrom, if you
+really wanted to. I wanted to learn more about this library, and this
+project seemed like a good place to try it out.</p>
+<p>Although I previously worked through some simple monadic parser
+exercises in Haskell, I struggled the most with Angstrom. Reading one
+of the main <a href="https://github.com/inhabitedtype/angstrom/blob/master/lib/angstrom.mli">mli
+files</a>
+seemed to be the best way to get an overview of the combinators the
+library provides. I also spent a fair amount of time experimenting in
+<code>utop</code> as I put my parser together.</p>
+<h2>Steps</h2>
+<p>Here is a rough outline for how I built my shell.</p>
+<p>First, I defined a main function and worked on getting a line of text
+from <code>stdin</code> and echoing it back to the user. Shortly after that, I
+added the ability to represent either interactive or batch input with
+a <code>Stream</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="n">prompt_stream</span> <span class="o">=</span>
+  <span class="k">let</span> <span class="n">f</span> <span class="o">_</span> <span class="o">=</span>
+    <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"wish&gt; "</span><span class="o">;</span>
+    <span class="nc">Some</span> <span class="o">(</span><span class="n">read_line</span> <span class="bp">()</span><span class="o">)</span> <span class="k">in</span>
+  <span class="nn">Stream</span><span class="p">.</span><span class="n">from</span> <span class="n">f</span>
+
+
+<span class="k">let</span> <span class="n">file_stream</span> <span class="n">filename</span> <span class="o">=</span>
+  <span class="k">let</span> <span class="n">in_channel</span> <span class="o">=</span> <span class="n">open_in</span> <span class="n">filename</span> <span class="k">in</span>
+  <span class="k">let</span> <span class="n">f</span> <span class="o">_</span> <span class="o">=</span>
+    <span class="k">try</span>
+      <span class="nc">Some</span> <span class="o">(</span><span class="n">input_line</span> <span class="n">in_channel</span><span class="o">)</span>
+    <span class="k">with</span> <span class="nc">End_of_file</span> <span class="o">-&gt;</span>
+      <span class="n">close_in</span> <span class="n">in_channel</span><span class="o">;</span>
+      <span class="nc">None</span>
+  <span class="k">in</span>
+  <span class="nn">Stream</span><span class="p">.</span><span class="n">from</span> <span class="n">f</span>
+</code></pre></div>
+<p>It's useful to do this part first, since batch input will allow you to
+start running the tests.</p>
+<p>Once I could get my shell to fail all 22 test cases, I started adding
+the simpler built-in capabilities, <code>cd</code> and <code>exit</code>. (It may be useful
+to know that <code>./test-osh.sh -c</code> will run all 22 tests, without
+stopping at the first one that fails.)</p>
+<p>My first version of <code>main</code> just treated user input as a list of strings, like this:</p>
+<div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="k">rec</span> <span class="n">main</span> <span class="n">stream</span> <span class="o">=</span>
+  <span class="k">let</span> <span class="n">parse</span> <span class="n">text</span> <span class="o">=</span> <span class="nn">String</span><span class="p">.</span><span class="n">split_on_char</span> <span class="sc">' '</span> <span class="n">text</span> <span class="k">in</span>
+  <span class="k">let</span> <span class="n">process</span> <span class="n">text</span> <span class="o">=</span>
+    <span class="k">match</span> <span class="n">parse</span> <span class="n">text</span> <span class="k">with</span>
+    <span class="o">|</span> <span class="bp">[]</span> <span class="o">-&gt;</span> <span class="n">main</span> <span class="n">stream</span>  <span class="c">(* Empty lines should just be treated as no-ops. *)</span>
+    <span class="o">|</span> <span class="o">[</span><span class="s2">""</span><span class="o">]</span> <span class="o">-&gt;</span> <span class="n">main</span> <span class="n">stream</span>
+    <span class="o">|</span> <span class="o">[</span><span class="s2">"exit"</span><span class="o">]</span> <span class="o">-&gt;</span> <span class="n">exit</span> <span class="mi">0</span>
+    <span class="o">|</span> <span class="o">[</span><span class="s2">"cd"</span><span class="o">;</span> <span class="n">x</span><span class="o">]</span> <span class="o">-&gt;</span> <span class="nn">Unix</span><span class="p">.</span><span class="n">chdir</span> <span class="n">x</span>
+    <span class="o">|</span> <span class="s2">"cd"</span><span class="o">::</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="n">print_error</span> <span class="bp">()</span>
+    <span class="o">|</span> <span class="n">x</span><span class="o">::</span><span class="n">xs</span> <span class="o">-&gt;</span>
+      <span class="k">match</span> <span class="nn">Unix</span><span class="p">.</span><span class="n">fork</span> <span class="bp">()</span> <span class="k">with</span>
+      <span class="o">|</span> <span class="mi">0</span> <span class="o">-&gt;</span> <span class="c">(* Child *)</span>
+        <span class="nn">Unix</span><span class="p">.</span><span class="n">execv</span> <span class="n">x</span> <span class="o">(</span><span class="nn">Array</span><span class="p">.</span><span class="n">of_list</span> <span class="n">xs</span><span class="o">)</span>
+      <span class="o">|</span> <span class="n">child_pid</span> <span class="o">-&gt;</span> <span class="c">(* Parent *)</span>
+        <span class="k">let</span> <span class="o">_</span> <span class="o">=</span> <span class="nn">Unix</span><span class="p">.</span><span class="n">waitpid</span> <span class="bp">[]</span> <span class="n">child_pid</span>
+        <span class="k">in</span> <span class="bp">()</span>
+  <span class="k">in</span>
+  <span class="nn">Stream</span><span class="p">.</span><span class="n">iter</span> <span class="n">process</span> <span class="n">stream</span>
+</code></pre></div>
+<p>I found that this worked well enough for getting started and running
+some simple commands like <code>/usr/bin/ls -lah</code>.</p>
+<p>In order to get output redirection and <code>&amp;</code> to work, I realized I would
+need to upgrade the program's parsing capabilities. At this point I
+switched from representing user input with a <code>string list</code> to a variant type:</p>
+<div class="highlight"><pre><span></span><code><span class="k">type</span> <span class="n">exec</span> <span class="o">=</span> <span class="o">{</span>
+  <span class="n">executable</span><span class="o">:</span> <span class="kt">string</span><span class="o">;</span>
+  <span class="n">arguments</span><span class="o">:</span> <span class="kt">string</span> <span class="kt">list</span><span class="o">;</span>
+  <span class="n">output</span><span class="o">:</span> <span class="kt">string</span> <span class="n">option</span><span class="o">;</span>
+<span class="o">}</span>
+
+<span class="k">type</span> <span class="n">line</span> <span class="o">=</span>
+  <span class="o">|</span> <span class="nc">NoOp</span>
+  <span class="o">|</span> <span class="nc">ChangeDirectory</span> <span class="k">of</span> <span class="kt">string</span>
+  <span class="o">|</span> <span class="nc">PathChange</span> <span class="k">of</span> <span class="kt">string</span> <span class="kt">list</span>
+  <span class="o">|</span> <span class="nc">Executable</span> <span class="k">of</span> <span class="n">exec</span> <span class="kt">list</span>
+  <span class="o">|</span> <span class="nc">Quit</span>
+</code></pre></div>
+<p>At this point, I found the OCaml compiler (and its emacs integrations,
+<code>merlin</code> and <code>tuareg</code>), very helpful for refactoring. I would revise
+my types to make them better reflect the data I wanted to model, and
+the compiler would helpfully point out all of the things I needed to
+revise to support the new model.</p>
+<p>The last phase of the project was to add support for output
+redirection and parallel commands. To do this, I introduced an
+Angstrom parser, and re-implemented support for <code>cd</code>, <code>exit</code>, and
+<code>path</code>. That allowed me to get familiar with the parser combinators
+<code>*&gt;</code> (which discards matched input), <code>many</code>, and <code>choice</code>, before
+attempting the more complicated parsers needed to support <code>&amp;</code>.</p>
+<p>Although the type system will protect you from a number of silly
+mistakes, it isn't a silver bullet. I spent an hour or so confused
+about why one of my parsers would go into an infinite loop before
+realizing I needed to use <code>many1</code> instead of <code>many</code>. I think this is
+the sort of mistake I would learn to avoid if I spend more time
+working with Angstrom.</p>
+<p>The compiler also can't help you from making dumb API mistakes. At one
+point I couldn't figure out why output redirection wasn't working
+correctly before I realized I had mis-ordered the arguments to <code>dup2</code>;
+again, I suspect this is something I'll spend less time on as I get
+more familiar with the Unix API.</p>
+<h2>Discussion</h2>
+<p>As I worked through this project, I started to appreciate how OCaml
+chooses "good defaults" for my code (especially immutable data)
+without forbidding me from working in an imperative mode when I need
+to.</p>
+<p>For example, I found that the function responsible for running a child
+process was most natural to express with imperative language features:</p>
+<div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="n">run_executable</span> <span class="n">path</span> <span class="o">{</span><span class="n">executable</span><span class="o">;</span> <span class="n">arguments</span><span class="o">;</span> <span class="n">output</span><span class="o">}</span> <span class="o">=</span>
+  <span class="k">let</span> <span class="n">full_paths</span> <span class="o">=</span> <span class="nn">List</span><span class="p">.</span><span class="n">map</span> <span class="o">(</span><span class="k">fun</span> <span class="n">p</span> <span class="o">-&gt;</span> <span class="n">p</span> <span class="o">^</span> <span class="s2">"/"</span> <span class="o">^</span> <span class="n">executable</span><span class="o">)</span> <span class="n">path</span> <span class="k">in</span>
+  <span class="k">let</span> <span class="n">executables</span> <span class="o">=</span> <span class="nn">List</span><span class="p">.</span><span class="n">append</span> <span class="n">full_paths</span> <span class="o">[</span><span class="n">executable</span><span class="o">]</span> <span class="k">in</span>
+  <span class="k">let</span> <span class="n">present</span> <span class="o">=</span> <span class="nn">List</span><span class="p">.</span><span class="n">filter</span> <span class="n">executable_present</span> <span class="n">executables</span> <span class="k">in</span>
+
+  <span class="k">match</span> <span class="n">present</span> <span class="k">with</span>
+  <span class="o">|</span> <span class="bp">[]</span> <span class="o">-&gt;</span> <span class="n">print_error</span> <span class="bp">()</span><span class="o">;</span> <span class="nc">None</span>
+  <span class="o">|</span> <span class="n">x</span> <span class="o">::</span> <span class="o">_</span> <span class="o">-&gt;</span>
+    <span class="k">match</span> <span class="nn">Unix</span><span class="p">.</span><span class="n">fork</span> <span class="bp">()</span> <span class="k">with</span>
+    <span class="o">|</span> <span class="mi">0</span> <span class="o">-&gt;</span> <span class="c">(* Child *)</span>
+       <span class="k">let</span> <span class="n">out</span> <span class="o">=</span> <span class="k">match</span> <span class="n">output</span> <span class="k">with</span>
+         <span class="o">|</span> <span class="nc">Some</span> <span class="n">filename</span> <span class="o">-&gt;</span> <span class="nn">Unix</span><span class="p">.</span><span class="n">openfile</span> <span class="n">filename</span> <span class="o">[</span><span class="nn">Unix</span><span class="p">.</span><span class="nc">O_TRUNC</span><span class="o">;</span> <span class="nn">Unix</span><span class="p">.</span><span class="nc">O_WRONLY</span><span class="o">;</span> <span class="nn">Unix</span><span class="p">.</span><span class="nc">O_CREAT</span> <span class="o">]</span> <span class="mo">0o640</span>
+         <span class="o">|</span> <span class="nc">None</span> <span class="o">-&gt;</span> <span class="nn">Unix</span><span class="p">.</span><span class="n">stdout</span>
+       <span class="k">in</span>
+       <span class="k">let</span> <span class="n">err</span> <span class="o">=</span> <span class="k">match</span> <span class="n">output</span> <span class="k">with</span>
+         <span class="o">|</span> <span class="nc">None</span> <span class="o">-&gt;</span> <span class="nn">Unix</span><span class="p">.</span><span class="n">stderr</span>
+         <span class="o">|</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="n">out</span>
+       <span class="k">in</span>
+       <span class="nn">Unix</span><span class="p">.</span><span class="n">dup2</span> <span class="n">out</span> <span class="nn">Unix</span><span class="p">.</span><span class="n">stdout</span><span class="o">;</span>
+       <span class="nn">Unix</span><span class="p">.</span><span class="n">dup2</span> <span class="n">err</span> <span class="nn">Unix</span><span class="p">.</span><span class="n">stderr</span><span class="o">;</span>
+       <span class="nn">Unix</span><span class="p">.</span><span class="n">execv</span> <span class="n">x</span> <span class="o">@@</span> <span class="nn">Array</span><span class="p">.</span><span class="n">of_list</span> <span class="o">@@</span> <span class="n">executable</span><span class="o">::</span><span class="n">arguments</span><span class="o">;</span>
+    <span class="o">|</span> <span class="n">child_pid</span> <span class="o">-&gt;</span> <span class="c">(* Parent *)</span>
+      <span class="nc">Some</span> <span class="n">child_pid</span>
+</code></pre></div>
+<p>Writing this way made it easy for me to switch between C and OCaml; in
+both languages, we follow a pattern of calling <code>fork</code>, then <code>execv</code> in
+the child process. The fact that I can easily re-use my knowledge of
+the UNIX APIs across different programming languages is one of the
+main reasons I'm excited to learn more systems programming concepts!</p>
+<p>Variants and pattern matching are features I miss when working in
+languages like Python. These features make it so easy to look at a
+function like:</p>
+<div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="n">main</span> <span class="n">stream</span> <span class="o">=</span>
+  <span class="k">let</span> <span class="n">path</span> <span class="o">=</span> <span class="n">ref</span> <span class="o">[</span><span class="s2">"/bin"</span><span class="o">]</span> <span class="k">in</span>
+  <span class="k">let</span> <span class="n">process</span> <span class="n">text</span> <span class="o">=</span>
+    <span class="k">match</span> <span class="nn">Parser</span><span class="p">.</span><span class="n">parse_line</span> <span class="n">text</span> <span class="k">with</span>
+    <span class="o">|</span> <span class="nc">Error</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="n">print_error</span> <span class="bp">()</span>
+    <span class="o">|</span> <span class="nc">Ok</span> <span class="o">(</span><span class="nc">NoOp</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="bp">()</span> <span class="c">(* Empty lines should just be treated as no-ops. *)</span>
+    <span class="o">|</span> <span class="nc">Ok</span> <span class="o">(</span><span class="nc">Quit</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="n">exit</span> <span class="mi">0</span>
+    <span class="o">|</span> <span class="nc">Ok</span> <span class="o">(</span><span class="nc">ChangeDirectory</span> <span class="n">x</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="n">change_directory</span> <span class="n">x</span>
+    <span class="o">|</span> <span class="nc">Ok</span> <span class="o">(</span><span class="nc">PathChange</span> <span class="n">paths</span><span class="o">)</span> <span class="o">-&gt;</span>
+      <span class="k">let</span> <span class="n">cwd</span> <span class="o">=</span> <span class="nn">Unix</span><span class="p">.</span><span class="n">getcwd</span> <span class="bp">()</span> <span class="k">in</span>
+      <span class="n">path</span> <span class="o">:=</span> <span class="nn">List</span><span class="p">.</span><span class="n">map</span> <span class="o">(</span><span class="n">amend_path</span> <span class="n">cwd</span><span class="o">)</span> <span class="n">paths</span>
+    <span class="o">|</span> <span class="nc">Ok</span> <span class="o">(</span><span class="nc">Executable</span> <span class="n">execs</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="n">run_executables</span> <span class="o">!</span><span class="n">path</span> <span class="n">execs</span>
+  <span class="k">in</span>
+  <span class="nn">Stream</span><span class="p">.</span><span class="n">iter</span> <span class="n">process</span> <span class="n">stream</span>
+</code></pre></div>
+<p>and quickly understand all of the different commands the shell can process.</p>
+<p>Although it took me some time to get up and running with Angstrom, I
+find that I strongly prefer working with parser combinators to writing
+an imperative parser (as I've had to do in Python and Java). Angstrom
+makes it easy to build up small parsers and test them in isolation
+before composing them into the larger parser you need. If I planned to
+develop a more robust shell, I would probably break <code>Parser</code> out into
+its own module, with separate unit tests.</p>
+<h2>Feedback</h2>
+<p>If you give this project a try, let me know how it turned out! I'm
+interested in adding more tutorial resources to the OCaml ecosystem,
+so feel free to post a PR or issue to
+<a href="https://github.com/jsthomas/simple-ocaml-shell">simple-ocaml-shell</a>
+if you have ideas about how to make these resources better.</p>
+                <div class="clear"></div>
+
+                <div class="info">
+                    <a href="https://jsthomas.github.io/ocaml-shell.html">posted at 00:00</a>
+                    &nbsp;&middot;&nbsp;<a href="https://jsthomas.github.io/category/ocaml.html" rel="tag">OCaml</a>
+                </div>
+            </article>            <h4 class="date">Jun 06, 2017</h4>
 
             <article class="post">
                 <h2 class="title">

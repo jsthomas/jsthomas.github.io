@@ -1,5 +1,232 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Joe Thomas - OCaml</title><link href="https://jsthomas.github.io/" rel="alternate"></link><link href="https://jsthomas.github.io/feeds/ocaml.atom.xml" rel="self"></link><id>https://jsthomas.github.io/</id><updated>2017-06-06T00:00:00-04:00</updated><entry><title>Microbenchmarking Implementations of Map in OCaml</title><link href="https://jsthomas.github.io/map-comparison.html" rel="alternate"></link><published>2017-06-06T00:00:00-04:00</published><updated>2017-06-06T00:00:00-04:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2017-06-06:/map-comparison.html</id><summary type="html">&lt;p&gt;A comparison of different implementations of map in OCaml&lt;/p&gt;</summary><content type="html">&lt;p&gt;&lt;code&gt;Map&lt;/code&gt; is one of the first higher-order functions I remember
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Joe Thomas - OCaml</title><link href="https://jsthomas.github.io/" rel="alternate"></link><link href="https://jsthomas.github.io/feeds/ocaml.atom.xml" rel="self"></link><id>https://jsthomas.github.io/</id><updated>2021-07-01T00:00:00-04:00</updated><entry><title>Let's write a shell in OCaml!</title><link href="https://jsthomas.github.io/ocaml-shell.html" rel="alternate"></link><published>2021-07-01T00:00:00-04:00</published><updated>2021-07-01T00:00:00-04:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2021-07-01:/ocaml-shell.html</id><summary type="html">&lt;p&gt;A user experience report about writing a simple shell in OCaml&lt;/p&gt;</summary><content type="html">&lt;p&gt;This Summer I'm studying OCaml and systems programming at the &lt;a href="https://www.recurse.com/"&gt;Recurse
+Center&lt;/a&gt;. Currently I'm reading the
+delightful book &lt;a href="https://pages.cs.wisc.edu/~remzi/OSTEP/"&gt;&lt;em&gt;Operating Systems: Three Easy
+Pieces&lt;/em&gt;&lt;/a&gt; by Remzi
+Arpaci-Dusseau and Andrea Arpaci-Dusseau. Besides great exposition,
+the materials for this book include a number of interesting projects,
+one of which is to &lt;a href="https://github.com/remzi-arpacidusseau/ostep-projects/tree/master/processes-shell"&gt;build a
+shell&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;The project materials, a set of shell scripts that define tests, are
+language agnostic. I believe the authors intended for students to use
+C, but I worked through the exercise in OCaml; you can find the final
+result &lt;a href="https://github.com/jsthomas/simple-ocaml-shell"&gt;in this
+repo&lt;/a&gt;. This blog post
+is a short experience report; if you're interested in working on a
+beginner OCaml project, hopefully it can provides some useful
+scaffolding for your studies.&lt;/p&gt;
+&lt;h2&gt;Shell features&lt;/h2&gt;
+&lt;p&gt;The shell I built (&lt;code&gt;osh&lt;/code&gt;) has a somewhat limited feature set. It:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Allows several commands to be run in parallel (e.g. &lt;code&gt;program1 arg1 &amp;amp;
+  program2 arg2 arg3&lt;/code&gt;)&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Supports simple output redirection (e.g. &lt;code&gt;echo "hello" &amp;gt;
+  hello.txt&lt;/code&gt;). Both &lt;code&gt;stdout&lt;/code&gt; and &lt;code&gt;stderr&lt;/code&gt; go to the same file.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Has three builtin functions, &lt;code&gt;cd&lt;/code&gt;, &lt;code&gt;exit&lt;/code&gt;, and &lt;code&gt;path&lt;/code&gt;. &lt;code&gt;path&lt;/code&gt; allows
+  you to define a list of directories to search for executables; we
+  need this because environment variables aren't supported.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Other niceties, like tab completion and pipes, aren't supported. To
+facilitate testing, the shell can run in a batch mode (&lt;code&gt;osh &amp;lt;my file
+of commands&amp;gt;&lt;/code&gt;) as well as an interactive mode. A final simplifying
+assumption is that the project will only provide a basic error message
+when inputs are malformed.&lt;/p&gt;
+&lt;h2&gt;Concepts&lt;/h2&gt;
+&lt;p&gt;There are three topics things I learned working through this project:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;The &lt;code&gt;Unix&lt;/code&gt; module, especially &lt;code&gt;fork&lt;/code&gt; and
+    &lt;code&gt;execv&lt;/code&gt;. &lt;a href="https://ocaml.github.io/ocamlunix/ocamlunix.html"&gt;This
+    page&lt;/a&gt;, from
+    Xavier Leroy and Didier Rémy, was helpful for getting up to
+    speed. The man-pages were also useful.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The &lt;a href="https://ocaml.org/api/Stream.html"&gt;&lt;code&gt;Stream&lt;/code&gt;&lt;/a&gt; module. Streams
+   in OCaml are roughly analogous to generators in Python; they allowed
+   me to use a single type (a &lt;code&gt;string Stream.t&lt;/code&gt;) to represent commands
+   coming from an interactive session or a batch file.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The &lt;a href="https://github.com/inhabitedtype/angstrom"&gt;Angstrom&lt;/a&gt;
+   parser-combinator library. I used this library to determine whether
+   a given line of user input is well formed.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;I suspect you could implement the parser without Angstrom, if you
+really wanted to. I wanted to learn more about this library, and this
+project seemed like a good place to try it out.&lt;/p&gt;
+&lt;p&gt;Although I previously worked through some simple monadic parser
+exercises in Haskell, I struggled the most with Angstrom. Reading one
+of the main &lt;a href="https://github.com/inhabitedtype/angstrom/blob/master/lib/angstrom.mli"&gt;mli
+files&lt;/a&gt;
+seemed to be the best way to get an overview of the combinators the
+library provides. I also spent a fair amount of time experimenting in
+&lt;code&gt;utop&lt;/code&gt; as I put my parser together.&lt;/p&gt;
+&lt;h2&gt;Steps&lt;/h2&gt;
+&lt;p&gt;Here is a rough outline for how I built my shell.&lt;/p&gt;
+&lt;p&gt;First, I defined a main function and worked on getting a line of text
+from &lt;code&gt;stdin&lt;/code&gt; and echoing it back to the user. Shortly after that, I
+added the ability to represent either interactive or batch input with
+a &lt;code&gt;Stream&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;prompt_stream&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+    &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;"wish&amp;gt; "&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+    &lt;span class="nc"&gt;Some&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;read_line&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="nn"&gt;Stream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;from&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt;
+
+
+&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;file_stream&lt;/span&gt; &lt;span class="n"&gt;filename&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;in_channel&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;open_in&lt;/span&gt; &lt;span class="n"&gt;filename&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+    &lt;span class="k"&gt;try&lt;/span&gt;
+      &lt;span class="nc"&gt;Some&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;input_line&lt;/span&gt; &lt;span class="n"&gt;in_channel&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;with&lt;/span&gt; &lt;span class="nc"&gt;End_of_file&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
+      &lt;span class="n"&gt;close_in&lt;/span&gt; &lt;span class="n"&gt;in_channel&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+      &lt;span class="nc"&gt;None&lt;/span&gt;
+  &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="nn"&gt;Stream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;from&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;It's useful to do this part first, since batch input will allow you to
+start running the tests.&lt;/p&gt;
+&lt;p&gt;Once I could get my shell to fail all 22 test cases, I started adding
+the simpler built-in capabilities, &lt;code&gt;cd&lt;/code&gt; and &lt;code&gt;exit&lt;/code&gt;. (It may be useful
+to know that &lt;code&gt;./test-osh.sh -c&lt;/code&gt; will run all 22 tests, without
+stopping at the first one that fails.)&lt;/p&gt;
+&lt;p&gt;My first version of &lt;code&gt;main&lt;/code&gt; just treated user input as a list of strings, like this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="k"&gt;rec&lt;/span&gt; &lt;span class="n"&gt;main&lt;/span&gt; &lt;span class="n"&gt;stream&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;parse&lt;/span&gt; &lt;span class="n"&gt;text&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;String&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split_on_char&lt;/span&gt; &lt;span class="sc"&gt;' '&lt;/span&gt; &lt;span class="n"&gt;text&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;process&lt;/span&gt; &lt;span class="n"&gt;text&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+    &lt;span class="k"&gt;match&lt;/span&gt; &lt;span class="n"&gt;parse&lt;/span&gt; &lt;span class="n"&gt;text&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt;
+    &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="bp"&gt;[]&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;main&lt;/span&gt; &lt;span class="n"&gt;stream&lt;/span&gt;  &lt;span class="c"&gt;(* Empty lines should just be treated as no-ops. *)&lt;/span&gt;
+    &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;""&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;main&lt;/span&gt; &lt;span class="n"&gt;stream&lt;/span&gt;
+    &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;"exit"&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;exit&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+    &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;"cd"&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="n"&gt;x&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Unix&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;chdir&lt;/span&gt; &lt;span class="n"&gt;x&lt;/span&gt;
+    &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="s2"&gt;"cd"&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;print_error&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt;
+    &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="n"&gt;x&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;xs&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
+      &lt;span class="k"&gt;match&lt;/span&gt; &lt;span class="nn"&gt;Unix&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fork&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt;
+      &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="c"&gt;(* Child *)&lt;/span&gt;
+        &lt;span class="nn"&gt;Unix&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;execv&lt;/span&gt; &lt;span class="n"&gt;x&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nn"&gt;Array&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;of_list&lt;/span&gt; &lt;span class="n"&gt;xs&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+      &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="n"&gt;child_pid&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="c"&gt;(* Parent *)&lt;/span&gt;
+        &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Unix&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;waitpid&lt;/span&gt; &lt;span class="bp"&gt;[]&lt;/span&gt; &lt;span class="n"&gt;child_pid&lt;/span&gt;
+        &lt;span class="k"&gt;in&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt;
+  &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="nn"&gt;Stream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;iter&lt;/span&gt; &lt;span class="n"&gt;process&lt;/span&gt; &lt;span class="n"&gt;stream&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;I found that this worked well enough for getting started and running
+some simple commands like &lt;code&gt;/usr/bin/ls -lah&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;In order to get output redirection and &lt;code&gt;&amp;amp;&lt;/code&gt; to work, I realized I would
+need to upgrade the program's parsing capabilities. At this point I
+switched from representing user input with a &lt;code&gt;string list&lt;/code&gt; to a variant type:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;type&lt;/span&gt; &lt;span class="n"&gt;exec&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+  &lt;span class="n"&gt;executable&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+  &lt;span class="n"&gt;arguments&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;string&lt;/span&gt; &lt;span class="kt"&gt;list&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+  &lt;span class="n"&gt;output&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;string&lt;/span&gt; &lt;span class="n"&gt;option&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+
+&lt;span class="k"&gt;type&lt;/span&gt; &lt;span class="n"&gt;line&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+  &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;NoOp&lt;/span&gt;
+  &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;ChangeDirectory&lt;/span&gt; &lt;span class="k"&gt;of&lt;/span&gt; &lt;span class="kt"&gt;string&lt;/span&gt;
+  &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;PathChange&lt;/span&gt; &lt;span class="k"&gt;of&lt;/span&gt; &lt;span class="kt"&gt;string&lt;/span&gt; &lt;span class="kt"&gt;list&lt;/span&gt;
+  &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Executable&lt;/span&gt; &lt;span class="k"&gt;of&lt;/span&gt; &lt;span class="n"&gt;exec&lt;/span&gt; &lt;span class="kt"&gt;list&lt;/span&gt;
+  &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Quit&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;At this point, I found the OCaml compiler (and its emacs integrations,
+&lt;code&gt;merlin&lt;/code&gt; and &lt;code&gt;tuareg&lt;/code&gt;), very helpful for refactoring. I would revise
+my types to make them better reflect the data I wanted to model, and
+the compiler would helpfully point out all of the things I needed to
+revise to support the new model.&lt;/p&gt;
+&lt;p&gt;The last phase of the project was to add support for output
+redirection and parallel commands. To do this, I introduced an
+Angstrom parser, and re-implemented support for &lt;code&gt;cd&lt;/code&gt;, &lt;code&gt;exit&lt;/code&gt;, and
+&lt;code&gt;path&lt;/code&gt;. That allowed me to get familiar with the parser combinators
+&lt;code&gt;*&amp;gt;&lt;/code&gt; (which discards matched input), &lt;code&gt;many&lt;/code&gt;, and &lt;code&gt;choice&lt;/code&gt;, before
+attempting the more complicated parsers needed to support &lt;code&gt;&amp;amp;&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Although the type system will protect you from a number of silly
+mistakes, it isn't a silver bullet. I spent an hour or so confused
+about why one of my parsers would go into an infinite loop before
+realizing I needed to use &lt;code&gt;many1&lt;/code&gt; instead of &lt;code&gt;many&lt;/code&gt;. I think this is
+the sort of mistake I would learn to avoid if I spend more time
+working with Angstrom.&lt;/p&gt;
+&lt;p&gt;The compiler also can't help you from making dumb API mistakes. At one
+point I couldn't figure out why output redirection wasn't working
+correctly before I realized I had mis-ordered the arguments to &lt;code&gt;dup2&lt;/code&gt;;
+again, I suspect this is something I'll spend less time on as I get
+more familiar with the Unix API.&lt;/p&gt;
+&lt;h2&gt;Discussion&lt;/h2&gt;
+&lt;p&gt;As I worked through this project, I started to appreciate how OCaml
+chooses "good defaults" for my code (especially immutable data)
+without forbidding me from working in an imperative mode when I need
+to.&lt;/p&gt;
+&lt;p&gt;For example, I found that the function responsible for running a child
+process was most natural to express with imperative language features:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;run_executable&lt;/span&gt; &lt;span class="n"&gt;path&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;&lt;span class="n"&gt;executable&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="n"&gt;arguments&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="n"&gt;output&lt;/span&gt;&lt;span class="o"&gt;}&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;full_paths&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;List&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;map&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="k"&gt;fun&lt;/span&gt; &lt;span class="n"&gt;p&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;p&lt;/span&gt; &lt;span class="o"&gt;^&lt;/span&gt; &lt;span class="s2"&gt;"/"&lt;/span&gt; &lt;span class="o"&gt;^&lt;/span&gt; &lt;span class="n"&gt;executable&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="n"&gt;path&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;executables&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;List&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt; &lt;span class="n"&gt;full_paths&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;executable&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;present&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;List&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;filter&lt;/span&gt; &lt;span class="n"&gt;executable_present&lt;/span&gt; &lt;span class="n"&gt;executables&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+
+  &lt;span class="k"&gt;match&lt;/span&gt; &lt;span class="n"&gt;present&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt;
+  &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="bp"&gt;[]&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;print_error&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="nc"&gt;None&lt;/span&gt;
+  &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="n"&gt;x&lt;/span&gt; &lt;span class="o"&gt;::&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
+    &lt;span class="k"&gt;match&lt;/span&gt; &lt;span class="nn"&gt;Unix&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fork&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt;
+    &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="c"&gt;(* Child *)&lt;/span&gt;
+       &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;out&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;match&lt;/span&gt; &lt;span class="n"&gt;output&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt;
+         &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Some&lt;/span&gt; &lt;span class="n"&gt;filename&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Unix&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;openfile&lt;/span&gt; &lt;span class="n"&gt;filename&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="nn"&gt;Unix&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nc"&gt;O_TRUNC&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="nn"&gt;Unix&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nc"&gt;O_WRONLY&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="nn"&gt;Unix&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nc"&gt;O_CREAT&lt;/span&gt; &lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="mo"&gt;0o640&lt;/span&gt;
+         &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;None&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Unix&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;stdout&lt;/span&gt;
+       &lt;span class="k"&gt;in&lt;/span&gt;
+       &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;err&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;match&lt;/span&gt; &lt;span class="n"&gt;output&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt;
+         &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;None&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Unix&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;stderr&lt;/span&gt;
+         &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;out&lt;/span&gt;
+       &lt;span class="k"&gt;in&lt;/span&gt;
+       &lt;span class="nn"&gt;Unix&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;dup2&lt;/span&gt; &lt;span class="n"&gt;out&lt;/span&gt; &lt;span class="nn"&gt;Unix&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;stdout&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+       &lt;span class="nn"&gt;Unix&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;dup2&lt;/span&gt; &lt;span class="n"&gt;err&lt;/span&gt; &lt;span class="nn"&gt;Unix&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;stderr&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+       &lt;span class="nn"&gt;Unix&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;execv&lt;/span&gt; &lt;span class="n"&gt;x&lt;/span&gt; &lt;span class="o"&gt;@@&lt;/span&gt; &lt;span class="nn"&gt;Array&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;of_list&lt;/span&gt; &lt;span class="o"&gt;@@&lt;/span&gt; &lt;span class="n"&gt;executable&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;arguments&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+    &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="n"&gt;child_pid&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="c"&gt;(* Parent *)&lt;/span&gt;
+      &lt;span class="nc"&gt;Some&lt;/span&gt; &lt;span class="n"&gt;child_pid&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Writing this way made it easy for me to switch between C and OCaml; in
+both languages, we follow a pattern of calling &lt;code&gt;fork&lt;/code&gt;, then &lt;code&gt;execv&lt;/code&gt; in
+the child process. The fact that I can easily re-use my knowledge of
+the UNIX APIs across different programming languages is one of the
+main reasons I'm excited to learn more systems programming concepts!&lt;/p&gt;
+&lt;p&gt;Variants and pattern matching are features I miss when working in
+languages like Python. These features make it so easy to look at a
+function like:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;main&lt;/span&gt; &lt;span class="n"&gt;stream&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;path&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ref&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;"/bin"&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;process&lt;/span&gt; &lt;span class="n"&gt;text&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+    &lt;span class="k"&gt;match&lt;/span&gt; &lt;span class="nn"&gt;Parser&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;parse_line&lt;/span&gt; &lt;span class="n"&gt;text&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt;
+    &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Error&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;print_error&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt;
+    &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Ok&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nc"&gt;NoOp&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="c"&gt;(* Empty lines should just be treated as no-ops. *)&lt;/span&gt;
+    &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Ok&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nc"&gt;Quit&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;exit&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+    &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Ok&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nc"&gt;ChangeDirectory&lt;/span&gt; &lt;span class="n"&gt;x&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;change_directory&lt;/span&gt; &lt;span class="n"&gt;x&lt;/span&gt;
+    &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Ok&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nc"&gt;PathChange&lt;/span&gt; &lt;span class="n"&gt;paths&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
+      &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;cwd&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Unix&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getcwd&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+      &lt;span class="n"&gt;path&lt;/span&gt; &lt;span class="o"&gt;:=&lt;/span&gt; &lt;span class="nn"&gt;List&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;map&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;amend_path&lt;/span&gt; &lt;span class="n"&gt;cwd&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="n"&gt;paths&lt;/span&gt;
+    &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Ok&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nc"&gt;Executable&lt;/span&gt; &lt;span class="n"&gt;execs&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;run_executables&lt;/span&gt; &lt;span class="o"&gt;!&lt;/span&gt;&lt;span class="n"&gt;path&lt;/span&gt; &lt;span class="n"&gt;execs&lt;/span&gt;
+  &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="nn"&gt;Stream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;iter&lt;/span&gt; &lt;span class="n"&gt;process&lt;/span&gt; &lt;span class="n"&gt;stream&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;and quickly understand all of the different commands the shell can process.&lt;/p&gt;
+&lt;p&gt;Although it took me some time to get up and running with Angstrom, I
+find that I strongly prefer working with parser combinators to writing
+an imperative parser (as I've had to do in Python and Java). Angstrom
+makes it easy to build up small parsers and test them in isolation
+before composing them into the larger parser you need. If I planned to
+develop a more robust shell, I would probably break &lt;code&gt;Parser&lt;/code&gt; out into
+its own module, with separate unit tests.&lt;/p&gt;
+&lt;h2&gt;Feedback&lt;/h2&gt;
+&lt;p&gt;If you give this project a try, let me know how it turned out! I'm
+interested in adding more tutorial resources to the OCaml ecosystem,
+so feel free to post a PR or issue to
+&lt;a href="https://github.com/jsthomas/simple-ocaml-shell"&gt;simple-ocaml-shell&lt;/a&gt;
+if you have ideas about how to make these resources better.&lt;/p&gt;</content><category term="OCaml"></category></entry><entry><title>Microbenchmarking Implementations of Map in OCaml</title><link href="https://jsthomas.github.io/map-comparison.html" rel="alternate"></link><published>2017-06-06T00:00:00-04:00</published><updated>2017-06-06T00:00:00-04:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2017-06-06:/map-comparison.html</id><summary type="html">&lt;p&gt;A comparison of different implementations of map in OCaml&lt;/p&gt;</summary><content type="html">&lt;p&gt;&lt;code&gt;Map&lt;/code&gt; is one of the first higher-order functions I remember
 encountering when I learned some rudimentary functional programming
 topics as an undergraduate. More recently I began learning OCaml. The
 &lt;code&gt;map&lt;/code&gt;
