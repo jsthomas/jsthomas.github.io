@@ -235,8 +235,8 @@ strongly prefer working with parser combinators to writing an
 imperative parser (as I've had to do in Python and Java). Angstrom
 makes it easy to build up small parsers and test them in isolation
 before composing them into the larger parser you really need. If I
-planned to develop a more robust shell, I would probably break
-`Parser` out into its own module, with separate unit tests.
+planned to develop a shell with more features, I would probably break
+`Parser` out into its own file with separate unit tests.
 
 ## Feedback
 
