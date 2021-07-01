@@ -10,7 +10,7 @@ delightful book [_Operating Systems: Three Easy
 Pieces_](https://pages.cs.wisc.edu/~remzi/OSTEP/) by Remzi
 Arpaci-Dusseau and Andrea Arpaci-Dusseau. Besides great exposition,
 the materials for this book include a number of interesting projects,
-one of which is to [build a
+one of which is to [write a
 shell](https://github.com/remzi-arpacidusseau/ostep-projects/tree/master/processes-shell).
 
 The project materials, a set of shell scripts that define tests, are
@@ -44,7 +44,7 @@ when inputs are malformed.
 
 ## Concepts
 
-There are three topics things I learned working through this project:
+There are three main topics I studied while working on this project:
 
 1. The `Unix` module, especially `fork` and
 	`execv`. [This
@@ -53,9 +53,9 @@ There are three topics things I learned working through this project:
 	speed. The man-pages were also useful.
 
 2. The [`Stream`](https://ocaml.org/api/Stream.html) module. Streams
-   in OCaml are roughly analogous to generators in Python; they allowed
-   me to use a single type (a `string Stream.t`) to represent commands
-   coming from an interactive session or a batch file.
+   in OCaml are roughly analogous to generators in Python; they
+   allowed me to use a single type (a `string Stream.t`) to represent
+   commands coming from an interactive session or a batch file.
 
 3. The [Angstrom](https://github.com/inhabitedtype/angstrom)
    parser-combinator library. I used this library to determine whether
@@ -85,7 +85,7 @@ a `Stream`:
 ```ocaml
 let prompt_stream =
   let f _ =
-    Printf.printf "wish> ";
+    Printf.printf "osh> ";
     Some (read_line ()) in
   Stream.from f
 
@@ -105,10 +105,10 @@ let file_stream filename =
 It's useful to do this part first, since batch input will allow you to
 start running the tests.
 
-Once I could get my shell to fail all 22 test cases, I started adding
-the simpler built-in capabilities, `cd` and `exit`. (It may be useful
-to know that `./test-osh.sh -c` will run all 22 tests, without
-stopping at the first one that fails.)
+Once I could get `osh` to fail all 22 test cases, I started adding the
+simpler built-in commands `cd` and `exit`. (It may be useful to know
+that `./test-osh.sh -c` will run all 22 tests, without stopping at the
+first one that fails.)
 
 My first version of `main` just treated user input as a list of strings, like this:
 ```ocaml
@@ -136,8 +136,8 @@ I found that this worked well enough for getting started and running
 some simple commands like `/usr/bin/ls -lah`.
 
 In order to get output redirection and `&` to work, I realized I would
-need to upgrade the program's parsing capabilities. At this point I
-switched from representing user input with a `string list` to a variant type:
+need to upgrade the program's parsing capabilities. I switched from
+representing user input with a `string list` to a variant type:
 
 ```ocaml
 type exec = {
@@ -154,31 +154,26 @@ type line =
   | Quit
 ```
 
-At this point, I found the OCaml compiler (and its emacs integrations,
-`merlin` and `tuareg`), very helpful for refactoring. I would revise
-my types to make them better reflect the data I wanted to model, and
-the compiler would helpfully point out all of the things I needed to
-revise to support the new model.
+I found the OCaml compiler (and its emacs integrations, `merlin` and
+`tuareg`) very helpful for refactoring. When I revised my types to
+make them better reflect the data I wanted to model, the compiler
+helpfully pointed out all of the things I needed to revise. At this
+point, I introduced an Angstrom parser and re-implemented support for
+`cd`, `exit`, and `path`. That allowed me to get familiar with the
+parser combinators `*>`, `many`, and `choice`, before attempting the
+(slightly) more complicated parsers needed to support `&` and `>`.
 
-The last phase of the project was to add support for output
-redirection and parallel commands. To do this, I introduced an
-Angstrom parser, and re-implemented support for `cd`, `exit`, and
-`path`. That allowed me to get familiar with the parser combinators
-`*>` (which discards matched input), `many`, and `choice`, before
-attempting the more complicated parsers needed to support `&`.
+The type system will protected me from a number of silly mistakes, but
+it isn't a silver bullet. I spent an hour confused about why one of my
+parsers would go into an infinite loop before realizing I needed to
+use `many1` instead of `many`. I think this is the sort of mistake I
+would learn to avoid if I spend more time working with Angstrom.
 
-Although the type system will protect you from a number of silly
-mistakes, it isn't a silver bullet. I spent an hour or so confused
-about why one of my parsers would go into an infinite loop before
-realizing I needed to use `many1` instead of `many`. I think this is
-the sort of mistake I would learn to avoid if I spend more time
-working with Angstrom.
-
-The compiler also can't help you from making dumb API mistakes. At one
-point I couldn't figure out why output redirection wasn't working
-correctly before I realized I had mis-ordered the arguments to `dup2`;
-again, I suspect this is something I'll spend less time on as I get
-more familiar with the Unix API.
+The compiler also didn't prevent me from making dumb API mistakes. At
+one point I couldn't figure out why output redirection wasn't working,
+then I realized I had mis-ordered the arguments to `dup2`. Again, I
+suspect this is something I'll spend less time on as I get more
+familiar with the Unix API.
 
 ## Discussion
 
@@ -243,16 +238,16 @@ let main stream =
   Stream.iter process stream
 ```
 
-and quickly understand all of the different commands the shell can process.
+and quickly understand all of the different commands `osh` can
+process.
 
 Although it took me some time to get up and running with Angstrom, I
-find that I strongly prefer working with parser combinators to writing
-an imperative parser (as I've had to do in Python and Java). Angstrom
+strongly prefer working with parser combinators to writing an
+imperative parser (as I've had to do in Python and Java). Angstrom
 makes it easy to build up small parsers and test them in isolation
-before composing them into the larger parser you need. If I planned to
-develop a more robust shell, I would probably break `Parser` out into
-its own module, with separate unit tests.
-
+before composing them into the larger parser you really need. If I
+planned to develop a more robust shell, I would probably break
+`Parser` out into its own module, with separate unit tests.
 
 ## Feedback
 
