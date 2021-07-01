@@ -13,8 +13,8 @@ C, but I worked through the exercise in OCaml; you can find the final
 result &lt;a href="https://github.com/jsthomas/simple-ocaml-shell"&gt;in this
 repo&lt;/a&gt;. This blog post
 is a short experience report; if you're interested in working on a
-beginner OCaml project, hopefully it can provides some useful
-scaffolding for your studies.&lt;/p&gt;
+beginner OCaml project, hopefully it provides some useful scaffolding
+for your studies.&lt;/p&gt;
 &lt;h2&gt;Shell features&lt;/h2&gt;
 &lt;p&gt;The shell I built (&lt;code&gt;osh&lt;/code&gt;) has a somewhat limited feature set. It:&lt;/p&gt;
 &lt;ul&gt;
