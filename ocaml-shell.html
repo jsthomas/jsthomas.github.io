@@ -45,7 +45,7 @@ delightful book <a href="https://pages.cs.wisc.edu/~remzi/OSTEP/"><em>Operating 
 Pieces</em></a> by Remzi
 Arpaci-Dusseau and Andrea Arpaci-Dusseau. Besides great exposition,
 the materials for this book include a number of interesting projects,
-one of which is to <a href="https://github.com/remzi-arpacidusseau/ostep-projects/tree/master/processes-shell">build a
+one of which is to <a href="https://github.com/remzi-arpacidusseau/ostep-projects/tree/master/processes-shell">write a
 shell</a>.</p>
 <p>The project materials, a set of shell scripts that define tests, are
 language agnostic. I believe the authors intended for students to use
@@ -78,7 +78,7 @@ of commands&gt;</code>) as well as an interactive mode. A final simplifying
 assumption is that the project will only provide a basic error message
 when inputs are malformed.</p>
 <h2>Concepts</h2>
-<p>There are three topics things I learned working through this project:</p>
+<p>There are three main topics I studied while working on this project:</p>
 <ol>
 <li>
 <p>The <code>Unix</code> module, especially <code>fork</code> and
@@ -89,9 +89,9 @@ when inputs are malformed.</p>
 </li>
 <li>
 <p>The <a href="https://ocaml.org/api/Stream.html"><code>Stream</code></a> module. Streams
-   in OCaml are roughly analogous to generators in Python; they allowed
-   me to use a single type (a <code>string Stream.t</code>) to represent commands
-   coming from an interactive session or a batch file.</p>
+   in OCaml are roughly analogous to generators in Python; they
+   allowed me to use a single type (a <code>string Stream.t</code>) to represent
+   commands coming from an interactive session or a batch file.</p>
 </li>
 <li>
 <p>The <a href="https://github.com/inhabitedtype/angstrom">Angstrom</a>
@@ -117,7 +117,7 @@ added the ability to represent either interactive or batch input with
 a <code>Stream</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="n">prompt_stream</span> <span class="o">=</span>
   <span class="k">let</span> <span class="n">f</span> <span class="o">_</span> <span class="o">=</span>
-    <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"wish&gt; "</span><span class="o">;</span>
+    <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"osh&gt; "</span><span class="o">;</span>
     <span class="nc">Some</span> <span class="o">(</span><span class="n">read_line</span> <span class="bp">()</span><span class="o">)</span> <span class="k">in</span>
   <span class="nn">Stream</span><span class="p">.</span><span class="n">from</span> <span class="n">f</span>
 
@@ -135,10 +135,10 @@ a <code>Stream</code>:</p>
 </code></pre></div>
 <p>It's useful to do this part first, since batch input will allow you to
 start running the tests.</p>
-<p>Once I could get my shell to fail all 22 test cases, I started adding
-the simpler built-in capabilities, <code>cd</code> and <code>exit</code>. (It may be useful
-to know that <code>./test-osh.sh -c</code> will run all 22 tests, without
-stopping at the first one that fails.)</p>
+<p>Once I could get <code>osh</code> to fail all 22 test cases, I started adding the
+simpler built-in commands <code>cd</code> and <code>exit</code>. (It may be useful to know
+that <code>./test-osh.sh -c</code> will run all 22 tests, without stopping at the
+first one that fails.)</p>
 <p>My first version of <code>main</code> just treated user input as a list of strings, like this:</p>
 <div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="k">rec</span> <span class="n">main</span> <span class="n">stream</span> <span class="o">=</span>
   <span class="k">let</span> <span class="n">parse</span> <span class="n">text</span> <span class="o">=</span> <span class="nn">String</span><span class="p">.</span><span class="n">split_on_char</span> <span class="sc">' '</span> <span class="n">text</span> <span class="k">in</span>
@@ -162,8 +162,8 @@ stopping at the first one that fails.)</p>
 <p>I found that this worked well enough for getting started and running
 some simple commands like <code>/usr/bin/ls -lah</code>.</p>
 <p>In order to get output redirection and <code>&amp;</code> to work, I realized I would
-need to upgrade the program's parsing capabilities. At this point I
-switched from representing user input with a <code>string list</code> to a variant type:</p>
+need to upgrade the program's parsing capabilities. I switched from
+representing user input with a <code>string list</code> to a variant type:</p>
 <div class="highlight"><pre><span></span><code><span class="k">type</span> <span class="n">exec</span> <span class="o">=</span> <span class="o">{</span>
   <span class="n">executable</span><span class="o">:</span> <span class="kt">string</span><span class="o">;</span>
   <span class="n">arguments</span><span class="o">:</span> <span class="kt">string</span> <span class="kt">list</span><span class="o">;</span>
@@ -177,28 +177,24 @@ switched from representing user input with a <code>string list</code> to a varia
   <span class="o">|</span> <span class="nc">Executable</span> <span class="k">of</span> <span class="n">exec</span> <span class="kt">list</span>
   <span class="o">|</span> <span class="nc">Quit</span>
 </code></pre></div>
-<p>At this point, I found the OCaml compiler (and its emacs integrations,
-<code>merlin</code> and <code>tuareg</code>), very helpful for refactoring. I would revise
-my types to make them better reflect the data I wanted to model, and
-the compiler would helpfully point out all of the things I needed to
-revise to support the new model.</p>
-<p>The last phase of the project was to add support for output
-redirection and parallel commands. To do this, I introduced an
-Angstrom parser, and re-implemented support for <code>cd</code>, <code>exit</code>, and
-<code>path</code>. That allowed me to get familiar with the parser combinators
-<code>*&gt;</code> (which discards matched input), <code>many</code>, and <code>choice</code>, before
-attempting the more complicated parsers needed to support <code>&amp;</code>.</p>
-<p>Although the type system will protect you from a number of silly
-mistakes, it isn't a silver bullet. I spent an hour or so confused
-about why one of my parsers would go into an infinite loop before
-realizing I needed to use <code>many1</code> instead of <code>many</code>. I think this is
-the sort of mistake I would learn to avoid if I spend more time
-working with Angstrom.</p>
-<p>The compiler also can't help you from making dumb API mistakes. At one
-point I couldn't figure out why output redirection wasn't working
-correctly before I realized I had mis-ordered the arguments to <code>dup2</code>;
-again, I suspect this is something I'll spend less time on as I get
-more familiar with the Unix API.</p>
+<p>I found the OCaml compiler (and its emacs integrations, <code>merlin</code> and
+<code>tuareg</code>) very helpful for refactoring. When I revised my types to
+make them better reflect the data I wanted to model, the compiler
+helpfully pointed out all of the things I needed to revise. At this
+point, I introduced an Angstrom parser and re-implemented support for
+<code>cd</code>, <code>exit</code>, and <code>path</code>. That allowed me to get familiar with the
+parser combinators <code>*&gt;</code>, <code>many</code>, and <code>choice</code>, before attempting the
+(slightly) more complicated parsers needed to support <code>&amp;</code> and <code>&gt;</code>.</p>
+<p>The type system will protected me from a number of silly mistakes, but
+it isn't a silver bullet. I spent an hour confused about why one of my
+parsers would go into an infinite loop before realizing I needed to
+use <code>many1</code> instead of <code>many</code>. I think this is the sort of mistake I
+would learn to avoid if I spend more time working with Angstrom.</p>
+<p>The compiler also didn't prevent me from making dumb API mistakes. At
+one point I couldn't figure out why output redirection wasn't working,
+then I realized I had mis-ordered the arguments to <code>dup2</code>. Again, I
+suspect this is something I'll spend less time on as I get more
+familiar with the Unix API.</p>
 <h2>Discussion</h2>
 <p>As I worked through this project, I started to appreciate how OCaml
 chooses "good defaults" for my code (especially immutable data)
@@ -253,14 +249,15 @@ function like:</p>
   <span class="k">in</span>
   <span class="nn">Stream</span><span class="p">.</span><span class="n">iter</span> <span class="n">process</span> <span class="n">stream</span>
 </code></pre></div>
-<p>and quickly understand all of the different commands the shell can process.</p>
+<p>and quickly understand all of the different commands <code>osh</code> can
+process.</p>
 <p>Although it took me some time to get up and running with Angstrom, I
-find that I strongly prefer working with parser combinators to writing
-an imperative parser (as I've had to do in Python and Java). Angstrom
+strongly prefer working with parser combinators to writing an
+imperative parser (as I've had to do in Python and Java). Angstrom
 makes it easy to build up small parsers and test them in isolation
-before composing them into the larger parser you need. If I planned to
-develop a more robust shell, I would probably break <code>Parser</code> out into
-its own module, with separate unit tests.</p>
+before composing them into the larger parser you really need. If I
+planned to develop a more robust shell, I would probably break
+<code>Parser</code> out into its own module, with separate unit tests.</p>
 <h2>Feedback</h2>
 <p>If you give this project a try, let me know how it turned out! I'm
 interested in adding more tutorial resources to the OCaml ecosystem,
