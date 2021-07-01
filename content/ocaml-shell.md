@@ -19,8 +19,8 @@ C, but I worked through the exercise in OCaml; you can find the final
 result [in this
 repo](https://github.com/jsthomas/simple-ocaml-shell). This blog post
 is a short experience report; if you're interested in working on a
-beginner OCaml project, hopefully it can provides some useful
-scaffolding for your studies.
+beginner OCaml project, hopefully it provides some useful scaffolding
+for your studies.
 
 ## Shell features
 
