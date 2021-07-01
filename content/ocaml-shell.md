@@ -9,8 +9,8 @@ Center](https://www.recurse.com/). Currently I'm reading the
 delightful book [_Operating Systems: Three Easy
 Pieces_](https://pages.cs.wisc.edu/~remzi/OSTEP/) by Remzi
 Arpaci-Dusseau and Andrea Arpaci-Dusseau. Besides great exposition,
-the materials for this book include a number of interesting projects,
-one of which is to [write a
+the book includes several interesting projects, one of which is to
+[write a
 shell](https://github.com/remzi-arpacidusseau/ostep-projects/tree/master/processes-shell).
 
 The project materials, a set of shell scripts that define tests, are
@@ -39,8 +39,8 @@ The shell I built (`osh`) has a somewhat limited feature set. It:
 Other niceties, like tab completion and pipes, aren't supported. To
 facilitate testing, the shell can run in a batch mode (`osh <my file
 of commands>`) as well as an interactive mode. A final simplifying
-assumption is that the project will only provide a basic error message
-when inputs are malformed.
+assumption is that `osh` only provides a basic error message when
+inputs are malformed.
 
 ## Concepts
 
@@ -77,10 +77,9 @@ library provides. I also spent a fair amount of time experimenting in
 
 Here is a rough outline for how I built my shell.
 
-First, I defined a main function and worked on getting a line of text
-from `stdin` and echoing it back to the user. Shortly after that, I
-added the ability to represent either interactive or batch input with
-a `Stream`:
+First, I defined a main function that would fetch a line of text from
+`stdin` and echo it back to the user. Then I added the ability to
+represent either interactive or batch input with a `Stream`:
 
 ```ocaml
 let prompt_stream =
@@ -102,15 +101,14 @@ let file_stream filename =
   Stream.from f
 ```
 
-It's useful to do this part first, since batch input will allow you to
-start running the tests.
+It's useful to do this part as early as possible, since batch input
+allows you to run the tests.
 
 Once I could get `osh` to fail all 22 test cases, I started adding the
-simpler built-in commands `cd` and `exit`. (It may be useful to know
-that `./test-osh.sh -c` will run all 22 tests, without stopping at the
-first one that fails.)
+simpler built-in commands `cd` and `exit`. (Note `./test-osh.sh -c`
+will run all 22 tests, without stopping at the first one that fails.)
 
-My first version of `main` just treated user input as a list of strings, like this:
+My first version of `main` just treated user input as `string list`:
 ```ocaml
 let rec main stream =
   let parse text = String.split_on_char ' ' text in
@@ -132,11 +130,9 @@ let rec main stream =
   Stream.iter process stream
 ```
 
-I found that this worked well enough for getting started and running
-some simple commands like `/usr/bin/ls -lah`.
-
-In order to get output redirection and `&` to work, I realized I would
-need to upgrade the program's parsing capabilities. I switched from
+This worked well enough for running simple commands like `/usr/bin/ls
+-lah`. In order to get output redirection and `&` to work, I needed to
+upgrade the program's parsing capabilities. I switched from
 representing user input with a `string list` to a variant type:
 
 ```ocaml
@@ -156,24 +152,18 @@ type line =
 
 I found the OCaml compiler (and its emacs integrations, `merlin` and
 `tuareg`) very helpful for refactoring. When I revised my types to
-make them better reflect the data I wanted to model, the compiler
-helpfully pointed out all of the things I needed to revise. At this
-point, I introduced an Angstrom parser and re-implemented support for
-`cd`, `exit`, and `path`. That allowed me to get familiar with the
-parser combinators `*>`, `many`, and `choice`, before attempting the
-(slightly) more complicated parsers needed to support `&` and `>`.
+make them better reflect the data I wanted to model, type errors
+identified all of the places I needed to update. At this point, I
+introduced an Angstrom parser and re-implemented support for `cd`,
+`exit`, and `path`. That allowed me to get familiar with the parser
+combinators `*>`, `many`, and `choice`, before attempting the more
+complicated parsers needed to support `&` and `>`.
 
-The type system will protected me from a number of silly mistakes, but
-it isn't a silver bullet. I spent an hour confused about why one of my
+The type system protected me from a number of silly mistakes, but it
+wasn't a silver bullet. I spent an hour confused about why one of my
 parsers would go into an infinite loop before realizing I needed to
 use `many1` instead of `many`. I think this is the sort of mistake I
-would learn to avoid if I spend more time working with Angstrom.
-
-The compiler also didn't prevent me from making dumb API mistakes. At
-one point I couldn't figure out why output redirection wasn't working,
-then I realized I had mis-ordered the arguments to `dup2`. Again, I
-suspect this is something I'll spend less time on as I get more
-familiar with the Unix API.
+would learn to avoid if I spent more time working with Angstrom.
 
 ## Discussion
 
@@ -238,8 +228,7 @@ let main stream =
   Stream.iter process stream
 ```
 
-and quickly understand all of the different commands `osh` can
-process.
+and quickly understand all of the different commands `osh` supports.
 
 Although it took me some time to get up and running with Angstrom, I
 strongly prefer working with parser combinators to writing an
