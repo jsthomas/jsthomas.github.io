@@ -35,7 +35,7 @@ requirements for the project were as follows:
 - The API will allow creating, reading, and deleting "sensors". A
   sensor is an abstract IoT device that measures a floating point
   quantity at a specific cadence (for example a weather station
-  measuring the air temperature once per hour).
+  measuring average hourly windspeed).
 - Every sensor gets an API key that allows it to upload (POST) data to
   an endpoint.
 - A GET endpoint will allow users to retrieve the data a sensor
@@ -71,10 +71,9 @@ accompany Dream. Since I had previously written an
 of how to use Dream with a dockerized PostrgreSQL container, I used
 that as a starting point.
 
-It's useful to have some sort of way to run (and re-run) ad-hoc
-requests against the API during development. I used
-[Insomnia](https://insomnia.rest/) for this, but other tools like
-`curl` would work too.
+It's useful to have a way to run (and re-run) ad-hoc requests against
+the API during development. I used [Insomnia](https://insomnia.rest/)
+for this, but other tools like `curl` would work too.
 
 ## Adding an endpoint
 
@@ -114,14 +113,21 @@ functions are called `login_doc_of_yojson` and `yojson_of_login_doc`.
 My `login` handler looked roughly like this:
 ```ocaml
 let json_receiver json_parser handler request =
-  try%lwt
-    let%lwt body = Dream.body request in
-    let json = body
-               |> Yojson.Safe.from_string
-               |> json_parser in
-    handler json request
-  with _ ->
-    Dream.empty `Bad_Request
+  let%lwt body = Dream.body request in
+  let parse =
+    try
+      Some (body
+      |> Yojson.Safe.from_string
+      |> json_parser)
+    with _ ->
+      None
+  in
+  match parse with
+  | Some doc -> handler doc request
+  | None ->
+    { error="Received invalid JSON input." }
+    |> yojson_of_error_doc
+    |> json_response ~status: `Bad_Request
 
 
 let login =
@@ -143,9 +149,10 @@ If a user uploads an invalid JSON body, this will cause
 a 500 server error response. To handle this situation more gracefully,
 I introduced `json_receiver`. If the parser passed to `json_receiver`
 succeeds on the request body, the results are passed to the inner
-handler. Otherwise, the server responds with a `400 Bad Request`. This
-helps avoid introducing many `try/with` blocks across all of the
-handlers that need to parse JSON input.
+handler. Otherwise, the server responds with a `400 Bad
+Request`. Re-using `json_receiver` across my endpoints allows me to
+avoid introducing a`try/with` block any time time I need to handle
+JSON input.
 
 I decided to manage models in a separate library, `Models`. The
 build tool, `dune`, made this easy to do; I just needed separate
@@ -155,7 +162,7 @@ project. For example, if I later needed to build a CLI admin tool,
 that tool could utilize my existing queries without being exposed to
 API concerns.
 
-Inside of the `User` module, the `get` query function is defined as:
+Inside `User`, the `get` query function is defined as:
 ```ocaml
 let get =
   let query =
@@ -166,21 +173,22 @@ let get =
     Caqti_lwt.or_fail user_or_error
 ```
 
-Caqti allows us to define a function that consumes our query parameters
-(the username and password) along with a database connection, and produces a
-promise that will resolve with the results of the query. In this case,
-the types encode that the function produces an `int option` containing
-the user's primary key if the credentials are valid. (Note that it's
-not a good idea to store passwords in plain text like this, but this
-application is just for illustrative purposes.)
+Caqti allows us to define a function that consumes our query
+parameters (the username and password) along with a database
+connection, and produces a promise that will resolve with the results
+of the query. In this case, the types encode that the function
+produces an `int option` containing the user's primary key if the
+credentials are valid. (Note that it's not a good idea to store
+passwords in plain text like this; this is just for illustrative
+purposes.)
 
 Session management, the final item that the endpoint needs to address,
 is handled by Dream. The framework allows sessions to be stored in
 cookies, memory, or the database; I opted for database sessions
-because I had used similar storage in the past. Sessions allow us to
-store pairs key/value strings across requests. I used the session just
-to store the logged-in user's ID, so that the API has easy access in
-later database queries.
+because I had used similar session backends in the past. Sessions
+allow us to store pairs key/value strings across requests. I used the
+session just to store the logged-in user's ID, so that the API has
+easy access in later database queries.
 
 ## Thoughts on the Dream Router
 
@@ -212,9 +220,9 @@ let () =
 ```
 
 I really appreciate how Dream makes it possible to get a concise
-overview of the API; in some Pyramid projects, I found this was not
+overview of the API; in some Pyramid projects, I found this wasn't
 always possible. In fact, in Pyramid I sometimes struggled with subtle
-routing bugs that were not obvious until run time; having the compiler
+routing bugs that were not obvious until run time. Having the compiler
 validate the router in Dream was a welcome change.
 
 Pyramid does make it somewhat easier to handle access/permissions
@@ -225,7 +233,7 @@ and permissions. For example, given a path
 terminology) would be responsible for:
 
 - Extracting the user and article IDs (`123` and `abc456`).
-- Determining those resources actually exist in the database, and
+- Determining those records actually exist in the database, and
   passing them to the view/handler in a context record.
 - Validating that the requester has permissions to operate on those
 User and Article records.
@@ -237,7 +245,7 @@ can focus on updating database records and/or rendering HTML/JSON
 without worrying about permissions concerns.
 
 Because I didn't want to build a permissions system for my API, I
-instead incorporated User IDs into my function signatures in `Model`,
+instead incorporated User IDs into my function signatures in `Model`
 and used inner joins to model permissions. For example, here is an
 example of a query that fetches the metadata for all sensors belonging
 to a particular user:
@@ -254,8 +262,8 @@ INNER JOIN api_key k
 By joining against `user_sensor`, I ensure that a user only gets data
 for the sensors they own.
 
-Dream does make it possible to use a custom-made router, however. For
-example, Ulrik Strid has already introduced
+I should point out that Dream allows us to use a custom router,
+however! For example, Ulrik Strid has introduced
 [dream-routes](https://github.com/ulrikstrid/dream-routes), which
 allows additional type information to be encoded in routes. Writing an
 even more sophisticated router that acts more like Pyramid's resource
@@ -296,14 +304,14 @@ db.session.query(User) \
 
 Working with Caqti, a mistake in the syntax of a SQL query won't be
 discovered until runtime. I made fewer mistakes like this with
-SQLAlchemy, because most queries are written in Python and can be
+SQLAlchemy because most queries are written in Python and can be
 linted by the IDE. Another recurring point of confusion for me with
 Caqti had to do with matching the function on the `Caqti_request`
 (`R.find_opt` above) with the function invoked in `Db`
 (`Db.find_opt`); this is how we indicate that the query produces zero,
-one, zero or one, or multiple rows. If the two don't agree, the
-program won't compile and initially I struggled to understand what
-this compiler error meant:
+one, zero/one, or multiple rows. If the two don't agree, the program
+won't compile; initially I struggled to understand what this
+compiler error meant:
 
 ```
 Error: The function applied to this argument has type
@@ -319,8 +327,8 @@ needed to switch from SQLite to PostgreSQL, and changing databases was
 fairly painless because Caqti supports both.
 
 I also made use of Caqti's features for dealing with custom column
-types. Caqti does not have built-in support for JSON columns, but it
-was relatively easy to add a custom column type to handle this:
+types. Caqti does not have built-in support for JSON columns, but
+adding a custom column type to handle this was straightforward:
 
 ```
 type readings = float option array [@@deriving yojson]
@@ -344,12 +352,24 @@ matter of connecting Yojson and Caqti in the right way.
 Ever since I started building web applications in Python, I've thought
 of an API server as a big function that transforms requests into
 responses, with any nontrivial state residing in databases or services
-like S3. This mental model initially made Elixir's `Phoenix` project
-attractive, until I realized that the lack of type safety means that
-many of the refactoring issues I encountered in Python could
-reappear. Dream provides a modern web framework that matches my mental
-model for how a web server should work, with the added benefit of a
-type system that makes refactoring safe and easy.
+like S3. Dream provides a modern web framework that matches my mental
+model for how a web server should work.
+
+Web programming in OCaml "feels" a bit different than working in
+Python. In Python it's possible to get something running quickly, but
+it's also easy to forget corner cases and introduce defects that have
+to be addressed later in the application's lifecycle. An OCaml project
+requires some up-front investment, but this investment pays off later
+in several ways. First, fast feedback from the compiler (together with
+editor integrations like `merlin` and `tuareg`) helped me to identify
+issues earlier. `Yojson` made it simple to enforce that JSON requests
+and responses adhered to a fixed schema, and process inputs more
+systematically. Finally, OCaml makes refactoring safe and easy, so
+that I could confidently adapt my design as I introduced new
+requirements. In the right context, I think the advantages of using
+OCaml could significantly reduce the total lifecycle costs of
+maintaining many web applications, without reducing the pace of new
+development.
 
 ## References
 
