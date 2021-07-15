@@ -1,5 +1,347 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Joe Thomas - OCaml</title><link href="https://jsthomas.github.io/" rel="alternate"></link><link href="https://jsthomas.github.io/feeds/ocaml.atom.xml" rel="self"></link><id>https://jsthomas.github.io/</id><updated>2021-07-01T00:00:00-04:00</updated><entry><title>Let's write a shell in OCaml!</title><link href="https://jsthomas.github.io/ocaml-shell.html" rel="alternate"></link><published>2021-07-01T00:00:00-04:00</published><updated>2021-07-01T00:00:00-04:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2021-07-01:/ocaml-shell.html</id><summary type="html">&lt;p&gt;A user experience report about writing a simple shell in OCaml&lt;/p&gt;</summary><content type="html">&lt;p&gt;This Summer I'm studying OCaml and systems programming at the &lt;a href="https://www.recurse.com/"&gt;Recurse
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Joe Thomas - OCaml</title><link href="https://jsthomas.github.io/" rel="alternate"></link><link href="https://jsthomas.github.io/feeds/ocaml.atom.xml" rel="self"></link><id>https://jsthomas.github.io/</id><updated>2021-07-12T00:00:00-04:00</updated><entry><title>Writing a REST API with Dream</title><link href="https://jsthomas.github.io/ocaml-dream-api.html" rel="alternate"></link><published>2021-07-12T00:00:00-04:00</published><updated>2021-07-12T00:00:00-04:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2021-07-12:/ocaml-dream-api.html</id><summary type="html">&lt;p&gt;Writing a REST API in Dream&lt;/p&gt;</summary><content type="html">&lt;p&gt;In the last few weeks I've been building a simple REST API using the
+&lt;a href="https://aantron.github.io/dream/"&gt;Dream&lt;/a&gt; web framework. Writing APIs
+has been one major component of my paid programming work and I wanted
+to compare and contrast the experience of writing an API in a strongly
+typed functional programming language with the same workflow in a
+dynamically typed language like Python.&lt;/p&gt;
+&lt;p&gt;You can find the source code for this project
+&lt;a href="https://github.com/jsthomas/sensors"&gt;here&lt;/a&gt;. Hopefully, this repo will
+be a useful resource for anyone who wants to look at a slightly larger
+example application that uses Dream. Though I'm still a beginner, I
+was surprised how easy it was to complete familiar tasks in this
+framework. Overall, I'm optimistic about the future of web programming
+in OCaml.&lt;/p&gt;
+&lt;p&gt;This post provides a sort of "experience report" for working with
+Dream, Yojson, and Caqti. Obviously, these types of reports are highly
+subjective and you should run your own experiments too!  Because I've
+worked mostly in &lt;a href="https://trypyramid.com/"&gt;Pyramid&lt;/a&gt; and
+&lt;a href="https://www.sqlalchemy.org/"&gt;SQLAlchemy&lt;/a&gt;, those are the Python
+projects I'll compare with.&lt;/p&gt;
+&lt;h2&gt;Problem Definition&lt;/h2&gt;
+&lt;p&gt;I decided to build a API for managing time series data. My
+requirements for the project were as follows:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;The API will allow creating, reading, and deleting "sensors". A
+  sensor is an abstract IoT device that measures a floating point
+  quantity at a specific cadence (for example a weather station
+  measuring average hourly windspeed).&lt;/li&gt;
+&lt;li&gt;Every sensor gets an API key that allows it to upload (POST) data to
+  an endpoint.&lt;/li&gt;
+&lt;li&gt;A GET endpoint will allow users to retrieve the data a sensor
+  generated between two dates.&lt;/li&gt;
+&lt;li&gt;The API sends and receives data formatted as JSON and must be backed
+  by a PostgreSQL database.&lt;/li&gt;
+&lt;li&gt;The API should have &lt;code&gt;login/logout&lt;/code&gt; endpoints for a (not yet built)
+  frontend to use.&lt;/li&gt;
+&lt;li&gt;Finally, a user should only be allowed to access sensor data that
+  belongs to them.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;I chose these requirements because they cover a number of different
+read/write operations that require data formatting/parsing and
+tracking relationships between four different entities (users, keys,
+sensors, and readings).&lt;/p&gt;
+&lt;h2&gt;Dependencies and Setup&lt;/h2&gt;
+&lt;p&gt;For this build, I needed three core dependencies:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;A server to handle web requests (Dream).&lt;/li&gt;
+&lt;li&gt;Support for parsing and synthesizing JSON records.&lt;/li&gt;
+&lt;li&gt;A library for integrating with PostgreSQL.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;After a bit of research, I settled on
+&lt;a href="https://opam.ocaml.org/packages/yojson/"&gt;Yojson&lt;/a&gt; and
+&lt;a href="https://opam.ocaml.org/packages/caqti/"&gt;Caqti&lt;/a&gt; for (2) and (3)
+respectively. Both of these are fairly standard and appear in the
+excellent corpus of
+&lt;a href="https://github.com/aantron/dream/tree/master/example"&gt;examples&lt;/a&gt; that
+accompany Dream. Since I had previously written an
+&lt;a href="https://github.com/aantron/dream/tree/master/example/w-docker-postgres"&gt;example&lt;/a&gt;
+of how to use Dream with a dockerized PostrgreSQL container, I used
+that as a starting point.&lt;/p&gt;
+&lt;p&gt;It's useful to have a way to run (and re-run) ad-hoc requests against
+the API during development. I used &lt;a href="https://insomnia.rest/"&gt;Insomnia&lt;/a&gt;
+for this, but other tools like &lt;code&gt;curl&lt;/code&gt; would work too.&lt;/p&gt;
+&lt;h2&gt;Adding an endpoint&lt;/h2&gt;
+&lt;p&gt;To give a sense of my development workflow, I want to walk through my
+process for adding a simple endpoint, &lt;code&gt;/api/login&lt;/code&gt;. Inside the router,
+that endpoint looks like:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;post&lt;/span&gt; &lt;span class="s2"&gt;"/api/login"&lt;/span&gt; &lt;span class="n"&gt;login&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;In this excerpt &lt;code&gt;login&lt;/code&gt; is a "handler". Handlers are responsible for
+translating requests into responses; this is captured in their &lt;a href="https://aantron.github.io/dream/#type-handler"&gt;type
+signature&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Conceptually, the &lt;code&gt;login&lt;/code&gt; handler needs to do three things:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Receive a JSON body and confirm it's formatted as expected.&lt;/li&gt;
+&lt;li&gt;Look up the relevant user/password combination in the database.&lt;/li&gt;
+&lt;li&gt;Load the relevant session information if the credentials are valid.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;For the first part, the endpoint needs to receive a JSON payload that
+looks like &lt;code&gt;{"username": "...", "password": "..."}&lt;/code&gt;. To describe that
+payload, I introduced a simple record type:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;type&lt;/span&gt; &lt;span class="n"&gt;login_doc&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+  &lt;span class="n"&gt;username&lt;/span&gt; &lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+  &lt;span class="n"&gt;password&lt;/span&gt; &lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt; &lt;span class="o"&gt;[@@&lt;/span&gt;&lt;span class="n"&gt;deriving&lt;/span&gt; &lt;span class="n"&gt;yojson&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Adding &lt;code&gt;[@@deriving yojson]&lt;/code&gt; means the compiler can generate functions
+to convert these records to and from JSON. In this case those
+functions are called &lt;code&gt;login_doc_of_yojson&lt;/code&gt; and &lt;code&gt;yojson_of_login_doc&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;My &lt;code&gt;login&lt;/code&gt; handler looked roughly like this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;json_receiver&lt;/span&gt; &lt;span class="n"&gt;json_parser&lt;/span&gt; &lt;span class="n"&gt;handler&lt;/span&gt; &lt;span class="n"&gt;request&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="n"&gt;body&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;body&lt;/span&gt; &lt;span class="n"&gt;request&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;parse&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+    &lt;span class="k"&gt;try&lt;/span&gt;
+      &lt;span class="nc"&gt;Some&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;body&lt;/span&gt;
+      &lt;span class="o"&gt;|&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Yojson&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nn"&gt;Safe&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;from_string&lt;/span&gt;
+      &lt;span class="o"&gt;|&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;json_parser&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;with&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
+      &lt;span class="nc"&gt;None&lt;/span&gt;
+  &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;match&lt;/span&gt; &lt;span class="n"&gt;parse&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt;
+  &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Some&lt;/span&gt; &lt;span class="n"&gt;doc&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;handler&lt;/span&gt; &lt;span class="n"&gt;doc&lt;/span&gt; &lt;span class="n"&gt;request&lt;/span&gt;
+  &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;None&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
+    &lt;span class="o"&gt;{&lt;/span&gt; &lt;span class="n"&gt;error&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"Received invalid JSON input."&lt;/span&gt; &lt;span class="o"&gt;}&lt;/span&gt;
+    &lt;span class="o"&gt;|&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;yojson_of_error_doc&lt;/span&gt;
+    &lt;span class="o"&gt;|&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;json_response&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;status&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="o"&gt;`&lt;/span&gt;&lt;span class="nc"&gt;Bad_Request&lt;/span&gt;
+
+
+&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;login&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;login_base&lt;/span&gt; &lt;span class="n"&gt;login_doc&lt;/span&gt; &lt;span class="n"&gt;request&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+    &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="n"&gt;user_id&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sql&lt;/span&gt; &lt;span class="n"&gt;request&lt;/span&gt;
+        &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nn"&gt;Models&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nn"&gt;User&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get&lt;/span&gt; &lt;span class="n"&gt;login_doc&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;username&lt;/span&gt; &lt;span class="n"&gt;login_doc&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;password&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+    &lt;span class="k"&gt;match&lt;/span&gt; &lt;span class="n"&gt;user_id&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt;
+    &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Some&lt;/span&gt; &lt;span class="n"&gt;id&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
+      &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;invalidate_session&lt;/span&gt; &lt;span class="n"&gt;request&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+      &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;put_session&lt;/span&gt; &lt;span class="s2"&gt;"user"&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nn"&gt;Int&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;to_string&lt;/span&gt; &lt;span class="n"&gt;id&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="n"&gt;request&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+      &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;empty&lt;/span&gt; &lt;span class="o"&gt;`&lt;/span&gt;&lt;span class="nc"&gt;OK&lt;/span&gt;
+    &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;None&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;empty&lt;/span&gt; &lt;span class="o"&gt;`&lt;/span&gt;&lt;span class="nc"&gt;Forbidden&lt;/span&gt;
+  &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="n"&gt;json_receiver&lt;/span&gt; &lt;span class="n"&gt;login_doc_of_yojson&lt;/span&gt; &lt;span class="n"&gt;login_base&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;If a user uploads an invalid JSON body, this will cause
+&lt;code&gt;login_doc_of_yojson&lt;/code&gt; to throw an exception. By default, this produces
+a 500 server error response. To handle this situation more gracefully,
+I introduced &lt;code&gt;json_receiver&lt;/code&gt;. If the parser passed to &lt;code&gt;json_receiver&lt;/code&gt;
+succeeds on the request body, the results are passed to the inner
+handler. Otherwise, the server responds with a &lt;code&gt;400 Bad
+Request&lt;/code&gt;. Re-using &lt;code&gt;json_receiver&lt;/code&gt; across my endpoints allows me to
+avoid introducing a&lt;code&gt;try/with&lt;/code&gt; block any time time I need to handle
+JSON input.&lt;/p&gt;
+&lt;p&gt;I decided to manage models in a separate library, &lt;code&gt;Models&lt;/code&gt;. The
+build tool, &lt;code&gt;dune&lt;/code&gt;, made this easy to do; I just needed separate
+&lt;code&gt;dune&lt;/code&gt; files for the &lt;code&gt;server/model&lt;/code&gt; and &lt;code&gt;server/bin&lt;/code&gt; folders. I like
+this design because it simplifies re-use of the database portion of my
+project. For example, if I later needed to build a CLI admin tool,
+that tool could utilize my existing queries without being exposed to
+API concerns.&lt;/p&gt;
+&lt;p&gt;Inside &lt;code&gt;User&lt;/code&gt;, the &lt;code&gt;get&lt;/code&gt; query function is defined as:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;get&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;query&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+    &lt;span class="nn"&gt;R&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;find_opt&lt;/span&gt; &lt;span class="nn"&gt;T&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;tup2&lt;/span&gt; &lt;span class="nn"&gt;T&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;string&lt;/span&gt; &lt;span class="nn"&gt;T&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;string&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="nn"&gt;T&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;int&lt;/span&gt;
+      &lt;span class="s2"&gt;"SELECT id FROM app_user WHERE username = ? and password = ?"&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;fun&lt;/span&gt; &lt;span class="n"&gt;username&lt;/span&gt; &lt;span class="n"&gt;password&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="k"&gt;module&lt;/span&gt; &lt;span class="nc"&gt;Db&lt;/span&gt; &lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="nc"&gt;DB&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
+    &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="n"&gt;user_or_error&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Db&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;find_opt&lt;/span&gt; &lt;span class="n"&gt;query&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;username&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;password&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+    &lt;span class="nn"&gt;Caqti_lwt&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;or_fail&lt;/span&gt; &lt;span class="n"&gt;user_or_error&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Caqti allows us to define a function that consumes our query
+parameters (the username and password) along with a database
+connection, and produces a promise that will resolve with the results
+of the query. In this case, the types encode that the function
+produces an &lt;code&gt;int option&lt;/code&gt; containing the user's primary key if the
+credentials are valid. (Note that it's not a good idea to store
+passwords in plain text like this; this is just for illustrative
+purposes.)&lt;/p&gt;
+&lt;p&gt;Session management, the final item that the endpoint needs to address,
+is handled by Dream. The framework allows sessions to be stored in
+cookies, memory, or the database; I opted for database sessions
+because I had used similar session backends in the past. Sessions
+allow us to store pairs key/value strings across requests. I used the
+session just to store the logged-in user's ID, so that the API has
+easy access in later database queries.&lt;/p&gt;
+&lt;h2&gt;Thoughts on the Dream Router&lt;/h2&gt;
+&lt;p&gt;The final router for my server looked like this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+  &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;run&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;interface&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="s2"&gt;"0.0.0.0"&lt;/span&gt;
+  &lt;span class="o"&gt;@@&lt;/span&gt; &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;logger&lt;/span&gt;
+  &lt;span class="o"&gt;@@&lt;/span&gt; &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sql_pool&lt;/span&gt; &lt;span class="s2"&gt;"postgresql://sensors@127.0.0.1/sensors"&lt;/span&gt;
+  &lt;span class="o"&gt;@@&lt;/span&gt; &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sql_sessions&lt;/span&gt;
+  &lt;span class="o"&gt;@@&lt;/span&gt; &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;router&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;
+    &lt;span class="c"&gt;(* More endpoints here ... *)&lt;/span&gt;
+
+    &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get&lt;/span&gt; &lt;span class="s2"&gt;"/version"&lt;/span&gt; &lt;span class="n"&gt;version&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+    &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;post&lt;/span&gt; &lt;span class="s2"&gt;"/api/login"&lt;/span&gt; &lt;span class="n"&gt;login&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+    &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;post&lt;/span&gt; &lt;span class="s2"&gt;"/api/logout"&lt;/span&gt; &lt;span class="n"&gt;logout&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+
+    &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;scope&lt;/span&gt; &lt;span class="s2"&gt;"/api"&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;login_required&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;
+      &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get&lt;/span&gt; &lt;span class="s2"&gt;"/user/:user_id"&lt;/span&gt; &lt;span class="n"&gt;user&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+      &lt;span class="c"&gt;(* More endpoints here... *)&lt;/span&gt;
+    &lt;span class="o"&gt;];&lt;/span&gt;
+
+    &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;scope&lt;/span&gt; &lt;span class="s2"&gt;"/sensor"&lt;/span&gt; &lt;span class="bp"&gt;[]&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;
+      &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;post&lt;/span&gt; &lt;span class="s2"&gt;"/upload"&lt;/span&gt; &lt;span class="o"&gt;@@&lt;/span&gt; &lt;span class="n"&gt;api_key_required&lt;/span&gt; &lt;span class="n"&gt;sensor_upload&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+    &lt;span class="o"&gt;]&lt;/span&gt;
+  &lt;span class="o"&gt;]&lt;/span&gt;
+  &lt;span class="o"&gt;@@&lt;/span&gt; &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;not_found&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;I really appreciate how Dream makes it possible to get a concise
+overview of the API; in some Pyramid projects, I found this wasn't
+always possible. In fact, in Pyramid I sometimes struggled with subtle
+routing bugs that were not obvious until run time. Having the compiler
+validate the router in Dream was a welcome change.&lt;/p&gt;
+&lt;p&gt;Pyramid does make it somewhat easier to handle access/permissions
+concerns compared to Dream. Working in Pyramid, it was relatively
+common for the routes to manage some amount of parameter validation
+and permissions. For example, given a path
+&lt;code&gt;/user/123/article/abc456&lt;/code&gt;, the route (or "resources" in Pyramid
+terminology) would be responsible for:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Extracting the user and article IDs (&lt;code&gt;123&lt;/code&gt; and &lt;code&gt;abc456&lt;/code&gt;).&lt;/li&gt;
+&lt;li&gt;Determining those records actually exist in the database, and
+  passing them to the view/handler in a context record.&lt;/li&gt;
+&lt;li&gt;Validating that the requester has permissions to operate on those
+User and Article records.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;This is discussed a bit more in the Pyramid Docs under &lt;a href="https://docs.pylonsproject.org/projects/pyramid/en/latest/narr/traversal.html"&gt;URL
+traversal&lt;/a&gt;.
+Effectively, Pyramid resources mean that handler/view code downstream
+can focus on updating database records and/or rendering HTML/JSON
+without worrying about permissions concerns.&lt;/p&gt;
+&lt;p&gt;Because I didn't want to build a permissions system for my API, I
+instead incorporated User IDs into my function signatures in &lt;code&gt;Model&lt;/code&gt;
+and used inner joins to model permissions. For example, here is an
+example of a query that fetches the metadata for all sensors belonging
+to a particular user:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;SELECT&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;description&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;k&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;uuid&lt;/span&gt;
+&lt;span class="k"&gt;FROM&lt;/span&gt; &lt;span class="n"&gt;sensor&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt;
+&lt;span class="k"&gt;INNER&lt;/span&gt; &lt;span class="k"&gt;JOIN&lt;/span&gt; &lt;span class="n"&gt;user_sensor&lt;/span&gt; &lt;span class="n"&gt;us&lt;/span&gt;
+ &lt;span class="k"&gt;ON&lt;/span&gt; &lt;span class="n"&gt;us&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sensor&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;id&lt;/span&gt; &lt;span class="k"&gt;AND&lt;/span&gt; &lt;span class="n"&gt;us&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;app_user&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="err"&gt;$&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt; &lt;span class="k"&gt;AND&lt;/span&gt; &lt;span class="n"&gt;us&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sensor&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="err"&gt;$&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;
+&lt;span class="k"&gt;INNER&lt;/span&gt; &lt;span class="k"&gt;JOIN&lt;/span&gt; &lt;span class="n"&gt;api_key&lt;/span&gt; &lt;span class="n"&gt;k&lt;/span&gt;
+ &lt;span class="k"&gt;ON&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;api_key&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;k&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;id&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;By joining against &lt;code&gt;user_sensor&lt;/code&gt;, I ensure that a user only gets data
+for the sensors they own.&lt;/p&gt;
+&lt;p&gt;I should point out that Dream allows us to use a custom router,
+however! For example, Ulrik Strid has introduced
+&lt;a href="https://github.com/ulrikstrid/dream-routes"&gt;dream-routes&lt;/a&gt;, which
+allows additional type information to be encoded in routes. Writing an
+even more sophisticated router that acts more like Pyramid's resource
+system is certainly possible.&lt;/p&gt;
+&lt;h2&gt;Comparing Caqti and SQLAlchemy&lt;/h2&gt;
+&lt;p&gt;As a web programmer,especially one working on an analytics project,
+it's important to get comfortable working with the database library
+you've chosen for your project. Indeed, a significant portion of this
+project consisted of familiarizing myself with &lt;code&gt;Caqti&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Caqti is a bit different from SQLAlchemy. With SQLAlchemy, you
+typically define one class for each table. Then, using SQLAlchemy's
+metaprogramming features, those classes are used to define
+queries. For comparison, here are equivalent queries against the user
+table:&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Caqti&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;get&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;query&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+    &lt;span class="nn"&gt;R&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;find_opt&lt;/span&gt; &lt;span class="nn"&gt;T&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;tup2&lt;/span&gt; &lt;span class="nn"&gt;T&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;string&lt;/span&gt; &lt;span class="nn"&gt;T&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;string&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="nn"&gt;T&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;int&lt;/span&gt;
+      &lt;span class="s2"&gt;"SELECT id FROM app_user WHERE username = ? and password = ?"&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;fun&lt;/span&gt; &lt;span class="n"&gt;username&lt;/span&gt; &lt;span class="n"&gt;password&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="k"&gt;module&lt;/span&gt; &lt;span class="nc"&gt;Db&lt;/span&gt; &lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="nc"&gt;DB&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
+    &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="n"&gt;user_or_error&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Db&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;find_opt&lt;/span&gt; &lt;span class="n"&gt;query&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;username&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;password&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+    &lt;span class="nn"&gt;Caqti_lwt&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;or_fail&lt;/span&gt; &lt;span class="n"&gt;user_or_error&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;SQLAlchemy&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="n"&gt;db&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;session&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;query&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;User&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; \
+    &lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;filter&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;User&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;username&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;username&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;User&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;password&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;password&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;one_or_none&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Working with Caqti, a mistake in the syntax of a SQL query won't be
+discovered until runtime. I made fewer mistakes like this with
+SQLAlchemy because most queries are written in Python and can be
+linted by the IDE. Another recurring point of confusion for me with
+Caqti had to do with matching the function on the &lt;code&gt;Caqti_request&lt;/code&gt;
+(&lt;code&gt;R.find_opt&lt;/code&gt; above) with the function invoked in &lt;code&gt;Db&lt;/code&gt;
+(&lt;code&gt;Db.find_opt&lt;/code&gt;); this is how we indicate that the query produces zero,
+one, zero/one, or multiple rows. If the two don't agree, the program
+won't compile; initially I struggled to understand what this
+compiler error meant:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="n"&gt;Error&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;The&lt;/span&gt; &lt;span class="kd"&gt;function&lt;/span&gt; &lt;span class="n"&gt;applied&lt;/span&gt; &lt;span class="n"&gt;to&lt;/span&gt; &lt;span class="k"&gt;this&lt;/span&gt; &lt;span class="n"&gt;argument&lt;/span&gt; &lt;span class="n"&gt;has&lt;/span&gt; &lt;span class="n"&gt;type&lt;/span&gt;
+         &lt;span class="o"&gt;?&lt;/span&gt;&lt;span class="n"&gt;env&lt;/span&gt;&lt;span class="o"&gt;:(&lt;/span&gt;&lt;span class="n"&gt;Caqti_driver_info&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;t&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;string&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;Caqti_query&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;t&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
+         &lt;span class="o"&gt;?&lt;/span&gt;&lt;span class="n"&gt;oneshot&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="n"&gt;bool&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
+         &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="err"&gt;'&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;unit&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="o"&gt;[&amp;lt;&lt;/span&gt; &lt;span class="err"&gt;`&lt;/span&gt;&lt;span class="n"&gt;Many&lt;/span&gt; &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="err"&gt;`&lt;/span&gt;&lt;span class="n"&gt;One&lt;/span&gt; &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="err"&gt;`&lt;/span&gt;&lt;span class="n"&gt;Zero&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="err"&gt;`&lt;/span&gt;&lt;span class="n"&gt;Zero&lt;/span&gt; &lt;span class="o"&gt;])&lt;/span&gt; &lt;span class="n"&gt;Caqti_request&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;t&lt;/span&gt;
+&lt;span class="n"&gt;This&lt;/span&gt; &lt;span class="n"&gt;argument&lt;/span&gt; &lt;span class="n"&gt;cannot&lt;/span&gt; &lt;span class="n"&gt;be&lt;/span&gt; &lt;span class="n"&gt;applied&lt;/span&gt; &lt;span class="n"&gt;without&lt;/span&gt; &lt;span class="n"&gt;label&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Using Caqti became easier as I became accustomed to thinking in terms of
+prepared queries. About halfway through the project I realized I
+needed to switch from SQLite to PostgreSQL, and changing databases was
+fairly painless because Caqti supports both.&lt;/p&gt;
+&lt;p&gt;I also made use of Caqti's features for dealing with custom column
+types. Caqti does not have built-in support for JSON columns, but
+adding a custom column type to handle this was straightforward:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="n"&gt;type&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;readings&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nc"&gt;float&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;option&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;array&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;@@deriving yojson&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+
+&lt;span class="n"&gt;let&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;sql_readings&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="w"&gt;  &lt;/span&gt;&lt;span class="n"&gt;let&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;encode&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nl"&gt;a&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;readings&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="n"&gt;Ok&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;|&amp;gt;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;yojson_of_readings&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;|&amp;gt;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;Yojson&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Safe&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;to_string&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="w"&gt;  &lt;/span&gt;&lt;span class="ow"&gt;in&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="w"&gt;  &lt;/span&gt;&lt;span class="n"&gt;let&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;decode&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nc"&gt;text&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="n"&gt;Ok&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nc"&gt;text&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;|&amp;gt;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;Yojson&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Safe&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;from_string&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;|&amp;gt;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;readings_of_yojson&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="w"&gt;  &lt;/span&gt;&lt;span class="ow"&gt;in&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="w"&gt;  &lt;/span&gt;&lt;span class="n"&gt;T&lt;/span&gt;&lt;span class="p"&gt;.(&lt;/span&gt;&lt;span class="n"&gt;custom&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;encode&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;decode&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;string&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;In my case, the JSON that I needed to store consisted of arrays of
+floating point numbers, so building the custom type was simply a
+matter of connecting Yojson and Caqti in the right way.&lt;/p&gt;
+&lt;h2&gt;Discussion&lt;/h2&gt;
+&lt;p&gt;Ever since I started building web applications in Python, I've thought
+of an API server as a big function that transforms requests into
+responses, with any nontrivial state residing in databases or services
+like S3. Dream provides a modern web framework that matches my mental
+model for how a web server should work.&lt;/p&gt;
+&lt;p&gt;Web programming in OCaml "feels" a bit different than working in
+Python. In Python it's possible to get something running quickly, but
+it's also easy to forget corner cases and introduce defects that have
+to be addressed later in the application's lifecycle. An OCaml project
+requires some up-front investment, but this investment pays off later
+in several ways. First, fast feedback from the compiler (together with
+editor integrations like &lt;code&gt;merlin&lt;/code&gt; and &lt;code&gt;tuareg&lt;/code&gt;) helped me to identify
+issues earlier. &lt;code&gt;Yojson&lt;/code&gt; made it simple to enforce that JSON requests
+and responses adhered to a fixed schema, and process inputs more
+systematically. Finally, OCaml makes refactoring safe and easy, so
+that I could confidently adapt my design as I introduced new
+requirements. In the right context, I think the advantages of using
+OCaml could significantly reduce the total lifecycle costs of
+maintaining many web applications, without reducing the pace of new
+development.&lt;/p&gt;
+&lt;h2&gt;References&lt;/h2&gt;
+&lt;p&gt;I found the resources below helpful for working on this project:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;The Dream &lt;a href="https://aantron.github.io/dream/"&gt;API docs&lt;/a&gt; set a high
+  standard for readability and helped me quickly get up to speed with
+  the framework.&lt;/li&gt;
+&lt;li&gt;This &lt;a href="https://github.com/aantron/dream/tree/master/example"&gt;section&lt;/a&gt;
+  of the Dream repo has excellent examples, both for working with the
+  framework and deploying it.&lt;/li&gt;
+&lt;li&gt;I referred to Bobby Priambodo's &lt;a href="https://medium.com/@bobbypriambodo/interfacing-ocaml-and-postgresql-with-caqti-a92515bdaa11"&gt;blog
+  posts&lt;/a&gt;
+  about interfacing Caqti and PostgreSQL as I wrote the models in my project.&lt;/li&gt;
+&lt;li&gt;The Caqti
+  &lt;a href="https://paurkedal.github.io/ocaml-caqti/index.html"&gt;docs&lt;/a&gt;,
+  especially for &lt;code&gt;Caqti_type&lt;/code&gt; and &lt;code&gt;Caqti_request&lt;/code&gt; were helpful as I
+  was writing queries.&lt;/li&gt;
+&lt;li&gt;There is also an
+  &lt;a href="https://github.com/paurkedal/ocaml-caqti/blob/master/tests/bikereg.ml"&gt;example&lt;/a&gt;
+  in the Caqti repo that is worth looking through.&lt;/li&gt;
+&lt;li&gt;The README on
+  &lt;a href="https://github.com/janestreet/ppx_yojson_conv"&gt;ppx_yojson_conv&lt;/a&gt; had
+  helpful examples that I referred to while writing my own
+  JSON-related types.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;Feedback&lt;/h2&gt;
+&lt;p&gt;If you ended up looking through the source code for my API, let me
+know how what you thought! I'm interested in adding more tutorial
+resources to the OCaml ecosystem, so feel free to post a PR or issue
+to
+&lt;a href="https://github.com/jsthomas/sensors"&gt;sensors&lt;/a&gt;
+if you have ideas about how to make these resources better.&lt;/p&gt;</content><category term="OCaml"></category></entry><entry><title>Let's write a shell in OCaml!</title><link href="https://jsthomas.github.io/ocaml-shell.html" rel="alternate"></link><published>2021-07-01T00:00:00-04:00</published><updated>2021-07-01T00:00:00-04:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2021-07-01:/ocaml-shell.html</id><summary type="html">&lt;p&gt;A user experience report about writing a simple shell in OCaml&lt;/p&gt;</summary><content type="html">&lt;p&gt;This Summer I'm studying OCaml and systems programming at the &lt;a href="https://www.recurse.com/"&gt;Recurse
 Center&lt;/a&gt;. Currently I'm reading the
 delightful book &lt;a href="https://pages.cs.wisc.edu/~remzi/OSTEP/"&gt;&lt;em&gt;Operating Systems: Three Easy
 Pieces&lt;/em&gt;&lt;/a&gt; by Remzi

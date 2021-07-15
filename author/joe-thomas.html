@@ -29,7 +29,366 @@
         </div>
     </header>
     <div id="wrapper">
-        <div id="content">            <h4 class="date">Jul 01, 2021</h4>
+        <div id="content">            <h4 class="date">Jul 12, 2021</h4>
+
+            <article class="post">
+                <h2 class="title">
+                    <a href="https://jsthomas.github.io/ocaml-dream-api.html" rel="bookmark" title="Permanent Link to &quot;Writing a REST API with Dream&quot;">Writing a REST API with Dream</a>
+                </h2>
+
+                
+                
+
+                <p>In the last few weeks I've been building a simple REST API using the
+<a href="https://aantron.github.io/dream/">Dream</a> web framework. Writing APIs
+has been one major component of my paid programming work and I wanted
+to compare and contrast the experience of writing an API in a strongly
+typed functional programming language with the same workflow in a
+dynamically typed language like Python.</p>
+<p>You can find the source code for this project
+<a href="https://github.com/jsthomas/sensors">here</a>. Hopefully, this repo will
+be a useful resource for anyone who wants to look at a slightly larger
+example application that uses Dream. Though I'm still a beginner, I
+was surprised how easy it was to complete familiar tasks in this
+framework. Overall, I'm optimistic about the future of web programming
+in OCaml.</p>
+<p>This post provides a sort of "experience report" for working with
+Dream, Yojson, and Caqti. Obviously, these types of reports are highly
+subjective and you should run your own experiments too!  Because I've
+worked mostly in <a href="https://trypyramid.com/">Pyramid</a> and
+<a href="https://www.sqlalchemy.org/">SQLAlchemy</a>, those are the Python
+projects I'll compare with.</p>
+<h2>Problem Definition</h2>
+<p>I decided to build a API for managing time series data. My
+requirements for the project were as follows:</p>
+<ul>
+<li>The API will allow creating, reading, and deleting "sensors". A
+  sensor is an abstract IoT device that measures a floating point
+  quantity at a specific cadence (for example a weather station
+  measuring average hourly windspeed).</li>
+<li>Every sensor gets an API key that allows it to upload (POST) data to
+  an endpoint.</li>
+<li>A GET endpoint will allow users to retrieve the data a sensor
+  generated between two dates.</li>
+<li>The API sends and receives data formatted as JSON and must be backed
+  by a PostgreSQL database.</li>
+<li>The API should have <code>login/logout</code> endpoints for a (not yet built)
+  frontend to use.</li>
+<li>Finally, a user should only be allowed to access sensor data that
+  belongs to them.</li>
+</ul>
+<p>I chose these requirements because they cover a number of different
+read/write operations that require data formatting/parsing and
+tracking relationships between four different entities (users, keys,
+sensors, and readings).</p>
+<h2>Dependencies and Setup</h2>
+<p>For this build, I needed three core dependencies:</p>
+<ol>
+<li>A server to handle web requests (Dream).</li>
+<li>Support for parsing and synthesizing JSON records.</li>
+<li>A library for integrating with PostgreSQL.</li>
+</ol>
+<p>After a bit of research, I settled on
+<a href="https://opam.ocaml.org/packages/yojson/">Yojson</a> and
+<a href="https://opam.ocaml.org/packages/caqti/">Caqti</a> for (2) and (3)
+respectively. Both of these are fairly standard and appear in the
+excellent corpus of
+<a href="https://github.com/aantron/dream/tree/master/example">examples</a> that
+accompany Dream. Since I had previously written an
+<a href="https://github.com/aantron/dream/tree/master/example/w-docker-postgres">example</a>
+of how to use Dream with a dockerized PostrgreSQL container, I used
+that as a starting point.</p>
+<p>It's useful to have a way to run (and re-run) ad-hoc requests against
+the API during development. I used <a href="https://insomnia.rest/">Insomnia</a>
+for this, but other tools like <code>curl</code> would work too.</p>
+<h2>Adding an endpoint</h2>
+<p>To give a sense of my development workflow, I want to walk through my
+process for adding a simple endpoint, <code>/api/login</code>. Inside the router,
+that endpoint looks like:</p>
+<div class="highlight"><pre><span></span><code><span class="nn">Dream</span><span class="p">.</span><span class="n">post</span> <span class="s2">"/api/login"</span> <span class="n">login</span><span class="o">;</span>
+</code></pre></div>
+<p>In this excerpt <code>login</code> is a "handler". Handlers are responsible for
+translating requests into responses; this is captured in their <a href="https://aantron.github.io/dream/#type-handler">type
+signature</a>.</p>
+<p>Conceptually, the <code>login</code> handler needs to do three things:</p>
+<ol>
+<li>Receive a JSON body and confirm it's formatted as expected.</li>
+<li>Look up the relevant user/password combination in the database.</li>
+<li>Load the relevant session information if the credentials are valid.</li>
+</ol>
+<p>For the first part, the endpoint needs to receive a JSON payload that
+looks like <code>{"username": "...", "password": "..."}</code>. To describe that
+payload, I introduced a simple record type:</p>
+<div class="highlight"><pre><span></span><code><span class="k">type</span> <span class="n">login_doc</span> <span class="o">=</span> <span class="o">{</span>
+  <span class="n">username</span> <span class="o">:</span> <span class="kt">string</span><span class="o">;</span>
+  <span class="n">password</span> <span class="o">:</span> <span class="kt">string</span><span class="o">;</span>
+<span class="o">}</span> <span class="o">[@@</span><span class="n">deriving</span> <span class="n">yojson</span><span class="o">]</span>
+</code></pre></div>
+<p>Adding <code>[@@deriving yojson]</code> means the compiler can generate functions
+to convert these records to and from JSON. In this case those
+functions are called <code>login_doc_of_yojson</code> and <code>yojson_of_login_doc</code>.</p>
+<p>My <code>login</code> handler looked roughly like this:</p>
+<div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="n">json_receiver</span> <span class="n">json_parser</span> <span class="n">handler</span> <span class="n">request</span> <span class="o">=</span>
+  <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">body</span> <span class="o">=</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">body</span> <span class="n">request</span> <span class="k">in</span>
+  <span class="k">let</span> <span class="n">parse</span> <span class="o">=</span>
+    <span class="k">try</span>
+      <span class="nc">Some</span> <span class="o">(</span><span class="n">body</span>
+      <span class="o">|&gt;</span> <span class="nn">Yojson</span><span class="p">.</span><span class="nn">Safe</span><span class="p">.</span><span class="n">from_string</span>
+      <span class="o">|&gt;</span> <span class="n">json_parser</span><span class="o">)</span>
+    <span class="k">with</span> <span class="o">_</span> <span class="o">-&gt;</span>
+      <span class="nc">None</span>
+  <span class="k">in</span>
+  <span class="k">match</span> <span class="n">parse</span> <span class="k">with</span>
+  <span class="o">|</span> <span class="nc">Some</span> <span class="n">doc</span> <span class="o">-&gt;</span> <span class="n">handler</span> <span class="n">doc</span> <span class="n">request</span>
+  <span class="o">|</span> <span class="nc">None</span> <span class="o">-&gt;</span>
+    <span class="o">{</span> <span class="n">error</span><span class="o">=</span><span class="s2">"Received invalid JSON input."</span> <span class="o">}</span>
+    <span class="o">|&gt;</span> <span class="n">yojson_of_error_doc</span>
+    <span class="o">|&gt;</span> <span class="n">json_response</span> <span class="o">~</span><span class="n">status</span><span class="o">:</span> <span class="o">`</span><span class="nc">Bad_Request</span>
+
+
+<span class="k">let</span> <span class="n">login</span> <span class="o">=</span>
+  <span class="k">let</span> <span class="n">login_base</span> <span class="n">login_doc</span> <span class="n">request</span> <span class="o">=</span>
+    <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">user_id</span> <span class="o">=</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">sql</span> <span class="n">request</span>
+        <span class="o">(</span><span class="nn">Models</span><span class="p">.</span><span class="nn">User</span><span class="p">.</span><span class="n">get</span> <span class="n">login_doc</span><span class="o">.</span><span class="n">username</span> <span class="n">login_doc</span><span class="o">.</span><span class="n">password</span><span class="o">)</span> <span class="k">in</span>
+    <span class="k">match</span> <span class="n">user_id</span> <span class="k">with</span>
+    <span class="o">|</span> <span class="nc">Some</span> <span class="n">id</span> <span class="o">-&gt;</span>
+      <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="bp">()</span> <span class="o">=</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">invalidate_session</span> <span class="n">request</span> <span class="k">in</span>
+      <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="bp">()</span> <span class="o">=</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">put_session</span> <span class="s2">"user"</span> <span class="o">(</span><span class="nn">Int</span><span class="p">.</span><span class="n">to_string</span> <span class="n">id</span><span class="o">)</span> <span class="n">request</span> <span class="k">in</span>
+      <span class="nn">Dream</span><span class="p">.</span><span class="n">empty</span> <span class="o">`</span><span class="nc">OK</span>
+    <span class="o">|</span> <span class="nc">None</span> <span class="o">-&gt;</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">empty</span> <span class="o">`</span><span class="nc">Forbidden</span>
+  <span class="k">in</span>
+  <span class="n">json_receiver</span> <span class="n">login_doc_of_yojson</span> <span class="n">login_base</span>
+</code></pre></div>
+<p>If a user uploads an invalid JSON body, this will cause
+<code>login_doc_of_yojson</code> to throw an exception. By default, this produces
+a 500 server error response. To handle this situation more gracefully,
+I introduced <code>json_receiver</code>. If the parser passed to <code>json_receiver</code>
+succeeds on the request body, the results are passed to the inner
+handler. Otherwise, the server responds with a <code>400 Bad
+Request</code>. Re-using <code>json_receiver</code> across my endpoints allows me to
+avoid introducing a<code>try/with</code> block any time time I need to handle
+JSON input.</p>
+<p>I decided to manage models in a separate library, <code>Models</code>. The
+build tool, <code>dune</code>, made this easy to do; I just needed separate
+<code>dune</code> files for the <code>server/model</code> and <code>server/bin</code> folders. I like
+this design because it simplifies re-use of the database portion of my
+project. For example, if I later needed to build a CLI admin tool,
+that tool could utilize my existing queries without being exposed to
+API concerns.</p>
+<p>Inside <code>User</code>, the <code>get</code> query function is defined as:</p>
+<div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="n">get</span> <span class="o">=</span>
+  <span class="k">let</span> <span class="n">query</span> <span class="o">=</span>
+    <span class="nn">R</span><span class="p">.</span><span class="n">find_opt</span> <span class="nn">T</span><span class="p">.</span><span class="o">(</span><span class="n">tup2</span> <span class="nn">T</span><span class="p">.</span><span class="n">string</span> <span class="nn">T</span><span class="p">.</span><span class="n">string</span><span class="o">)</span> <span class="nn">T</span><span class="p">.</span><span class="n">int</span>
+      <span class="s2">"SELECT id FROM app_user WHERE username = ? and password = ?"</span> <span class="k">in</span>
+  <span class="k">fun</span> <span class="n">username</span> <span class="n">password</span> <span class="o">(</span><span class="k">module</span> <span class="nc">Db</span> <span class="o">:</span> <span class="nc">DB</span><span class="o">)</span> <span class="o">-&gt;</span>
+    <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">user_or_error</span> <span class="o">=</span> <span class="nn">Db</span><span class="p">.</span><span class="n">find_opt</span> <span class="n">query</span> <span class="o">(</span><span class="n">username</span><span class="o">,</span> <span class="n">password</span><span class="o">)</span> <span class="k">in</span>
+    <span class="nn">Caqti_lwt</span><span class="p">.</span><span class="n">or_fail</span> <span class="n">user_or_error</span>
+</code></pre></div>
+<p>Caqti allows us to define a function that consumes our query
+parameters (the username and password) along with a database
+connection, and produces a promise that will resolve with the results
+of the query. In this case, the types encode that the function
+produces an <code>int option</code> containing the user's primary key if the
+credentials are valid. (Note that it's not a good idea to store
+passwords in plain text like this; this is just for illustrative
+purposes.)</p>
+<p>Session management, the final item that the endpoint needs to address,
+is handled by Dream. The framework allows sessions to be stored in
+cookies, memory, or the database; I opted for database sessions
+because I had used similar session backends in the past. Sessions
+allow us to store pairs key/value strings across requests. I used the
+session just to store the logged-in user's ID, so that the API has
+easy access in later database queries.</p>
+<h2>Thoughts on the Dream Router</h2>
+<p>The final router for my server looked like this:</p>
+<div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="bp">()</span> <span class="o">=</span>
+  <span class="nn">Dream</span><span class="p">.</span><span class="n">run</span> <span class="o">~</span><span class="n">interface</span><span class="o">:</span><span class="s2">"0.0.0.0"</span>
+  <span class="o">@@</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">logger</span>
+  <span class="o">@@</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">sql_pool</span> <span class="s2">"postgresql://sensors@127.0.0.1/sensors"</span>
+  <span class="o">@@</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">sql_sessions</span>
+  <span class="o">@@</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">router</span> <span class="o">[</span>
+    <span class="c">(* More endpoints here ... *)</span>
+
+    <span class="nn">Dream</span><span class="p">.</span><span class="n">get</span> <span class="s2">"/version"</span> <span class="n">version</span><span class="o">;</span>
+    <span class="nn">Dream</span><span class="p">.</span><span class="n">post</span> <span class="s2">"/api/login"</span> <span class="n">login</span><span class="o">;</span>
+    <span class="nn">Dream</span><span class="p">.</span><span class="n">post</span> <span class="s2">"/api/logout"</span> <span class="n">logout</span><span class="o">;</span>
+
+    <span class="nn">Dream</span><span class="p">.</span><span class="n">scope</span> <span class="s2">"/api"</span> <span class="o">[</span><span class="n">login_required</span><span class="o">]</span> <span class="o">[</span>
+      <span class="nn">Dream</span><span class="p">.</span><span class="n">get</span> <span class="s2">"/user/:user_id"</span> <span class="n">user</span><span class="o">;</span>
+      <span class="c">(* More endpoints here... *)</span>
+    <span class="o">];</span>
+
+    <span class="nn">Dream</span><span class="p">.</span><span class="n">scope</span> <span class="s2">"/sensor"</span> <span class="bp">[]</span> <span class="o">[</span>
+      <span class="nn">Dream</span><span class="p">.</span><span class="n">post</span> <span class="s2">"/upload"</span> <span class="o">@@</span> <span class="n">api_key_required</span> <span class="n">sensor_upload</span><span class="o">;</span>
+    <span class="o">]</span>
+  <span class="o">]</span>
+  <span class="o">@@</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">not_found</span>
+</code></pre></div>
+<p>I really appreciate how Dream makes it possible to get a concise
+overview of the API; in some Pyramid projects, I found this wasn't
+always possible. In fact, in Pyramid I sometimes struggled with subtle
+routing bugs that were not obvious until run time. Having the compiler
+validate the router in Dream was a welcome change.</p>
+<p>Pyramid does make it somewhat easier to handle access/permissions
+concerns compared to Dream. Working in Pyramid, it was relatively
+common for the routes to manage some amount of parameter validation
+and permissions. For example, given a path
+<code>/user/123/article/abc456</code>, the route (or "resources" in Pyramid
+terminology) would be responsible for:</p>
+<ul>
+<li>Extracting the user and article IDs (<code>123</code> and <code>abc456</code>).</li>
+<li>Determining those records actually exist in the database, and
+  passing them to the view/handler in a context record.</li>
+<li>Validating that the requester has permissions to operate on those
+User and Article records.</li>
+</ul>
+<p>This is discussed a bit more in the Pyramid Docs under <a href="https://docs.pylonsproject.org/projects/pyramid/en/latest/narr/traversal.html">URL
+traversal</a>.
+Effectively, Pyramid resources mean that handler/view code downstream
+can focus on updating database records and/or rendering HTML/JSON
+without worrying about permissions concerns.</p>
+<p>Because I didn't want to build a permissions system for my API, I
+instead incorporated User IDs into my function signatures in <code>Model</code>
+and used inner joins to model permissions. For example, here is an
+example of a query that fetches the metadata for all sensors belonging
+to a particular user:</p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span> <span class="n">s</span><span class="p">.</span><span class="n">name</span><span class="p">,</span> <span class="n">s</span><span class="p">.</span><span class="n">description</span><span class="p">,</span> <span class="n">k</span><span class="p">.</span><span class="n">uuid</span>
+<span class="k">FROM</span> <span class="n">sensor</span> <span class="n">s</span>
+<span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">user_sensor</span> <span class="n">us</span>
+ <span class="k">ON</span> <span class="n">us</span><span class="p">.</span><span class="n">sensor</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">id</span> <span class="k">AND</span> <span class="n">us</span><span class="p">.</span><span class="n">app_user</span> <span class="o">=</span> <span class="err">$</span><span class="mi">1</span> <span class="k">AND</span> <span class="n">us</span><span class="p">.</span><span class="n">sensor</span> <span class="o">=</span> <span class="err">$</span><span class="mi">2</span>
+<span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">api_key</span> <span class="n">k</span>
+ <span class="k">ON</span> <span class="n">s</span><span class="p">.</span><span class="n">api_key</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">id</span>
+</code></pre></div>
+<p>By joining against <code>user_sensor</code>, I ensure that a user only gets data
+for the sensors they own.</p>
+<p>I should point out that Dream allows us to use a custom router,
+however! For example, Ulrik Strid has introduced
+<a href="https://github.com/ulrikstrid/dream-routes">dream-routes</a>, which
+allows additional type information to be encoded in routes. Writing an
+even more sophisticated router that acts more like Pyramid's resource
+system is certainly possible.</p>
+<h2>Comparing Caqti and SQLAlchemy</h2>
+<p>As a web programmer,especially one working on an analytics project,
+it's important to get comfortable working with the database library
+you've chosen for your project. Indeed, a significant portion of this
+project consisted of familiarizing myself with <code>Caqti</code>.</p>
+<p>Caqti is a bit different from SQLAlchemy. With SQLAlchemy, you
+typically define one class for each table. Then, using SQLAlchemy's
+metaprogramming features, those classes are used to define
+queries. For comparison, here are equivalent queries against the user
+table:</p>
+<p><strong>Caqti</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="n">get</span> <span class="o">=</span>
+  <span class="k">let</span> <span class="n">query</span> <span class="o">=</span>
+    <span class="nn">R</span><span class="p">.</span><span class="n">find_opt</span> <span class="nn">T</span><span class="p">.</span><span class="o">(</span><span class="n">tup2</span> <span class="nn">T</span><span class="p">.</span><span class="n">string</span> <span class="nn">T</span><span class="p">.</span><span class="n">string</span><span class="o">)</span> <span class="nn">T</span><span class="p">.</span><span class="n">int</span>
+      <span class="s2">"SELECT id FROM app_user WHERE username = ? and password = ?"</span> <span class="k">in</span>
+  <span class="k">fun</span> <span class="n">username</span> <span class="n">password</span> <span class="o">(</span><span class="k">module</span> <span class="nc">Db</span> <span class="o">:</span> <span class="nc">DB</span><span class="o">)</span> <span class="o">-&gt;</span>
+    <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">user_or_error</span> <span class="o">=</span> <span class="nn">Db</span><span class="p">.</span><span class="n">find_opt</span> <span class="n">query</span> <span class="o">(</span><span class="n">username</span><span class="o">,</span> <span class="n">password</span><span class="o">)</span> <span class="k">in</span>
+    <span class="nn">Caqti_lwt</span><span class="p">.</span><span class="n">or_fail</span> <span class="n">user_or_error</span>
+</code></pre></div>
+<p><strong>SQLAlchemy</strong></p>
+<div class="highlight"><pre><span></span><code><span class="n">db</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">User</span><span class="p">)</span> \
+    <span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+        <span class="n">User</span><span class="o">.</span><span class="n">username</span> <span class="o">==</span> <span class="n">username</span><span class="p">,</span>
+        <span class="n">User</span><span class="o">.</span><span class="n">password</span> <span class="o">==</span> <span class="n">password</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">one_or_none</span><span class="p">()</span>
+</code></pre></div>
+<p>Working with Caqti, a mistake in the syntax of a SQL query won't be
+discovered until runtime. I made fewer mistakes like this with
+SQLAlchemy because most queries are written in Python and can be
+linted by the IDE. Another recurring point of confusion for me with
+Caqti had to do with matching the function on the <code>Caqti_request</code>
+(<code>R.find_opt</code> above) with the function invoked in <code>Db</code>
+(<code>Db.find_opt</code>); this is how we indicate that the query produces zero,
+one, zero/one, or multiple rows. If the two don't agree, the program
+won't compile; initially I struggled to understand what this
+compiler error meant:</p>
+<div class="highlight"><pre><span></span><code><span class="n">Error</span><span class="o">:</span> <span class="n">The</span> <span class="kd">function</span> <span class="n">applied</span> <span class="n">to</span> <span class="k">this</span> <span class="n">argument</span> <span class="n">has</span> <span class="n">type</span>
+         <span class="o">?</span><span class="n">env</span><span class="o">:(</span><span class="n">Caqti_driver_info</span><span class="o">.</span><span class="na">t</span> <span class="o">-&gt;</span> <span class="n">string</span> <span class="o">-&gt;</span> <span class="n">Caqti_query</span><span class="o">.</span><span class="na">t</span><span class="o">)</span> <span class="o">-&gt;</span>
+         <span class="o">?</span><span class="n">oneshot</span><span class="o">:</span><span class="n">bool</span> <span class="o">-&gt;</span>
+         <span class="o">(</span><span class="err">'</span><span class="n">a</span><span class="o">,</span> <span class="n">unit</span><span class="o">,</span> <span class="o">[&lt;</span> <span class="err">`</span><span class="n">Many</span> <span class="o">|</span> <span class="err">`</span><span class="n">One</span> <span class="o">|</span> <span class="err">`</span><span class="n">Zero</span> <span class="o">&gt;</span> <span class="err">`</span><span class="n">Zero</span> <span class="o">])</span> <span class="n">Caqti_request</span><span class="o">.</span><span class="na">t</span>
+<span class="n">This</span> <span class="n">argument</span> <span class="n">cannot</span> <span class="n">be</span> <span class="n">applied</span> <span class="n">without</span> <span class="n">label</span>
+</code></pre></div>
+<p>Using Caqti became easier as I became accustomed to thinking in terms of
+prepared queries. About halfway through the project I realized I
+needed to switch from SQLite to PostgreSQL, and changing databases was
+fairly painless because Caqti supports both.</p>
+<p>I also made use of Caqti's features for dealing with custom column
+types. Caqti does not have built-in support for JSON columns, but
+adding a custom column type to handle this was straightforward:</p>
+<div class="highlight"><pre><span></span><code><span class="n">type</span><span class="w"> </span><span class="n">readings</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">float</span><span class="w"> </span><span class="k">option</span><span class="w"> </span><span class="k">array</span><span class="w"> </span><span class="o">[</span><span class="n">@@deriving yojson</span><span class="o">]</span><span class="w"></span>
+
+<span class="n">let</span><span class="w"> </span><span class="n">sql_readings</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="w">  </span><span class="n">let</span><span class="w"> </span><span class="n">encode</span><span class="w"> </span><span class="p">(</span><span class="nl">a</span><span class="p">:</span><span class="w"> </span><span class="n">readings</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="w">    </span><span class="n">Ok</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">yojson_of_readings</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">Yojson</span><span class="p">.</span><span class="n">Safe</span><span class="p">.</span><span class="n">to_string</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="ow">in</span><span class="w"></span>
+<span class="w">  </span><span class="n">let</span><span class="w"> </span><span class="n">decode</span><span class="w"> </span><span class="nc">text</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="w">    </span><span class="n">Ok</span><span class="w"> </span><span class="p">(</span><span class="nc">text</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">Yojson</span><span class="p">.</span><span class="n">Safe</span><span class="p">.</span><span class="n">from_string</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">readings_of_yojson</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="ow">in</span><span class="w"></span>
+<span class="w">  </span><span class="n">T</span><span class="p">.(</span><span class="n">custom</span><span class="w"> </span><span class="o">~</span><span class="n">encode</span><span class="w"> </span><span class="o">~</span><span class="n">decode</span><span class="w"> </span><span class="n">string</span><span class="p">)</span><span class="w"></span>
+</code></pre></div>
+<p>In my case, the JSON that I needed to store consisted of arrays of
+floating point numbers, so building the custom type was simply a
+matter of connecting Yojson and Caqti in the right way.</p>
+<h2>Discussion</h2>
+<p>Ever since I started building web applications in Python, I've thought
+of an API server as a big function that transforms requests into
+responses, with any nontrivial state residing in databases or services
+like S3. Dream provides a modern web framework that matches my mental
+model for how a web server should work.</p>
+<p>Web programming in OCaml "feels" a bit different than working in
+Python. In Python it's possible to get something running quickly, but
+it's also easy to forget corner cases and introduce defects that have
+to be addressed later in the application's lifecycle. An OCaml project
+requires some up-front investment, but this investment pays off later
+in several ways. First, fast feedback from the compiler (together with
+editor integrations like <code>merlin</code> and <code>tuareg</code>) helped me to identify
+issues earlier. <code>Yojson</code> made it simple to enforce that JSON requests
+and responses adhered to a fixed schema, and process inputs more
+systematically. Finally, OCaml makes refactoring safe and easy, so
+that I could confidently adapt my design as I introduced new
+requirements. In the right context, I think the advantages of using
+OCaml could significantly reduce the total lifecycle costs of
+maintaining many web applications, without reducing the pace of new
+development.</p>
+<h2>References</h2>
+<p>I found the resources below helpful for working on this project:</p>
+<ul>
+<li>The Dream <a href="https://aantron.github.io/dream/">API docs</a> set a high
+  standard for readability and helped me quickly get up to speed with
+  the framework.</li>
+<li>This <a href="https://github.com/aantron/dream/tree/master/example">section</a>
+  of the Dream repo has excellent examples, both for working with the
+  framework and deploying it.</li>
+<li>I referred to Bobby Priambodo's <a href="https://medium.com/@bobbypriambodo/interfacing-ocaml-and-postgresql-with-caqti-a92515bdaa11">blog
+  posts</a>
+  about interfacing Caqti and PostgreSQL as I wrote the models in my project.</li>
+<li>The Caqti
+  <a href="https://paurkedal.github.io/ocaml-caqti/index.html">docs</a>,
+  especially for <code>Caqti_type</code> and <code>Caqti_request</code> were helpful as I
+  was writing queries.</li>
+<li>There is also an
+  <a href="https://github.com/paurkedal/ocaml-caqti/blob/master/tests/bikereg.ml">example</a>
+  in the Caqti repo that is worth looking through.</li>
+<li>The README on
+  <a href="https://github.com/janestreet/ppx_yojson_conv">ppx_yojson_conv</a> had
+  helpful examples that I referred to while writing my own
+  JSON-related types.</li>
+</ul>
+<h2>Feedback</h2>
+<p>If you ended up looking through the source code for my API, let me
+know how what you thought! I'm interested in adding more tutorial
+resources to the OCaml ecosystem, so feel free to post a PR or issue
+to
+<a href="https://github.com/jsthomas/sensors">sensors</a>
+if you have ideas about how to make these resources better.</p>
+                <div class="clear"></div>
+
+                <div class="info">
+                    <a href="https://jsthomas.github.io/ocaml-dream-api.html">posted at 00:00</a>
+                    &nbsp;&middot;&nbsp;<a href="https://jsthomas.github.io/category/ocaml.html" rel="tag">OCaml</a>
+                </div>
+            </article>            <h4 class="date">Jul 01, 2021</h4>
 
             <article class="post">
                 <h2 class="title">
