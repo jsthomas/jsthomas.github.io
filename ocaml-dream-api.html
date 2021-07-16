@@ -50,14 +50,23 @@ dynamically typed language like Python.</p>
 be a useful resource for anyone who wants to look at a slightly larger
 example application that uses Dream. Though I'm still a beginner, I
 was surprised how easy it was to complete familiar tasks in this
-framework. Overall, I'm optimistic about the future of web programming
-in OCaml.</p>
+framework. I'm optimistic about the future of web programming in
+OCaml!</p>
 <p>This post provides a sort of "experience report" for working with
 Dream, Yojson, and Caqti. Obviously, these types of reports are highly
-subjective and you should run your own experiments too!  Because I've
-worked mostly in <a href="https://trypyramid.com/">Pyramid</a> and
-<a href="https://www.sqlalchemy.org/">SQLAlchemy</a>, those are the Python
-projects I'll compare with.</p>
+subjective and you should run your own experiments too!  I'll be
+comparing with my experience in working with
+<a href="https://trypyramid.com/">Pyramid</a> and
+<a href="https://www.sqlalchemy.org/">SQLAlchemy</a>, since those are the Python
+projects I've used most.</p>
+<p>Finally, it's important to point out that Dream is in alpha (version
+<code>1.0.0~alpha2</code> as of this writing). This is an early version!
+Comparisons with frameworks like Pyramid or Flask are in some sense
+apples-and-oranges, because those projects have had a long time (and
+many engineering hours) to mature. Ultimately, the point of this post
+(and the repo that goes with it) isn't to make make value judgements
+("framework X is good, Y is bad"), but rather to understand how to
+translate concepts from one workflow to another.</p>
 <h2>Problem Definition</h2>
 <p>I decided to build a API for managing time series data. My
 requirements for the project were as follows:</p>
@@ -229,10 +238,10 @@ overview of the API; in some Pyramid projects, I found this wasn't
 always possible. In fact, in Pyramid I sometimes struggled with subtle
 routing bugs that were not obvious until run time. Having the compiler
 validate the router in Dream was a welcome change.</p>
-<p>Pyramid does make it somewhat easier to handle access/permissions
-concerns compared to Dream. Working in Pyramid, it was relatively
-common for the routes to manage some amount of parameter validation
-and permissions. For example, given a path
+<p>At the moment, Pyramid makes it somewhat easier to handle
+access/permissions concerns compared to Dream. Working in Pyramid, it
+was relatively common for the routes to manage some amount of
+parameter validation and permissions. For example, given a path
 <code>/user/123/article/abc456</code>, the route (or "resources" in Pyramid
 terminology) would be responsible for:</p>
 <ul>
@@ -247,11 +256,11 @@ traversal</a>.
 Effectively, Pyramid resources mean that handler/view code downstream
 can focus on updating database records and/or rendering HTML/JSON
 without worrying about permissions concerns.</p>
-<p>Because I didn't want to build a permissions system for my API, I
-instead incorporated User IDs into my function signatures in <code>Model</code>
-and used inner joins to model permissions. For example, here is an
-example of a query that fetches the metadata for all sensors belonging
-to a particular user:</p>
+<p>I didn't want to build a permissions system for my API so instead I
+incorporated User IDs into my function signatures in <code>Model</code> and used
+inner joins to model permissions. For example, here is an example of a
+query that fetches the metadata for all sensors belonging to a
+particular user:</p>
 <div class="highlight"><pre><span></span><code><span class="k">SELECT</span> <span class="n">s</span><span class="p">.</span><span class="n">name</span><span class="p">,</span> <span class="n">s</span><span class="p">.</span><span class="n">description</span><span class="p">,</span> <span class="n">k</span><span class="p">.</span><span class="n">uuid</span>
 <span class="k">FROM</span> <span class="n">sensor</span> <span class="n">s</span>
 <span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">user_sensor</span> <span class="n">us</span>
@@ -262,13 +271,15 @@ to a particular user:</p>
 <p>By joining against <code>user_sensor</code>, I ensure that a user only gets data
 for the sensors they own.</p>
 <p>I should point out that Dream allows us to use a custom router,
-however! For example, Ulrik Strid has introduced
+however! The project has <a href="https://github.com/aantron/dream/issues/122">an
+issue</a> for more elaborate
+routing and Ulrik Strid has introduced
 <a href="https://github.com/ulrikstrid/dream-routes">dream-routes</a>, which
-allows additional type information to be encoded in routes. Writing an
-even more sophisticated router that acts more like Pyramid's resource
-system is certainly possible.</p>
+allows additional type information to be encoded in routes. So,
+writing a more sophisticated router that behaves like Pyramid's
+resource system is certainly possible.</p>
 <h2>Comparing Caqti and SQLAlchemy</h2>
-<p>As a web programmer,especially one working on an analytics project,
+<p>As a web programmer, especially one working on an analytics project,
 it's important to get comfortable working with the database library
 you've chosen for your project. Indeed, a significant portion of this
 project consisted of familiarizing myself with <code>Caqti</code>.</p>
@@ -344,13 +355,12 @@ requires some up-front investment, but this investment pays off later
 in several ways. First, fast feedback from the compiler (together with
 editor integrations like <code>merlin</code> and <code>tuareg</code>) helped me to identify
 issues earlier. <code>Yojson</code> made it simple to enforce that JSON requests
-and responses adhered to a fixed schema, and process inputs more
-systematically. Finally, OCaml makes refactoring safe and easy, so
-that I could confidently adapt my design as I introduced new
-requirements. In the right context, I think the advantages of using
-OCaml could significantly reduce the total lifecycle costs of
-maintaining many web applications, without reducing the pace of new
-development.</p>
+and responses adhered to a fixed schema, and helped me process inputs
+more systematically. OCaml made refactoring safe and easy, so that I
+could confidently adapt my design as I introduced new requirements. In
+the right context, I think the advantages of using OCaml could
+significantly reduce the total lifecycle costs of maintaining many web
+applications without reducing the pace of new development.</p>
 <h2>References</h2>
 <p>I found the resources below helpful for working on this project:</p>
 <ul>
