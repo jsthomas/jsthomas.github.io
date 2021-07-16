@@ -17,15 +17,25 @@ You can find the source code for this project
 be a useful resource for anyone who wants to look at a slightly larger
 example application that uses Dream. Though I'm still a beginner, I
 was surprised how easy it was to complete familiar tasks in this
-framework. Overall, I'm optimistic about the future of web programming
-in OCaml.
+framework. I'm optimistic about the future of web programming in
+OCaml!
 
 This post provides a sort of "experience report" for working with
 Dream, Yojson, and Caqti. Obviously, these types of reports are highly
-subjective and you should run your own experiments too!  Because I've
-worked mostly in [Pyramid](https://trypyramid.com/) and
-[SQLAlchemy](https://www.sqlalchemy.org/), those are the Python
-projects I'll compare with.
+subjective and you should run your own experiments too!  I'll be
+comparing with my experience in working with
+[Pyramid](https://trypyramid.com/) and
+[SQLAlchemy](https://www.sqlalchemy.org/), since those are the Python
+projects I've used most.
+
+Finally, it's important to point out that Dream is in alpha (version
+`1.0.0~alpha2` as of this writing). This is an early version!
+Comparisons with frameworks like Pyramid or Flask are in some sense
+apples-and-oranges, because those projects have had a long time (and
+many engineering hours) to mature. Ultimately, the point of this post
+(and the repo that goes with it) isn't to make make value judgements
+("framework X is good, Y is bad"), but rather to understand how to
+translate concepts from one workflow to another.
 
 ## Problem Definition
 
@@ -225,10 +235,10 @@ always possible. In fact, in Pyramid I sometimes struggled with subtle
 routing bugs that were not obvious until run time. Having the compiler
 validate the router in Dream was a welcome change.
 
-Pyramid does make it somewhat easier to handle access/permissions
-concerns compared to Dream. Working in Pyramid, it was relatively
-common for the routes to manage some amount of parameter validation
-and permissions. For example, given a path
+At the moment, Pyramid makes it somewhat easier to handle
+access/permissions concerns compared to Dream. Working in Pyramid, it
+was relatively common for the routes to manage some amount of
+parameter validation and permissions. For example, given a path
 `/user/123/article/abc456`, the route (or "resources" in Pyramid
 terminology) would be responsible for:
 
@@ -244,11 +254,11 @@ Effectively, Pyramid resources mean that handler/view code downstream
 can focus on updating database records and/or rendering HTML/JSON
 without worrying about permissions concerns.
 
-Because I didn't want to build a permissions system for my API, I
-instead incorporated User IDs into my function signatures in `Model`
-and used inner joins to model permissions. For example, here is an
-example of a query that fetches the metadata for all sensors belonging
-to a particular user:
+I didn't want to build a permissions system for my API so instead I
+incorporated User IDs into my function signatures in `Model` and used
+inner joins to model permissions. For example, here is an example of a
+query that fetches the metadata for all sensors belonging to a
+particular user:
 
 ```sql
 SELECT s.name, s.description, k.uuid
@@ -263,16 +273,17 @@ By joining against `user_sensor`, I ensure that a user only gets data
 for the sensors they own.
 
 I should point out that Dream allows us to use a custom router,
-however! For example, Ulrik Strid has introduced
+however! The project has [an
+issue](https://github.com/aantron/dream/issues/122) for more elaborate
+routing and Ulrik Strid has introduced
 [dream-routes](https://github.com/ulrikstrid/dream-routes), which
-allows additional type information to be encoded in routes. Writing an
-even more sophisticated router that acts more like Pyramid's resource
-system is certainly possible.
-
+allows additional type information to be encoded in routes. So,
+writing a more sophisticated router that behaves like Pyramid's
+resource system is certainly possible.
 
 ## Comparing Caqti and SQLAlchemy
 
-As a web programmer,especially one working on an analytics project,
+As a web programmer, especially one working on an analytics project,
 it's important to get comfortable working with the database library
 you've chosen for your project. Indeed, a significant portion of this
 project consisted of familiarizing myself with `Caqti`.
@@ -363,13 +374,12 @@ requires some up-front investment, but this investment pays off later
 in several ways. First, fast feedback from the compiler (together with
 editor integrations like `merlin` and `tuareg`) helped me to identify
 issues earlier. `Yojson` made it simple to enforce that JSON requests
-and responses adhered to a fixed schema, and process inputs more
-systematically. Finally, OCaml makes refactoring safe and easy, so
-that I could confidently adapt my design as I introduced new
-requirements. In the right context, I think the advantages of using
-OCaml could significantly reduce the total lifecycle costs of
-maintaining many web applications, without reducing the pace of new
-development.
+and responses adhered to a fixed schema, and helped me process inputs
+more systematically. OCaml made refactoring safe and easy, so that I
+could confidently adapt my design as I introduced new requirements. In
+the right context, I think the advantages of using OCaml could
+significantly reduce the total lifecycle costs of maintaining many web
+applications without reducing the pace of new development.
 
 ## References
 
