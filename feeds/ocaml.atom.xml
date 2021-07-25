@@ -1,5 +1,248 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Joe Thomas - OCaml</title><link href="https://jsthomas.github.io/" rel="alternate"></link><link href="https://jsthomas.github.io/feeds/ocaml.atom.xml" rel="self"></link><id>https://jsthomas.github.io/</id><updated>2021-07-12T00:00:00-04:00</updated><entry><title>Writing a REST API with Dream</title><link href="https://jsthomas.github.io/ocaml-dream-api.html" rel="alternate"></link><published>2021-07-12T00:00:00-04:00</published><updated>2021-07-12T00:00:00-04:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2021-07-12:/ocaml-dream-api.html</id><summary type="html">&lt;p&gt;Writing a REST API in Dream&lt;/p&gt;</summary><content type="html">&lt;p&gt;In the last few weeks I've been building a simple REST API using the
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Joe Thomas - OCaml</title><link href="https://jsthomas.github.io/" rel="alternate"></link><link href="https://jsthomas.github.io/feeds/ocaml.atom.xml" rel="self"></link><id>https://jsthomas.github.io/</id><updated>2021-07-23T00:00:00-04:00</updated><entry><title>How to send emails from Dream</title><link href="https://jsthomas.github.io/ocaml-email.html" rel="alternate"></link><published>2021-07-23T00:00:00-04:00</published><updated>2021-07-23T00:00:00-04:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2021-07-23:/ocaml-email.html</id><summary type="html">&lt;p&gt;How to build an email queue system for a Dream web server.&lt;/p&gt;</summary><content type="html">&lt;p&gt;I recently &lt;a href="https://github.com/aantron/dream/issues/138"&gt;learned&lt;/a&gt; the
+OCaml ecosystem has most of the libraries needed to build email
+features, but I wasn't able to find an example that brings all of
+those pieces together. I wanted a simple example I could easily adapt
+to build common account verification and password recovery workflows
+in the Dream web framework. This post is my attempt to solve that
+problem and explain what I learned in the process. The accompanying
+code can be found
+&lt;a href="https://github.com/jsthomas/dream-email-example"&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;Defining the problem&lt;/h2&gt;
+&lt;p&gt;As an application developer, my main concerns when
+sending mail are:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Trying to ensure the address I'm sending to is valid.&lt;/li&gt;
+&lt;li&gt;Handling the email synthesis process asynchronously, so it doesn't
+   block the web server from handling requests quickly.&lt;/li&gt;
+&lt;li&gt;Transmitting the email content (SMTP or a REST API call)&lt;/li&gt;
+&lt;li&gt;Monitoring that the applications messages aren't getting
+   blocked/dropped for some reason.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;To test how easily I could satisfy these requirements, I built a web
+app that lets the user send an arbitary email.&lt;/p&gt;
+&lt;p&gt;&lt;img alt="A screenshot of the email form." src="https://jsthomas.github.io/images/ocaml-email/screenshot.png" style="width: 671px; height: auto;"/&gt;&lt;/p&gt;
+&lt;p&gt;The app has two parts:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;A server process responsible for showing the form above and
+  validating user inputs.&lt;/li&gt;
+&lt;li&gt;A "worker" process responsible for sending mail. The worker gets its
+  tasks from a queue populated by the server.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;Validating Email Addresses&lt;/h2&gt;
+&lt;p&gt;I decided to utilize the library
+&lt;a href="https://github.com/dinosaure/emile"&gt;&lt;code&gt;emile&lt;/code&gt;&lt;/a&gt; for address
+validation. An email address might be invalid for reasons outside of
+the application's control (like the domain going way), but &lt;code&gt;emile&lt;/code&gt; at
+least provides a way to check a given string conforms to 5(!) RFCs
+relevant to parsing email addresses. Check out the
+&lt;a href="https://github.com/dinosaure/emile/blob/master/test/test.ml#L34"&gt;tests&lt;/a&gt;
+to see the impressive diversity of valid email addresses on the web.&lt;/p&gt;
+&lt;p&gt;The library provides several different predicates for checking
+addresses. I utilized &lt;code&gt;Emile.of_string&lt;/code&gt;, which generates a simple
+result type, like this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;form_post&lt;/span&gt; &lt;span class="n"&gt;request&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+  &lt;span class="k"&gt;match&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;form&lt;/span&gt; &lt;span class="n"&gt;request&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt;
+    &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;`&lt;/span&gt;&lt;span class="nc"&gt;Ok&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;"address"&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;address&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="s2"&gt;"message"&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="s2"&gt;"subject"&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;subject&lt;/span&gt; &lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
+      &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;parse&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Emile&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;of_string&lt;/span&gt; &lt;span class="n"&gt;address&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+      &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;alert&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;match&lt;/span&gt; &lt;span class="n"&gt;parse&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt;
+        &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Ok&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sprintf&lt;/span&gt; &lt;span class="s2"&gt;"Sent an email to %s."&lt;/span&gt; &lt;span class="n"&gt;address&lt;/span&gt;
+        &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Error&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sprintf&lt;/span&gt; &lt;span class="s2"&gt;"%s is not a valid email address."&lt;/span&gt; &lt;span class="n"&gt;address&lt;/span&gt;
+      &lt;span class="k"&gt;in&lt;/span&gt;
+      &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;queue_req&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;match&lt;/span&gt; &lt;span class="n"&gt;parse&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt;
+        &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Ok&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;queue_email&lt;/span&gt; &lt;span class="n"&gt;address&lt;/span&gt; &lt;span class="n"&gt;subject&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;
+        &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Error&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Lwt&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;return_unit&lt;/span&gt;
+    &lt;span class="k"&gt;in&lt;/span&gt;
+    &lt;span class="n"&gt;queue_req&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&amp;gt;=&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="k"&gt;fun&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
+        &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;html&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nn"&gt;Template&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;show_form&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;alert&lt;/span&gt; &lt;span class="n"&gt;request&lt;/span&gt;&lt;span class="o"&gt;))&lt;/span&gt;
+    &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;empty&lt;/span&gt; &lt;span class="o"&gt;`&lt;/span&gt;&lt;span class="nc"&gt;Bad_Request&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;This way, if a user provides an invalid address, the form displays a simple
+warning message and won't queue any email tasks.&lt;/p&gt;
+&lt;h2&gt;Queuing Tasks with RabbitMQ&lt;/h2&gt;
+&lt;p&gt;The second issue I needed to address is handling the email send
+process with a background worker (&lt;code&gt;queue_email&lt;/code&gt; in the code excerpt
+above). Sending an email can be a slow process, especially if you need
+to make additional database queries or render images to produce a
+customized email. That shouldn't block the web server from quickly
+responding to the user's requests. Instead, the server should record
+the email task in a &lt;em&gt;queue&lt;/em&gt;, to be handled by a background worker that
+isn't as sensitive to latency.&lt;/p&gt;
+&lt;p&gt;There are several different technologies that can be used to solve
+this problem, for example &lt;a href="https://www.rabbitmq.com/"&gt;RabbitMQ&lt;/a&gt;,
+&lt;a href="https://redislabs.com/ebook/part-2-core-concepts/chapter-6-application-components-in-redis/6-4-task-queues/6-4-1-first-in-first-out-queues/"&gt;Redis&lt;/a&gt;
+and &lt;a href="https://aws.amazon.com/sqs/"&gt;SQS&lt;/a&gt;. I decided to use RabbitMQ
+because I didn't want to tie my implementation to one cloud provider
+and RabbitMQ is supported by
+&lt;a href="https://github.com/andersfugmann/amqp-client"&gt;amqp-client&lt;/a&gt; on
+OPAM. This isn't the only way to go: for Redis and SQS, you might have
+success with the packages
+&lt;a href="https://opam.ocaml.org/packages/redis/"&gt;redis&lt;/a&gt; or
+&lt;a href="https://opam.ocaml.org/packages/aws-sqs/"&gt;aws-sqs&lt;/a&gt;, respectively.&lt;/p&gt;
+&lt;p&gt;The worker and server process share a common function for establishing
+a connection to RabbitMQ:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;rabbit_connection&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="n"&gt;connection&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Connection&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;connect&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;id&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="s2"&gt;"dream"&lt;/span&gt; &lt;span class="s2"&gt;"localhost"&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="n"&gt;channel&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Connection&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;open_channel&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;id&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="s2"&gt;"email"&lt;/span&gt; &lt;span class="nn"&gt;Channel&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;no_confirm&lt;/span&gt; &lt;span class="n"&gt;connection&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="n"&gt;queue&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Queue&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;declare&lt;/span&gt; &lt;span class="n"&gt;channel&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;arguments&lt;/span&gt;&lt;span class="o"&gt;:[&lt;/span&gt;&lt;span class="nn"&gt;Rpc&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nn"&gt;Server&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;queue_argument&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="s2"&gt;"email"&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="nn"&gt;Lwt&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;return&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;channel&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;queue&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;I was initially little confused about why I needed a "channel" when I
+already had a connection to the broker. Both the worker and the server
+connect to the RabbitMQ Broker via TCP. It's common for clients to
+need several connections to the broker, but it's costly to have many
+TCP connections. RabbitMQ lets us avoid this cost with channels, which
+are like "lightweight connections that share a single TCP
+connection", according to these &lt;a href="https://www.rabbitmq.com/channels.html"&gt;docs&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;I created this function to submit messages to the queue:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;type&lt;/span&gt; &lt;span class="n"&gt;email&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+  &lt;span class="n"&gt;address&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+  &lt;span class="n"&gt;subject&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+  &lt;span class="n"&gt;text&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt; &lt;span class="o"&gt;[@@&lt;/span&gt;&lt;span class="n"&gt;deriving&lt;/span&gt; &lt;span class="n"&gt;yojson&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;
+
+&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;queue_email&lt;/span&gt; &lt;span class="n"&gt;address&lt;/span&gt; &lt;span class="n"&gt;subject&lt;/span&gt; &lt;span class="n"&gt;text&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;email&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;&lt;span class="n"&gt;address&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="n"&gt;subject&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="n"&gt;text&lt;/span&gt;&lt;span class="o"&gt;}&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;text&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;email&lt;/span&gt; &lt;span class="o"&gt;|&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;yojson_of_email&lt;/span&gt; &lt;span class="o"&gt;|&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Yojson&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nn"&gt;Safe&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;to_string&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="n"&gt;channel&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;queue&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;rabbit_connection&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Queue&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;publish&lt;/span&gt; &lt;span class="n"&gt;channel&lt;/span&gt; &lt;span class="n"&gt;queue&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nn"&gt;Message&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;make&lt;/span&gt; &lt;span class="n"&gt;text&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="nn"&gt;Lwt&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;return_unit&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Here the server writes the address, subject, and text into a record
+type that can be serialized to JSON before being pushed into the queue.&lt;/p&gt;
+&lt;p&gt;The worker process, &lt;code&gt;queue_worker&lt;/code&gt;, is fairly simple to define:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;handle_message&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;m&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="nn"&gt;Message&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;t&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;text&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;snd&lt;/span&gt; &lt;span class="n"&gt;m&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;message&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;email&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+    &lt;span class="k"&gt;try&lt;/span&gt;
+      &lt;span class="nc"&gt;Some&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;text&lt;/span&gt; &lt;span class="o"&gt;|&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Yojson&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nn"&gt;Safe&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;from_string&lt;/span&gt; &lt;span class="o"&gt;|&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;email_of_yojson&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;with&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
+      &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;"Received invalid email record from RabbitMQ: %s"&lt;/span&gt; &lt;span class="n"&gt;text&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+      &lt;span class="nc"&gt;None&lt;/span&gt;
+  &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;match&lt;/span&gt; &lt;span class="n"&gt;email&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt;
+  &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Some&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;send_email&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;
+  &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;None&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Lwt&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;return_unit&lt;/span&gt;
+
+
+&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;queue_worker&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+  &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;"Starting Queue Worker&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="n"&gt;channel&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;queue&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;rabbit_connection&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="k"&gt;rec&lt;/span&gt; &lt;span class="n"&gt;handle&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+    &lt;span class="nn"&gt;Queue&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;no_ack&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="bp"&gt;true&lt;/span&gt; &lt;span class="n"&gt;channel&lt;/span&gt; &lt;span class="n"&gt;queue&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&amp;gt;=&lt;/span&gt; &lt;span class="k"&gt;fun&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
+    &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;task&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;match&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt;
+      &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Some&lt;/span&gt; &lt;span class="n"&gt;m&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;flush&lt;/span&gt; &lt;span class="n"&gt;stdout&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="n"&gt;handle_message&lt;/span&gt; &lt;span class="n"&gt;m&lt;/span&gt;
+      &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;"No new tasks, waiting.&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="n"&gt;flush&lt;/span&gt; &lt;span class="n"&gt;stdout&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="nn"&gt;Lwt_unix&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sleep&lt;/span&gt; &lt;span class="mi"&gt;5&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;
+    &lt;span class="k"&gt;in&lt;/span&gt;
+    &lt;span class="n"&gt;task&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&amp;gt;=&lt;/span&gt; &lt;span class="n"&gt;handle&lt;/span&gt;
+  &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="n"&gt;handle&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The worker consists of an infinite loop. When the worker wakes and
+finds tasks in the queue, it uses &lt;code&gt;yojson&lt;/code&gt; to deserialize the
+messages and passes them to &lt;code&gt;send_email&lt;/code&gt;. If no work is available,
+the worker just sleeps for 5 seconds.&lt;/p&gt;
+&lt;h2&gt;Sending Email with &lt;code&gt;cohttp&lt;/code&gt; and Mailgun&lt;/h2&gt;
+&lt;p&gt;In order to send mail, I set up a trial
+&lt;a href="https://documentation.mailgun.com/en/latest/quickstart-sending.html#send-via-smtp"&gt;Mailgun&lt;/a&gt;
+account. I selected this provider for several reasons:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Mailgun has a generous free tier (5000 emails).&lt;/li&gt;
+&lt;li&gt;A new account also comes with a "sandbox" domain, so I didn't have
+  to deal with registering a domain.&lt;/li&gt;
+&lt;li&gt;Mailgun supports both a REST API and SMTP, allowing me to try
+  different integrations.&lt;/li&gt;
+&lt;li&gt;Mailgun provides dashboards for tracking messages sent over time as
+  well as emails that were rejected (bounced, marked as spam, etc.).&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Mailgun's API allowed me to send an email by sending a POST with an API key and form
+data, like this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;send_email&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;email&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="k"&gt;open&lt;/span&gt; &lt;span class="nc"&gt;Cohttp&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="k"&gt;open&lt;/span&gt; &lt;span class="nc"&gt;Cohttp_lwt_unix&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+
+   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;api_key&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Sys&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getenv&lt;/span&gt; &lt;span class="s2"&gt;"MAILGUN_API_KEY"&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;sender&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Sys&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getenv&lt;/span&gt; &lt;span class="s2"&gt;"MAILGUN_SEND_ADDRESS"&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;api_base&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Sys&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getenv&lt;/span&gt; &lt;span class="s2"&gt;"MAILGUN_API_BASE"&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+
+   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;params&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;
+     &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"from"&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;sender&lt;/span&gt;&lt;span class="o"&gt;]);&lt;/span&gt;
+     &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"to"&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;address&lt;/span&gt;&lt;span class="o"&gt;]);&lt;/span&gt;
+     &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"subject"&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;subject&lt;/span&gt;&lt;span class="o"&gt;]);&lt;/span&gt;
+     &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"text"&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;text&lt;/span&gt;&lt;span class="o"&gt;])&lt;/span&gt;
+   &lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;cred&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;`&lt;/span&gt;&lt;span class="nc"&gt;Basic&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"api"&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;api_key&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;uri&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;api_base&lt;/span&gt; &lt;span class="o"&gt;^&lt;/span&gt; &lt;span class="s2"&gt;"/messages"&lt;/span&gt; &lt;span class="o"&gt;|&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Uri&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;of_string&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;headers&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Header&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;add_authorization&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nn"&gt;Header&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;init&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="n"&gt;cred&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;start&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+     &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;"Initiating email send to %s.&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;address&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+     &lt;span class="nn"&gt;Unix&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;gettimeofday&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+   &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="n"&gt;resp&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;rbody&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Client&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;post_form&lt;/span&gt; &lt;span class="n"&gt;uri&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;params&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;headers&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+   &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="n"&gt;finish&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Unix&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;gettimeofday&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="o"&gt;|&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Lwt&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;return&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+   &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="n"&gt;rbody_str&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nn"&gt;Cohttp_lwt&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nn"&gt;Body&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;to_string&lt;/span&gt; &lt;span class="n"&gt;rbody&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+   &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;"API Response Status: %d.&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nn"&gt;Code&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;code_of_status&lt;/span&gt; &lt;span class="n"&gt;resp&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;status&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+   &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;"API Response body %s.&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="n"&gt;rbody_str&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+   &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;"Time to send an email: %.2fs&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;finish&lt;/span&gt; &lt;span class="o"&gt;-.&lt;/span&gt; &lt;span class="n"&gt;start&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+   &lt;span class="nn"&gt;Lwt&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;return&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The endpoint replies with either 200 and a JSON body like this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+  &lt;span class="nt"&gt;"id"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;"&amp;lt;some mailgun email address here&amp;gt;"&lt;/span&gt;
+  &lt;span class="s2"&gt;"message"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;"Queued. Thank you."&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;or else a 400 and an explanation of why the request was rejected. In
+my tests, a successful API request typically took between 0.5 and 1
+seconds. For comparison, the webserver can serve the email form in
+less than 200 microseconds, so the performance benefits to shifting
+email tasks to a background queue are nontrivial.&lt;/p&gt;
+&lt;p&gt;Although Mailgun supports SMTP, they recommend using their API,
+especially for sending large amounts of mail at once. I tried using
+&lt;a href="https://github.com/oxidizing/letters/"&gt;letters&lt;/a&gt; to test their SMTP
+support, but ran into some
+&lt;a href="https://github.com/oxidizing/letters/issues/35"&gt;difficulties&lt;/a&gt;. At the
+moment I can't really provide any tips for setting up a web server
+with SMTP support in OCaml. This is something I'll have to revisit.&lt;/p&gt;
+&lt;h2&gt;Discussion&lt;/h2&gt;
+&lt;p&gt;This example focused on email, but task queues and background workers
+can be used to implement other important pieces of functionality for
+web applications. For example, I've utilized
+&lt;a href="https://docs.celeryproject.org/en/stable/getting-started/introduction.html"&gt;celery&lt;/a&gt;
+in the past to generate weekly reports and schedule recurring ETL
+jobs. This exercise was a nice opportunity to see how one would
+construct a system similar to Celery in OCaml. It also provides a
+simple illustration of how we can utilize queues to facilitate
+horizontal scaling. If the volume of email requests grows too big for
+one machine, we can put the web server and the worker on separate
+instances or have multiple worker instances consuming from the email
+queue.&lt;/p&gt;
+&lt;p&gt;I didn't cover error handling in this example, but that's clearly an
+important piece of functionality to include when building a production
+email system. At a minimum, it would be useful to add a retry
+mechanism in the event that Mailgun is unavailable.&lt;/p&gt;
+&lt;h2&gt;References&lt;/h2&gt;
+&lt;p&gt;I found the resources below helpful for working on this project:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;The &lt;code&gt;amqp-client&lt;/code&gt;
+&lt;a href="https://andersfugmann.github.io/amqp-client/amqp-client-lwt/index.html"&gt;documentation&lt;/a&gt;,
+  especially the
+  &lt;a href="https://github.com/andersfugmann/amqp-client/tree/master/examples"&gt;examples&lt;/a&gt;
+  were helpful for setting up with RabbitMQ.&lt;/li&gt;
+&lt;li&gt;The &lt;a href="https://github.com/mirage/ocaml-cohttp#client-tutorial"&gt;client
+  tutorial&lt;/a&gt;
+  was helpful for getting started with &lt;code&gt;cohttp&lt;/code&gt;. Later, I utilized
+  &lt;a href="https://mirage.github.io/ocaml-cohttp/cohttp-lwt-unix/Cohttp_lwt_unix/Client/index.html"&gt;this
+  section&lt;/a&gt;
+  of the docs to understand that I needed to use &lt;code&gt;post_form&lt;/code&gt; instead
+  of &lt;code&gt;post&lt;/code&gt; when interacting with Mailgun's API.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;Feedback&lt;/h2&gt;
+&lt;p&gt;If you ended up looking through the source code for this example, let
+me know how what you thought! I'm interested in adding more tutorial
+resources to the OCaml ecosystem, so feel free to post a PR or issue
+to
+&lt;a href="https://github.com/jsthomas/dream-email-example"&gt;dream-email-example&lt;/a&gt;
+if you have ideas about how to make these resources better.&lt;/p&gt;</content><category term="OCaml"></category></entry><entry><title>Writing a REST API with Dream</title><link href="https://jsthomas.github.io/ocaml-dream-api.html" rel="alternate"></link><published>2021-07-12T00:00:00-04:00</published><updated>2021-07-12T00:00:00-04:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2021-07-12:/ocaml-dream-api.html</id><summary type="html">&lt;p&gt;Writing a REST API in Dream&lt;/p&gt;</summary><content type="html">&lt;p&gt;In the last few weeks I've been building a simple REST API using the
 &lt;a href="https://aantron.github.io/dream/"&gt;Dream&lt;/a&gt; web framework. Writing APIs
 has been one major component of my paid programming work and I wanted
 to compare and contrast the experience of writing an API in a strongly

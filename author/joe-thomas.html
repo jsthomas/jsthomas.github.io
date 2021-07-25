@@ -29,7 +29,267 @@
         </div>
     </header>
     <div id="wrapper">
-        <div id="content">            <h4 class="date">Jul 12, 2021</h4>
+        <div id="content">            <h4 class="date">Jul 23, 2021</h4>
+
+            <article class="post">
+                <h2 class="title">
+                    <a href="https://jsthomas.github.io/ocaml-email.html" rel="bookmark" title="Permanent Link to &quot;How to send emails from Dream&quot;">How to send emails from Dream</a>
+                </h2>
+
+                
+                
+
+                <p>I recently <a href="https://github.com/aantron/dream/issues/138">learned</a> the
+OCaml ecosystem has most of the libraries needed to build email
+features, but I wasn't able to find an example that brings all of
+those pieces together. I wanted a simple example I could easily adapt
+to build common account verification and password recovery workflows
+in the Dream web framework. This post is my attempt to solve that
+problem and explain what I learned in the process. The accompanying
+code can be found
+<a href="https://github.com/jsthomas/dream-email-example">here</a>.</p>
+<h2>Defining the problem</h2>
+<p>As an application developer, my main concerns when
+sending mail are:</p>
+<ol>
+<li>Trying to ensure the address I'm sending to is valid.</li>
+<li>Handling the email synthesis process asynchronously, so it doesn't
+   block the web server from handling requests quickly.</li>
+<li>Transmitting the email content (SMTP or a REST API call)</li>
+<li>Monitoring that the applications messages aren't getting
+   blocked/dropped for some reason.</li>
+</ol>
+<p>To test how easily I could satisfy these requirements, I built a web
+app that lets the user send an arbitary email.</p>
+<p><img alt="A screenshot of the email form." src="https://jsthomas.github.io/images/ocaml-email/screenshot.png" style="width: 671px; height: auto;"/></p>
+<p>The app has two parts:</p>
+<ul>
+<li>A server process responsible for showing the form above and
+  validating user inputs.</li>
+<li>A "worker" process responsible for sending mail. The worker gets its
+  tasks from a queue populated by the server.</li>
+</ul>
+<h2>Validating Email Addresses</h2>
+<p>I decided to utilize the library
+<a href="https://github.com/dinosaure/emile"><code>emile</code></a> for address
+validation. An email address might be invalid for reasons outside of
+the application's control (like the domain going way), but <code>emile</code> at
+least provides a way to check a given string conforms to 5(!) RFCs
+relevant to parsing email addresses. Check out the
+<a href="https://github.com/dinosaure/emile/blob/master/test/test.ml#L34">tests</a>
+to see the impressive diversity of valid email addresses on the web.</p>
+<p>The library provides several different predicates for checking
+addresses. I utilized <code>Emile.of_string</code>, which generates a simple
+result type, like this:</p>
+<div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="n">form_post</span> <span class="n">request</span> <span class="o">=</span>
+  <span class="k">match</span><span class="o">%</span><span class="n">lwt</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">form</span> <span class="n">request</span> <span class="k">with</span>
+    <span class="o">|</span> <span class="o">`</span><span class="nc">Ok</span> <span class="o">[</span><span class="s2">"address"</span><span class="o">,</span> <span class="n">address</span><span class="o">;</span> <span class="s2">"message"</span><span class="o">,</span> <span class="n">message</span><span class="o">;</span> <span class="s2">"subject"</span><span class="o">,</span> <span class="n">subject</span> <span class="o">]</span> <span class="o">-&gt;</span>
+      <span class="k">let</span> <span class="n">parse</span> <span class="o">=</span> <span class="nn">Emile</span><span class="p">.</span><span class="n">of_string</span> <span class="n">address</span> <span class="k">in</span>
+      <span class="k">let</span> <span class="n">alert</span> <span class="o">=</span> <span class="k">match</span> <span class="n">parse</span> <span class="k">with</span>
+        <span class="o">|</span> <span class="nc">Ok</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="nn">Printf</span><span class="p">.</span><span class="n">sprintf</span> <span class="s2">"Sent an email to %s."</span> <span class="n">address</span>
+        <span class="o">|</span> <span class="nc">Error</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="nn">Printf</span><span class="p">.</span><span class="n">sprintf</span> <span class="s2">"%s is not a valid email address."</span> <span class="n">address</span>
+      <span class="k">in</span>
+      <span class="k">let</span> <span class="n">queue_req</span> <span class="o">=</span> <span class="k">match</span> <span class="n">parse</span> <span class="k">with</span>
+        <span class="o">|</span> <span class="nc">Ok</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="n">queue_email</span> <span class="n">address</span> <span class="n">subject</span> <span class="n">message</span>
+        <span class="o">|</span> <span class="nc">Error</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="nn">Lwt</span><span class="p">.</span><span class="n">return_unit</span>
+    <span class="k">in</span>
+    <span class="n">queue_req</span> <span class="o">&gt;&gt;=</span> <span class="o">(</span><span class="k">fun</span> <span class="o">_</span> <span class="o">-&gt;</span>
+        <span class="nn">Dream</span><span class="p">.</span><span class="n">html</span> <span class="o">(</span><span class="nn">Template</span><span class="p">.</span><span class="n">show_form</span> <span class="o">~</span><span class="n">alert</span> <span class="n">request</span><span class="o">))</span>
+    <span class="o">|</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">empty</span> <span class="o">`</span><span class="nc">Bad_Request</span>
+</code></pre></div>
+<p>This way, if a user provides an invalid address, the form displays a simple
+warning message and won't queue any email tasks.</p>
+<h2>Queuing Tasks with RabbitMQ</h2>
+<p>The second issue I needed to address is handling the email send
+process with a background worker (<code>queue_email</code> in the code excerpt
+above). Sending an email can be a slow process, especially if you need
+to make additional database queries or render images to produce a
+customized email. That shouldn't block the web server from quickly
+responding to the user's requests. Instead, the server should record
+the email task in a <em>queue</em>, to be handled by a background worker that
+isn't as sensitive to latency.</p>
+<p>There are several different technologies that can be used to solve
+this problem, for example <a href="https://www.rabbitmq.com/">RabbitMQ</a>,
+<a href="https://redislabs.com/ebook/part-2-core-concepts/chapter-6-application-components-in-redis/6-4-task-queues/6-4-1-first-in-first-out-queues/">Redis</a>
+and <a href="https://aws.amazon.com/sqs/">SQS</a>. I decided to use RabbitMQ
+because I didn't want to tie my implementation to one cloud provider
+and RabbitMQ is supported by
+<a href="https://github.com/andersfugmann/amqp-client">amqp-client</a> on
+OPAM. This isn't the only way to go: for Redis and SQS, you might have
+success with the packages
+<a href="https://opam.ocaml.org/packages/redis/">redis</a> or
+<a href="https://opam.ocaml.org/packages/aws-sqs/">aws-sqs</a>, respectively.</p>
+<p>The worker and server process share a common function for establishing
+a connection to RabbitMQ:</p>
+<div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="n">rabbit_connection</span> <span class="bp">()</span> <span class="o">=</span>
+  <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">connection</span> <span class="o">=</span> <span class="nn">Connection</span><span class="p">.</span><span class="n">connect</span> <span class="o">~</span><span class="n">id</span><span class="o">:</span><span class="s2">"dream"</span> <span class="s2">"localhost"</span> <span class="k">in</span>
+  <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">channel</span> <span class="o">=</span> <span class="nn">Connection</span><span class="p">.</span><span class="n">open_channel</span> <span class="o">~</span><span class="n">id</span><span class="o">:</span><span class="s2">"email"</span> <span class="nn">Channel</span><span class="p">.</span><span class="n">no_confirm</span> <span class="n">connection</span> <span class="k">in</span>
+  <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">queue</span> <span class="o">=</span> <span class="nn">Queue</span><span class="p">.</span><span class="n">declare</span> <span class="n">channel</span> <span class="o">~</span><span class="n">arguments</span><span class="o">:[</span><span class="nn">Rpc</span><span class="p">.</span><span class="nn">Server</span><span class="p">.</span><span class="n">queue_argument</span><span class="o">]</span> <span class="s2">"email"</span> <span class="k">in</span>
+  <span class="nn">Lwt</span><span class="p">.</span><span class="n">return</span> <span class="o">(</span><span class="n">channel</span><span class="o">,</span> <span class="n">queue</span><span class="o">)</span>
+</code></pre></div>
+<p>I was initially little confused about why I needed a "channel" when I
+already had a connection to the broker. Both the worker and the server
+connect to the RabbitMQ Broker via TCP. It's common for clients to
+need several connections to the broker, but it's costly to have many
+TCP connections. RabbitMQ lets us avoid this cost with channels, which
+are like "lightweight connections that share a single TCP
+connection", according to these <a href="https://www.rabbitmq.com/channels.html">docs</a>.</p>
+<p>I created this function to submit messages to the queue:</p>
+<div class="highlight"><pre><span></span><code><span class="k">type</span> <span class="n">email</span> <span class="o">=</span> <span class="o">{</span>
+  <span class="n">address</span><span class="o">:</span> <span class="kt">string</span><span class="o">;</span>
+  <span class="n">subject</span><span class="o">:</span> <span class="kt">string</span><span class="o">;</span>
+  <span class="n">text</span><span class="o">:</span> <span class="kt">string</span><span class="o">;</span>
+<span class="o">}</span> <span class="o">[@@</span><span class="n">deriving</span> <span class="n">yojson</span><span class="o">]</span>
+
+<span class="k">let</span> <span class="n">queue_email</span> <span class="n">address</span> <span class="n">subject</span> <span class="n">text</span> <span class="o">=</span>
+  <span class="k">let</span> <span class="n">email</span> <span class="o">=</span> <span class="o">{</span><span class="n">address</span><span class="o">;</span> <span class="n">subject</span><span class="o">;</span> <span class="n">text</span><span class="o">}</span> <span class="k">in</span>
+  <span class="k">let</span> <span class="n">text</span> <span class="o">=</span> <span class="n">email</span> <span class="o">|&gt;</span> <span class="n">yojson_of_email</span> <span class="o">|&gt;</span> <span class="nn">Yojson</span><span class="p">.</span><span class="nn">Safe</span><span class="p">.</span><span class="n">to_string</span> <span class="k">in</span>
+  <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">channel</span><span class="o">,</span> <span class="n">queue</span> <span class="o">=</span> <span class="n">rabbit_connection</span> <span class="bp">()</span> <span class="k">in</span>
+  <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="o">_</span> <span class="o">=</span> <span class="nn">Queue</span><span class="p">.</span><span class="n">publish</span> <span class="n">channel</span> <span class="n">queue</span> <span class="o">(</span><span class="nn">Message</span><span class="p">.</span><span class="n">make</span> <span class="n">text</span><span class="o">)</span> <span class="k">in</span>
+  <span class="nn">Lwt</span><span class="p">.</span><span class="n">return_unit</span>
+</code></pre></div>
+<p>Here the server writes the address, subject, and text into a record
+type that can be serialized to JSON before being pushed into the queue.</p>
+<p>The worker process, <code>queue_worker</code>, is fairly simple to define:</p>
+<div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="n">handle_message</span> <span class="o">(</span><span class="n">m</span><span class="o">:</span> <span class="nn">Message</span><span class="p">.</span><span class="n">t</span><span class="o">)</span> <span class="o">=</span>
+  <span class="k">let</span> <span class="n">text</span> <span class="o">=</span> <span class="n">snd</span> <span class="n">m</span><span class="o">.</span><span class="n">message</span> <span class="k">in</span>
+  <span class="k">let</span> <span class="n">email</span> <span class="o">=</span>
+    <span class="k">try</span>
+      <span class="nc">Some</span> <span class="o">(</span><span class="n">text</span> <span class="o">|&gt;</span> <span class="nn">Yojson</span><span class="p">.</span><span class="nn">Safe</span><span class="p">.</span><span class="n">from_string</span> <span class="o">|&gt;</span> <span class="n">email_of_yojson</span><span class="o">)</span>
+    <span class="k">with</span> <span class="o">_</span> <span class="o">-&gt;</span>
+      <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"Received invalid email record from RabbitMQ: %s"</span> <span class="n">text</span><span class="o">;</span>
+      <span class="nc">None</span>
+  <span class="k">in</span>
+  <span class="k">match</span> <span class="n">email</span> <span class="k">with</span>
+  <span class="o">|</span> <span class="nc">Some</span> <span class="n">e</span> <span class="o">-&gt;</span> <span class="n">send_email</span> <span class="n">e</span>
+  <span class="o">|</span> <span class="nc">None</span> <span class="o">-&gt;</span> <span class="nn">Lwt</span><span class="p">.</span><span class="n">return_unit</span>
+
+
+<span class="k">let</span> <span class="n">queue_worker</span> <span class="bp">()</span> <span class="o">=</span>
+  <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"Starting Queue Worker</span><span class="se">\n</span><span class="s2">"</span><span class="o">;</span>
+  <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">channel</span><span class="o">,</span> <span class="n">queue</span> <span class="o">=</span> <span class="n">rabbit_connection</span> <span class="bp">()</span> <span class="k">in</span>
+  <span class="k">let</span> <span class="k">rec</span> <span class="n">handle</span> <span class="bp">()</span> <span class="o">=</span>
+    <span class="nn">Queue</span><span class="p">.</span><span class="n">get</span> <span class="o">~</span><span class="n">no_ack</span><span class="o">:</span><span class="bp">true</span> <span class="n">channel</span> <span class="n">queue</span> <span class="o">&gt;&gt;=</span> <span class="k">fun</span> <span class="n">message</span> <span class="o">-&gt;</span>
+    <span class="k">let</span> <span class="n">task</span> <span class="o">=</span> <span class="k">match</span> <span class="n">message</span> <span class="k">with</span>
+      <span class="o">|</span> <span class="nc">Some</span> <span class="n">m</span> <span class="o">-&gt;</span> <span class="n">flush</span> <span class="n">stdout</span><span class="o">;</span> <span class="n">handle_message</span> <span class="n">m</span>
+      <span class="o">|</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"No new tasks, waiting.</span><span class="se">\n</span><span class="s2">"</span><span class="o">;</span> <span class="n">flush</span> <span class="n">stdout</span><span class="o">;</span> <span class="nn">Lwt_unix</span><span class="p">.</span><span class="n">sleep</span> <span class="mi">5</span><span class="o">.</span>
+    <span class="k">in</span>
+    <span class="n">task</span> <span class="o">&gt;&gt;=</span> <span class="n">handle</span>
+  <span class="k">in</span>
+  <span class="n">handle</span> <span class="bp">()</span>
+</code></pre></div>
+<p>The worker consists of an infinite loop. When the worker wakes and
+finds tasks in the queue, it uses <code>yojson</code> to deserialize the
+messages and passes them to <code>send_email</code>. If no work is available,
+the worker just sleeps for 5 seconds.</p>
+<h2>Sending Email with <code>cohttp</code> and Mailgun</h2>
+<p>In order to send mail, I set up a trial
+<a href="https://documentation.mailgun.com/en/latest/quickstart-sending.html#send-via-smtp">Mailgun</a>
+account. I selected this provider for several reasons:</p>
+<ul>
+<li>Mailgun has a generous free tier (5000 emails).</li>
+<li>A new account also comes with a "sandbox" domain, so I didn't have
+  to deal with registering a domain.</li>
+<li>Mailgun supports both a REST API and SMTP, allowing me to try
+  different integrations.</li>
+<li>Mailgun provides dashboards for tracking messages sent over time as
+  well as emails that were rejected (bounced, marked as spam, etc.).</li>
+</ul>
+<p>Mailgun's API allowed me to send an email by sending a POST with an API key and form
+data, like this:</p>
+<div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="n">send_email</span> <span class="o">(</span><span class="n">e</span><span class="o">:</span> <span class="n">email</span><span class="o">)</span> <span class="o">=</span>
+   <span class="k">let</span> <span class="k">open</span> <span class="nc">Cohttp</span> <span class="k">in</span>
+   <span class="k">let</span> <span class="k">open</span> <span class="nc">Cohttp_lwt_unix</span> <span class="k">in</span>
+
+   <span class="k">let</span> <span class="n">api_key</span> <span class="o">=</span> <span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">"MAILGUN_API_KEY"</span> <span class="k">in</span>
+   <span class="k">let</span> <span class="n">sender</span> <span class="o">=</span> <span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">"MAILGUN_SEND_ADDRESS"</span> <span class="k">in</span>
+   <span class="k">let</span> <span class="n">api_base</span> <span class="o">=</span> <span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">"MAILGUN_API_BASE"</span> <span class="k">in</span>
+
+   <span class="k">let</span> <span class="n">params</span> <span class="o">=</span> <span class="o">[</span>
+     <span class="o">(</span><span class="s2">"from"</span><span class="o">,</span> <span class="o">[</span><span class="n">sender</span><span class="o">]);</span>
+     <span class="o">(</span><span class="s2">"to"</span><span class="o">,</span> <span class="o">[</span><span class="n">e</span><span class="o">.</span><span class="n">address</span><span class="o">]);</span>
+     <span class="o">(</span><span class="s2">"subject"</span><span class="o">,</span> <span class="o">[</span><span class="n">e</span><span class="o">.</span><span class="n">subject</span><span class="o">]);</span>
+     <span class="o">(</span><span class="s2">"text"</span><span class="o">,</span> <span class="o">[</span><span class="n">e</span><span class="o">.</span><span class="n">text</span><span class="o">])</span>
+   <span class="o">]</span> <span class="k">in</span>
+   <span class="k">let</span> <span class="n">cred</span> <span class="o">=</span> <span class="o">`</span><span class="nc">Basic</span> <span class="o">(</span><span class="s2">"api"</span><span class="o">,</span> <span class="n">api_key</span><span class="o">)</span> <span class="k">in</span>
+   <span class="k">let</span> <span class="n">uri</span> <span class="o">=</span> <span class="n">api_base</span> <span class="o">^</span> <span class="s2">"/messages"</span> <span class="o">|&gt;</span> <span class="nn">Uri</span><span class="p">.</span><span class="n">of_string</span> <span class="k">in</span>
+   <span class="k">let</span> <span class="n">headers</span> <span class="o">=</span> <span class="nn">Header</span><span class="p">.</span><span class="n">add_authorization</span> <span class="o">(</span><span class="nn">Header</span><span class="p">.</span><span class="n">init</span> <span class="bp">()</span><span class="o">)</span> <span class="n">cred</span> <span class="k">in</span>
+   <span class="k">let</span> <span class="n">start</span> <span class="o">=</span>
+     <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"Initiating email send to %s.</span><span class="se">\n</span><span class="s2">"</span> <span class="n">e</span><span class="o">.</span><span class="n">address</span><span class="o">;</span>
+     <span class="nn">Unix</span><span class="p">.</span><span class="n">gettimeofday</span> <span class="bp">()</span> <span class="k">in</span>
+   <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">resp</span><span class="o">,</span> <span class="n">rbody</span> <span class="o">=</span> <span class="nn">Client</span><span class="p">.</span><span class="n">post_form</span> <span class="n">uri</span> <span class="o">~</span><span class="n">params</span> <span class="o">~</span><span class="n">headers</span> <span class="k">in</span>
+   <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">finish</span> <span class="o">=</span> <span class="nn">Unix</span><span class="p">.</span><span class="n">gettimeofday</span> <span class="bp">()</span> <span class="o">|&gt;</span> <span class="nn">Lwt</span><span class="p">.</span><span class="n">return</span> <span class="k">in</span>
+   <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">rbody_str</span> <span class="o">=</span> <span class="o">(</span><span class="nn">Cohttp_lwt</span><span class="p">.</span><span class="nn">Body</span><span class="p">.</span><span class="n">to_string</span> <span class="n">rbody</span><span class="o">)</span> <span class="k">in</span>
+   <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"API Response Status: %d.</span><span class="se">\n</span><span class="s2">"</span> <span class="o">(</span><span class="nn">Code</span><span class="p">.</span><span class="n">code_of_status</span> <span class="n">resp</span><span class="o">.</span><span class="n">status</span><span class="o">);</span>
+   <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"API Response body %s.</span><span class="se">\n</span><span class="s2">"</span> <span class="n">rbody_str</span><span class="o">;</span>
+   <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"Time to send an email: %.2fs</span><span class="se">\n</span><span class="s2">"</span> <span class="o">(</span><span class="n">finish</span> <span class="o">-.</span> <span class="n">start</span><span class="o">);</span>
+   <span class="nn">Lwt</span><span class="p">.</span><span class="n">return</span> <span class="bp">()</span>
+</code></pre></div>
+<p>The endpoint replies with either 200 and a JSON body like this:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+  <span class="nt">"id"</span><span class="p">:</span> <span class="s2">"&lt;some mailgun email address here&gt;"</span>
+  <span class="s2">"message"</span><span class="p">:</span> <span class="s2">"Queued. Thank you."</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>or else a 400 and an explanation of why the request was rejected. In
+my tests, a successful API request typically took between 0.5 and 1
+seconds. For comparison, the webserver can serve the email form in
+less than 200 microseconds, so the performance benefits to shifting
+email tasks to a background queue are nontrivial.</p>
+<p>Although Mailgun supports SMTP, they recommend using their API,
+especially for sending large amounts of mail at once. I tried using
+<a href="https://github.com/oxidizing/letters/">letters</a> to test their SMTP
+support, but ran into some
+<a href="https://github.com/oxidizing/letters/issues/35">difficulties</a>. At the
+moment I can't really provide any tips for setting up a web server
+with SMTP support in OCaml. This is something I'll have to revisit.</p>
+<h2>Discussion</h2>
+<p>This example focused on email, but task queues and background workers
+can be used to implement other important pieces of functionality for
+web applications. For example, I've utilized
+<a href="https://docs.celeryproject.org/en/stable/getting-started/introduction.html">celery</a>
+in the past to generate weekly reports and schedule recurring ETL
+jobs. This exercise was a nice opportunity to see how one would
+construct a system similar to Celery in OCaml. It also provides a
+simple illustration of how we can utilize queues to facilitate
+horizontal scaling. If the volume of email requests grows too big for
+one machine, we can put the web server and the worker on separate
+instances or have multiple worker instances consuming from the email
+queue.</p>
+<p>I didn't cover error handling in this example, but that's clearly an
+important piece of functionality to include when building a production
+email system. At a minimum, it would be useful to add a retry
+mechanism in the event that Mailgun is unavailable.</p>
+<h2>References</h2>
+<p>I found the resources below helpful for working on this project:</p>
+<ul>
+<li>The <code>amqp-client</code>
+<a href="https://andersfugmann.github.io/amqp-client/amqp-client-lwt/index.html">documentation</a>,
+  especially the
+  <a href="https://github.com/andersfugmann/amqp-client/tree/master/examples">examples</a>
+  were helpful for setting up with RabbitMQ.</li>
+<li>The <a href="https://github.com/mirage/ocaml-cohttp#client-tutorial">client
+  tutorial</a>
+  was helpful for getting started with <code>cohttp</code>. Later, I utilized
+  <a href="https://mirage.github.io/ocaml-cohttp/cohttp-lwt-unix/Cohttp_lwt_unix/Client/index.html">this
+  section</a>
+  of the docs to understand that I needed to use <code>post_form</code> instead
+  of <code>post</code> when interacting with Mailgun's API.</li>
+</ul>
+<h2>Feedback</h2>
+<p>If you ended up looking through the source code for this example, let
+me know how what you thought! I'm interested in adding more tutorial
+resources to the OCaml ecosystem, so feel free to post a PR or issue
+to
+<a href="https://github.com/jsthomas/dream-email-example">dream-email-example</a>
+if you have ideas about how to make these resources better.</p>
+                <div class="clear"></div>
+
+                <div class="info">
+                    <a href="https://jsthomas.github.io/ocaml-email.html">posted at 00:00</a>
+                    &nbsp;&middot;&nbsp;<a href="https://jsthomas.github.io/category/ocaml.html" rel="tag">OCaml</a>
+                </div>
+            </article>            <h4 class="date">Jul 12, 2021</h4>
 
             <article class="post">
                 <h2 class="title">
