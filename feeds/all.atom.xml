@@ -196,13 +196,51 @@ my tests, a successful API request typically took between 0.5 and 1
 seconds. For comparison, the webserver can serve the email form in
 less than 200 microseconds, so the performance benefits to shifting
 email tasks to a background queue are nontrivial.&lt;/p&gt;
-&lt;p&gt;Although Mailgun supports SMTP, they recommend using their API,
-especially for sending large amounts of mail at once. I tried using
+&lt;h2&gt;Sending email with SMTP&lt;/h2&gt;
+&lt;p&gt;Mailgun supports SMTP but they recommend using their API, especially
+for sending large amounts of mail at once. I used
 &lt;a href="https://github.com/oxidizing/letters/"&gt;letters&lt;/a&gt; to test their SMTP
-support, but ran into some
-&lt;a href="https://github.com/oxidizing/letters/issues/35"&gt;difficulties&lt;/a&gt;. At the
-moment I can't really provide any tips for setting up a web server
-with SMTP support in OCaml. This is something I'll have to revisit.&lt;/p&gt;
+support with this script:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;body&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Letters&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nc"&gt;Plain&lt;/span&gt; &lt;span class="o"&gt;{|&lt;/span&gt;&lt;span class="nc"&gt;This&lt;/span&gt; &lt;span class="n"&gt;is&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="n"&gt;test&lt;/span&gt; &lt;span class="n"&gt;email&lt;/span&gt; &lt;span class="n"&gt;body&lt;/span&gt;&lt;span class="o"&gt;.|}&lt;/span&gt;
+
+&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;send_email&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;config&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nn"&gt;Letters&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nn"&gt;Config&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;make&lt;/span&gt;
+      &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;username&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="nn"&gt;Sys&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getenv&lt;/span&gt; &lt;span class="s2"&gt;"MAILGUN_SMTP_USER"&lt;/span&gt;
+      &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;password&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="nn"&gt;Sys&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getenv&lt;/span&gt; &lt;span class="s2"&gt;"MAILGUN_SMTP_PASSWORD"&lt;/span&gt;
+      &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;hostname&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="s2"&gt;"smtp.mailgun.org"&lt;/span&gt;
+      &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;with_starttls&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="bp"&gt;true&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+  &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;sender&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Sys&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getenv&lt;/span&gt; &lt;span class="s2"&gt;"MAILGUN_SMTP_SENDER"&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;recipients&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="nn"&gt;Letters&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nc"&gt;To&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nn"&gt;Sys&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getenv&lt;/span&gt; &lt;span class="s2"&gt;"EMAIL_ADDRESS"&lt;/span&gt;&lt;span class="o"&gt;)]&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;subject&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"Test email from mailgun."&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;mail&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Letters&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;build_email&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;from&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="n"&gt;sender&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;recipients&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;subject&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;body&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+
+  &lt;span class="nn"&gt;Printexc&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;record_backtrace&lt;/span&gt; &lt;span class="bp"&gt;true&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+  &lt;span class="k"&gt;match&lt;/span&gt; &lt;span class="n"&gt;mail&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt;
+  &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Ok&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
+    &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="k"&gt;try&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt;
+       &lt;span class="nn"&gt;Letters&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;send&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;config&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;sender&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;recipients&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;message&lt;/span&gt;
+    &lt;span class="k"&gt;with&lt;/span&gt;
+      &lt;span class="n"&gt;e&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
+      &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;"Error. %s&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nn"&gt;Printexc&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;to_string&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+      &lt;span class="nn"&gt;Printexc&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;print_backtrace&lt;/span&gt; &lt;span class="n"&gt;stdout&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+      &lt;span class="nn"&gt;Lwt&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;return_unit&lt;/span&gt;
+   &lt;span class="o"&gt;)&lt;/span&gt;
+  &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Error&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;"Message synthesis failed."&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="n"&gt;flush&lt;/span&gt; &lt;span class="n"&gt;stdout&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="nn"&gt;Lwt&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;return_unit&lt;/span&gt;
+
+
+&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+  &lt;span class="nn"&gt;Lwt_main&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;run&lt;/span&gt; &lt;span class="o"&gt;@@&lt;/span&gt; &lt;span class="n"&gt;send_email&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;I ran into some
+&lt;a href="https://github.com/oxidizing/letters/issues/35"&gt;difficulties&lt;/a&gt; because
+Mailgun does not consistently follow RFC 4954 (thanks to Calascibetta
+Romain for figuring out the problem and creating a
+&lt;a href="https://github.com/mirage/colombe/pull/41"&gt;patch&lt;/a&gt;). Once I applied
+the patch, I was able to send mail successfully.&lt;/p&gt;
+&lt;p&gt;I haven't fully explored the tradeoffs of using SMTP versus an
+API. The main goal of my experiements was to confirm that if I needed
+to integrate with a specific SMTP server, I knew how to do so.&lt;/p&gt;
 &lt;h2&gt;Discussion&lt;/h2&gt;
 &lt;p&gt;This example focused on email, but task queues and background workers
 can be used to implement other important pieces of functionality for
@@ -210,7 +248,7 @@ web applications. For example, I've utilized
 &lt;a href="https://docs.celeryproject.org/en/stable/getting-started/introduction.html"&gt;celery&lt;/a&gt;
 in the past to generate weekly reports and schedule recurring ETL
 jobs. This exercise was a nice opportunity to see how one would
-construct a system similar to Celery in OCaml. It also provides a
+construct a system similar to &lt;code&gt;celery&lt;/code&gt; in OCaml. It also provides a
 simple illustration of how we can utilize queues to facilitate
 horizontal scaling. If the volume of email requests grows too big for
 one machine, we can put the web server and the worker on separate

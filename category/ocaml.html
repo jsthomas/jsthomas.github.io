@@ -237,13 +237,51 @@ my tests, a successful API request typically took between 0.5 and 1
 seconds. For comparison, the webserver can serve the email form in
 less than 200 microseconds, so the performance benefits to shifting
 email tasks to a background queue are nontrivial.</p>
-<p>Although Mailgun supports SMTP, they recommend using their API,
-especially for sending large amounts of mail at once. I tried using
+<h2>Sending email with SMTP</h2>
+<p>Mailgun supports SMTP but they recommend using their API, especially
+for sending large amounts of mail at once. I used
 <a href="https://github.com/oxidizing/letters/">letters</a> to test their SMTP
-support, but ran into some
-<a href="https://github.com/oxidizing/letters/issues/35">difficulties</a>. At the
-moment I can't really provide any tips for setting up a web server
-with SMTP support in OCaml. This is something I'll have to revisit.</p>
+support with this script:</p>
+<div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="n">body</span> <span class="o">=</span> <span class="nn">Letters</span><span class="p">.</span><span class="nc">Plain</span> <span class="o">{|</span><span class="nc">This</span> <span class="n">is</span> <span class="n">a</span> <span class="n">test</span> <span class="n">email</span> <span class="n">body</span><span class="o">.|}</span>
+
+<span class="k">let</span> <span class="n">send_email</span> <span class="bp">()</span> <span class="o">=</span>
+  <span class="k">let</span> <span class="n">config</span> <span class="o">=</span> <span class="o">(</span><span class="nn">Letters</span><span class="p">.</span><span class="nn">Config</span><span class="p">.</span><span class="n">make</span>
+      <span class="o">~</span><span class="n">username</span><span class="o">:</span> <span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">"MAILGUN_SMTP_USER"</span>
+      <span class="o">~</span><span class="n">password</span><span class="o">:</span> <span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">"MAILGUN_SMTP_PASSWORD"</span>
+      <span class="o">~</span><span class="n">hostname</span><span class="o">:</span><span class="s2">"smtp.mailgun.org"</span>
+      <span class="o">~</span><span class="n">with_starttls</span><span class="o">:</span><span class="bp">true</span><span class="o">)</span>
+  <span class="k">in</span>
+  <span class="k">let</span> <span class="n">sender</span> <span class="o">=</span> <span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">"MAILGUN_SMTP_SENDER"</span> <span class="k">in</span>
+  <span class="k">let</span> <span class="n">recipients</span> <span class="o">=</span> <span class="o">[</span><span class="nn">Letters</span><span class="p">.</span><span class="nc">To</span> <span class="o">(</span><span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">"EMAIL_ADDRESS"</span><span class="o">)]</span> <span class="k">in</span>
+  <span class="k">let</span> <span class="n">subject</span> <span class="o">=</span> <span class="s2">"Test email from mailgun."</span> <span class="k">in</span>
+  <span class="k">let</span> <span class="n">mail</span> <span class="o">=</span> <span class="nn">Letters</span><span class="p">.</span><span class="n">build_email</span> <span class="o">~</span><span class="n">from</span><span class="o">:</span><span class="n">sender</span> <span class="o">~</span><span class="n">recipients</span> <span class="o">~</span><span class="n">subject</span> <span class="o">~</span><span class="n">body</span> <span class="k">in</span>
+
+  <span class="nn">Printexc</span><span class="p">.</span><span class="n">record_backtrace</span> <span class="bp">true</span><span class="o">;</span>
+  <span class="k">match</span> <span class="n">mail</span> <span class="k">with</span>
+  <span class="o">|</span> <span class="nc">Ok</span> <span class="n">message</span> <span class="o">-&gt;</span>
+    <span class="o">(</span><span class="k">try</span><span class="o">%</span><span class="n">lwt</span>
+       <span class="nn">Letters</span><span class="p">.</span><span class="n">send</span> <span class="o">~</span><span class="n">config</span> <span class="o">~</span><span class="n">sender</span> <span class="o">~</span><span class="n">recipients</span> <span class="o">~</span><span class="n">message</span>
+    <span class="k">with</span>
+      <span class="n">e</span> <span class="o">-&gt;</span>
+      <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"Error. %s</span><span class="se">\n</span><span class="s2">"</span> <span class="o">(</span><span class="nn">Printexc</span><span class="p">.</span><span class="n">to_string</span> <span class="n">e</span><span class="o">);</span>
+      <span class="nn">Printexc</span><span class="p">.</span><span class="n">print_backtrace</span> <span class="n">stdout</span><span class="o">;</span>
+      <span class="nn">Lwt</span><span class="p">.</span><span class="n">return_unit</span>
+   <span class="o">)</span>
+  <span class="o">|</span> <span class="nc">Error</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"Message synthesis failed."</span><span class="o">;</span> <span class="n">flush</span> <span class="n">stdout</span><span class="o">;</span> <span class="nn">Lwt</span><span class="p">.</span><span class="n">return_unit</span>
+
+
+<span class="k">let</span> <span class="bp">()</span> <span class="o">=</span>
+  <span class="nn">Lwt_main</span><span class="p">.</span><span class="n">run</span> <span class="o">@@</span> <span class="n">send_email</span> <span class="bp">()</span>
+</code></pre></div>
+<p>I ran into some
+<a href="https://github.com/oxidizing/letters/issues/35">difficulties</a> because
+Mailgun does not consistently follow RFC 4954 (thanks to Calascibetta
+Romain for figuring out the problem and creating a
+<a href="https://github.com/mirage/colombe/pull/41">patch</a>). Once I applied
+the patch, I was able to send mail successfully.</p>
+<p>I haven't fully explored the tradeoffs of using SMTP versus an
+API. The main goal of my experiements was to confirm that if I needed
+to integrate with a specific SMTP server, I knew how to do so.</p>
 <h2>Discussion</h2>
 <p>This example focused on email, but task queues and background workers
 can be used to implement other important pieces of functionality for
@@ -251,7 +289,7 @@ web applications. For example, I've utilized
 <a href="https://docs.celeryproject.org/en/stable/getting-started/introduction.html">celery</a>
 in the past to generate weekly reports and schedule recurring ETL
 jobs. This exercise was a nice opportunity to see how one would
-construct a system similar to Celery in OCaml. It also provides a
+construct a system similar to <code>celery</code> in OCaml. It also provides a
 simple illustration of how we can utilize queues to facilitate
 horizontal scaling. If the volume of email requests grows too big for
 one machine, we can put the web server and the worker on separate
