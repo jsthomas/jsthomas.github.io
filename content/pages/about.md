@@ -16,8 +16,7 @@ in programming languages, data science, and mathematics.
 
 Currently, I'm attending the [Recurse
 Center](https://www.recurse.com/), where I'm making open source
-contributions to the OCaml ecosystem. If you're interested in hiring
-me in a functional programming or research role, please get in touch.
+contributions to the OCaml ecosystem.
 
 ## Contact Information and Resume
 
