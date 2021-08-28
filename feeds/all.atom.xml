@@ -1,5 +1,289 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Joe Thomas</title><link href="https://jsthomas.github.io/" rel="alternate"></link><link href="https://jsthomas.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jsthomas.github.io/</id><updated>2021-08-17T00:00:00-04:00</updated><entry><title>Thoughts on running a job search in 2021</title><link href="https://jsthomas.github.io/job-search-2021.html" rel="alternate"></link><published>2021-08-17T00:00:00-04:00</published><updated>2021-08-17T00:00:00-04:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2021-08-17:/job-search-2021.html</id><summary type="html">&lt;p&gt;Some notes from my most recent job search.&lt;/p&gt;</summary><content type="html">&lt;p&gt;I recently wrapped up a job search. My new job starts as I'm in the
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Joe Thomas</title><link href="https://jsthomas.github.io/" rel="alternate"></link><link href="https://jsthomas.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jsthomas.github.io/</id><updated>2021-08-25T00:00:00-04:00</updated><entry><title>Debugging an SMTP Integration in OCaml</title><link href="https://jsthomas.github.io/smtp-debugging.html" rel="alternate"></link><published>2021-08-25T00:00:00-04:00</published><updated>2021-08-25T00:00:00-04:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2021-08-25:/smtp-debugging.html</id><summary type="html">&lt;p&gt;Things I learned while fixing some SMTP problems.&lt;/p&gt;</summary><content type="html">&lt;p&gt;For the last few weeks I've been working on a side project to create a
+small library called
+&lt;a href="https://github.com/jsthomas/tidy-email"&gt;&lt;code&gt;tidy_email&lt;/code&gt;&lt;/a&gt; that makes it
+easier to send email in OCaml. The repository has some example
+programs illustrating how to connect to different email services. I
+wanted to make sure that these programs would fail gracefully if
+configured with the wrong credentials. But when I ran my example &lt;a href="https://github.com/jsthomas/tidy-email/blob/main/smtp/example/send.ml"&gt;SMTP
+app&lt;/a&gt;
+with an invalid password, I saw this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="err"&gt;Send failed. Details: Error: Stack overflow&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;I expected to see some sort of "not authorized" message. Why was
+this happening? This post summarizes how I debugged this problem.&lt;/p&gt;
+&lt;h2&gt;Context&lt;/h2&gt;
+&lt;p&gt;Among email services (like Mailgun, Sendgrid, and Amazon SES) there
+are typically two ways for a web application to send email: make a
+request to a REST API or use
+&lt;a href="https://en.wikipedia.org/wiki/Simple_Mail_Transfer_Protocol"&gt;SMTP&lt;/a&gt;. REST
+APIs are convenient because they expose more features. In particular,
+when you provide malformed data, the API can respond with a detailed
+explanation of what the application did incorrectly. On the other
+hand, SMTP is advantageous if you already have a mail server, want to
+integrate with a legacy system, or can't be bothered to write a custom
+REST API integration.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;tidy_email&lt;/code&gt; provides a simple wrapper around other libraries that
+handle HTTP requests and/or SMTP. For SMTP, it uses
+&lt;a href="https://github.com/oxidizing/letters"&gt;&lt;code&gt;letters&lt;/code&gt;&lt;/a&gt;, which in turn
+depends on a library called
+&lt;a href="https://github.com/mirage/colombe/"&gt;&lt;code&gt;colombe&lt;/code&gt;&lt;/a&gt;. At a high level, what
+I wanted to understand was why &lt;code&gt;letters&lt;/code&gt; was experiencing a stack
+overflow when provided with bad SMTP credentials.&lt;/p&gt;
+&lt;p&gt;The specific SMTP server I was testing against was provided by
+Mailgun. I had previously had some
+&lt;a href="https://github.com/oxidizing/letters/issues/35"&gt;difficulties&lt;/a&gt; with
+this server; these came about because Mailgun's implementation doesn't
+strictly adhere to the relevant RFCs, and I thought something similar
+might be occurring here.&lt;/p&gt;
+&lt;h2&gt;Gathering Data&lt;/h2&gt;
+&lt;p&gt;I started by cloning the &lt;code&gt;letters&lt;/code&gt; and &lt;code&gt;colombe&lt;/code&gt; repositories from
+github. Fortunately, I already had
+&lt;a href="https://github.com/ocaml/merlin/wiki/emacs-from-scratch#configuring-your-project"&gt;&lt;code&gt;merlin&lt;/code&gt;&lt;/a&gt;
+installed for Emacs. This gave me the ability to jump from a function
+call in my source code to the function's definition (&lt;code&gt;C-c l&lt;/code&gt;). It also
+allowed me to quickly look up types (&lt;code&gt;C-c t&lt;/code&gt;). These hotkeys were
+invaluable for efficiently working with unfamiliar code.&lt;/p&gt;
+&lt;p&gt;Before I started digging into the source code, I tried running
+&lt;code&gt;strace&lt;/code&gt; on my test app. This tool produces a log of all system calls
+made by the app under test. This results in a &lt;em&gt;lot&lt;/em&gt; of output; here is
+an excerpt of what I saw:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="err"&gt;read(5, "220 Mailgun Influx ready\r\n", 4096) = 26&lt;/span&gt;
+&lt;span class="err"&gt;read(5, 0x56132a92d460, 4096)           = -1 EAGAIN (Resource temporarily unavailable)&lt;/span&gt;
+&lt;span class="err"&gt;write(5, "EHLO glenmeretechnologies.com\r\n", 31) = 31&lt;/span&gt;
+&lt;span class="err"&gt;getpid()                                = 15565&lt;/span&gt;
+&lt;span class="err"&gt;epoll_wait(3, [{EPOLLIN, {u32=5, u64=8589934597}}], 64, 9879) = 1&lt;/span&gt;
+&lt;span class="err"&gt;read(5, "250-smtp-out-n02.prod.us-west-2."..., 4096) = 144&lt;/span&gt;
+&lt;span class="err"&gt;read(5, 0x56132a92d460, 4096)           = -1 EAGAIN (Resource temporarily unavailable)&lt;/span&gt;
+&lt;span class="err"&gt;write(5, "STARTTLS\r\n", 10)            = 10&lt;/span&gt;
+&lt;span class="err"&gt;getpid()                                = 15565&lt;/span&gt;
+&lt;span class="err"&gt;epoll_wait(3, [{EPOLLIN, {u32=5, u64=8589934597}}], 64, 9840) = 1&lt;/span&gt;
+&lt;span class="err"&gt;read(5, "220 Go ahead\r\n", 4096)       = 14&lt;/span&gt;
+&lt;span class="err"&gt;brk(0x56132a954000)                     = 0x56132a954000&lt;/span&gt;
+&lt;span class="err"&gt;brk(0x56132a975000)                     = 0x56132a975000&lt;/span&gt;
+&lt;span class="err"&gt;brk(0x56132a996000)                     = 0x56132a996000&lt;/span&gt;
+&lt;span class="err"&gt;read(5, 0x56132a92d460, 4096)           = -1 EAGAIN (Resource temporarily unavailable)&lt;/span&gt;
+&lt;span class="err"&gt;write(5, "\26\3\3\2\0\1\0\1\374\3\0033y\374\354\246\200\2749u\7\375P\226\273\37\342|\257\235\277h"..., 517) = 517&lt;/span&gt;
+&lt;span class="err"&gt;getpid()                                = 15565&lt;/span&gt;
+&lt;span class="err"&gt;epoll_wait(3, [{EPOLLIN, {u32=5, u64=8589934597}}], 64, 9796) = 1&lt;/span&gt;
+&lt;span class="err"&gt;read(5, "\26\3\3\0Z\2\0\0V\3\3\22c1v\234\367\0\322fR\230\264\236;\314\f\23\234$\245\33"..., 4096) = 3389&lt;/span&gt;
+&lt;span class="err"&gt;read(5, 0x56132a92d460, 4096)           = -1 EAGAIN (Resource temporarily unavailable)&lt;/span&gt;
+&lt;span class="err"&gt;...&lt;/span&gt;
+&lt;span class="err"&gt;read(5, "", 4096)                       = 0&lt;/span&gt;
+&lt;span class="err"&gt;(last line repeats hundreds of times)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;From this output, I was able to glean a couple of things:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;My app is successfully connecting to &lt;code&gt;smtp.mailgun.org&lt;/code&gt;, as
+   evidenced by the &lt;code&gt;220 Go ahead&lt;/code&gt; message.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The hundreds of &lt;code&gt;read&lt;/code&gt; calls seem related to the stack overflow
+   issue. They suggest some sort of infinite loop or that the app is
+   trying to read data that isn't available for some reason.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;Getting more information about SMTP&lt;/h2&gt;
+&lt;p&gt;At this point, I decided I needed to learn a little bit about how SMTP
+works. Fortunately, wikipedia provides a fairly concise
+&lt;a href="https://en.wikipedia.org/wiki/Simple_Mail_Transfer_Protocol"&gt;overview&lt;/a&gt;
+with an example of a successful SMTP session (&lt;code&gt;S&lt;/code&gt; = Server, &lt;code&gt;C&lt;/code&gt; = Client):&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="n"&gt;S&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="mi"&gt;220&lt;/span&gt; &lt;span class="n"&gt;smtp&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;example&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;com&lt;/span&gt; &lt;span class="n"&gt;ESMTP&lt;/span&gt; &lt;span class="n"&gt;Postfix&lt;/span&gt;
+&lt;span class="n"&gt;C&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;HELO&lt;/span&gt; &lt;span class="n"&gt;relay&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;example&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;com&lt;/span&gt;
+&lt;span class="n"&gt;S&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="mi"&gt;250&lt;/span&gt; &lt;span class="n"&gt;smtp&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;example&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;com&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;I&lt;/span&gt; &lt;span class="n"&gt;am&lt;/span&gt; &lt;span class="n"&gt;glad&lt;/span&gt; &lt;span class="n"&gt;to&lt;/span&gt; &lt;span class="n"&gt;meet&lt;/span&gt; &lt;span class="n"&gt;you&lt;/span&gt;
+&lt;span class="n"&gt;C&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;MAIL&lt;/span&gt; &lt;span class="n"&gt;FROM&lt;/span&gt;&lt;span class="o"&gt;:&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;bob&lt;/span&gt;&lt;span class="err"&gt;@&lt;/span&gt;&lt;span class="n"&gt;example&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;com&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="n"&gt;S&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="mi"&gt;250&lt;/span&gt; &lt;span class="n"&gt;Ok&lt;/span&gt;
+&lt;span class="n"&gt;C&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;RCPT&lt;/span&gt; &lt;span class="n"&gt;TO&lt;/span&gt;&lt;span class="o"&gt;:&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;alice&lt;/span&gt;&lt;span class="err"&gt;@&lt;/span&gt;&lt;span class="n"&gt;example&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;com&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="n"&gt;S&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="mi"&gt;250&lt;/span&gt; &lt;span class="n"&gt;Ok&lt;/span&gt;
+&lt;span class="n"&gt;C&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;RCPT&lt;/span&gt; &lt;span class="n"&gt;TO&lt;/span&gt;&lt;span class="o"&gt;:&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;theboss&lt;/span&gt;&lt;span class="err"&gt;@&lt;/span&gt;&lt;span class="n"&gt;example&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;com&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="n"&gt;S&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="mi"&gt;250&lt;/span&gt; &lt;span class="n"&gt;Ok&lt;/span&gt;
+&lt;span class="n"&gt;C&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;DATA&lt;/span&gt;
+&lt;span class="n"&gt;S&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="mi"&gt;354&lt;/span&gt; &lt;span class="n"&gt;End&lt;/span&gt; &lt;span class="n"&gt;data&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;CR&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;LF&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;.&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;CR&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;LF&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="n"&gt;C&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;From&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;"Bob Example"&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;bob&lt;/span&gt;&lt;span class="err"&gt;@&lt;/span&gt;&lt;span class="n"&gt;example&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;com&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="n"&gt;C&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;To&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Alice&lt;/span&gt; &lt;span class="n"&gt;Example&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;alice&lt;/span&gt;&lt;span class="err"&gt;@&lt;/span&gt;&lt;span class="n"&gt;example&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;com&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="n"&gt;C&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Cc&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;theboss&lt;/span&gt;&lt;span class="err"&gt;@&lt;/span&gt;&lt;span class="n"&gt;example&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;com&lt;/span&gt;
+&lt;span class="n"&gt;C&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Date&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Tue&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;15&lt;/span&gt; &lt;span class="n"&gt;Jan&lt;/span&gt; &lt;span class="mi"&gt;2008&lt;/span&gt; &lt;span class="mi"&gt;16&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="mi"&gt;02&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="mi"&gt;43&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;0500&lt;/span&gt;
+&lt;span class="n"&gt;C&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Subject&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Test&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;
+&lt;span class="n"&gt;C&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;
+&lt;span class="n"&gt;C&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Hello&lt;/span&gt; &lt;span class="n"&gt;Alice&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;
+&lt;span class="n"&gt;C&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;This&lt;/span&gt; &lt;span class="k"&gt;is&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="n"&gt;test&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt; &lt;span class="mi"&gt;5&lt;/span&gt; &lt;span class="n"&gt;header&lt;/span&gt; &lt;span class="n"&gt;fields&lt;/span&gt; &lt;span class="n"&gt;and&lt;/span&gt; &lt;span class="mi"&gt;4&lt;/span&gt; &lt;span class="n"&gt;lines&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt; &lt;span class="n"&gt;the&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt; &lt;span class="n"&gt;body&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;
+&lt;span class="n"&gt;C&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Your&lt;/span&gt; &lt;span class="n"&gt;friend&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt;
+&lt;span class="n"&gt;C&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Bob&lt;/span&gt;
+&lt;span class="n"&gt;C&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="o"&gt;.&lt;/span&gt;
+&lt;span class="n"&gt;S&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="mi"&gt;250&lt;/span&gt; &lt;span class="n"&gt;Ok&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;queued&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="mi"&gt;12345&lt;/span&gt;
+&lt;span class="n"&gt;C&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;QUIT&lt;/span&gt;
+&lt;span class="n"&gt;S&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="mi"&gt;221&lt;/span&gt; &lt;span class="n"&gt;Bye&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Unfortunately, this excerpt doesn't explain much about how a session
+using STARTTLS should look. Since I saw some successful &lt;code&gt;read&lt;/code&gt; calls
+in my strace output, with arguments that weren't readable text, I
+inferred that TLS was probably interfering with my ability to easily
+see what was going on in the session after the first 220 response.&lt;/p&gt;
+&lt;h2&gt;Getting more data from logs&lt;/h2&gt;
+&lt;p&gt;I used &lt;code&gt;merlin&lt;/code&gt; to jump to the &lt;a href="https://github.com/mirage/colombe/blob/master/sendmail/sendmail_with_starttls.ml"&gt;relevant
+parts&lt;/a&gt;
+of the &lt;code&gt;colombe&lt;/code&gt; source code and noticed that &lt;code&gt;colombe&lt;/code&gt; uses the
+&lt;code&gt;Logs&lt;/code&gt; module. Adding these two lines at the start of my test app
+allowed me to start collecting log output, and see what was going on
+in &lt;code&gt;colombe&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;  &lt;span class="nn"&gt;Logs&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;set_reporter&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nn"&gt;Logs&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;format_reporter&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+  &lt;span class="nn"&gt;Logs&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;set_level&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nc"&gt;Some&lt;/span&gt; &lt;span class="nn"&gt;Logs&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nc"&gt;Info&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;When I took a look at the log output, I saw:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="p"&gt;...&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="nl"&gt;send&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;INFO&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;Return&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="nl"&gt;send&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;INFO&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;READ&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;220&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;Mailgun&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;Influx&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;ready&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="nl"&gt;send&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;INFO&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;READ&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;250&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;smtp&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="k"&gt;out&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;n01&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;prod&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;us&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;west&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mf"&gt;2.&lt;/span&gt;&lt;span class="n"&gt;postgun&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;com&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="mi"&gt;250&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;AUTH&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;PLAIN&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;LOGIN&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="mi"&gt;250&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="k"&gt;SIZE&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;52428800&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="mi"&gt;250&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;8&lt;/span&gt;&lt;span class="n"&gt;BITMIME&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="mi"&gt;250&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;SMTPUTF8&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="mi"&gt;250&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;PIPELINING&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="mi"&gt;250&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;STARTTLS&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="p"&gt;...&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="nl"&gt;send&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;INFO&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;Return&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="nl"&gt;send&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;INFO&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;READ&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="nl"&gt;send&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;INFO&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;Return&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="nl"&gt;send&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;WARNING&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;The&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;server&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;send&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;an&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;invalid&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;base64&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;value&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="ss"&gt;"Go ahead"&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="nl"&gt;send&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;INFO&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;READ&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="nl"&gt;send&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;INFO&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;Return&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="nl"&gt;send&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;INFO&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;Response&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;535&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;Authentication&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;failed&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="nl"&gt;send&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;INFO&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;Quitting&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;connection&lt;/span&gt;&lt;span class="p"&gt;...&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="nl"&gt;send&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;INFO&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;Before&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;recv&lt;/span&gt;&lt;span class="p"&gt;...&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="nl"&gt;send&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;INFO&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;READ&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;repeats&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;hundreds&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;of&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;times&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="p"&gt;...&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Similar to the &lt;code&gt;strace&lt;/code&gt; results, I could see many failed reads. But
+this time I could see they occurred after a &lt;code&gt;535 Authentication
+failed&lt;/code&gt; message came back from the server.&lt;/p&gt;
+&lt;p&gt;During this phase of analysis it was helpful to be able to add my own
+log points to the source code. In order to do this, though, I needed
+to ensure that my test app would build against my modified version of
+&lt;code&gt;colombe&lt;/code&gt;, not the published version on &lt;code&gt;opam&lt;/code&gt;. Within the &lt;code&gt;colombe&lt;/code&gt;
+repo, I ran&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;dune build src &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt; dune install colombe &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt; dune build sendmail &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt; dune install sendmail
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;This pinned both &lt;code&gt;colombe&lt;/code&gt; and &lt;code&gt;sendmail&lt;/code&gt; to my local versions on
+disk. Because &lt;code&gt;letters&lt;/code&gt; uses these two libraries, I also needed to go
+to my &lt;code&gt;letters&lt;/code&gt; repo and run:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;dune build . &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt; dune install letters
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;With these two steps taken care of, I could use &lt;code&gt;dune&lt;/code&gt; to execute my
+test app and see the custom instrumentation that I'd added to the
+underlying libraries.&lt;/p&gt;
+&lt;h2&gt;Reproducing the problem&lt;/h2&gt;
+&lt;p&gt;At this point, I was pretty confident that &lt;code&gt;colombe&lt;/code&gt; was having
+problems immediately after trying to quit the SMTP session by sending
+a &lt;code&gt;QUIT&lt;/code&gt;. After some google searching, I learned that &lt;code&gt;openssl&lt;/code&gt;
+allows you to run an SMTP session interactively. To test, I ran:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="err"&gt;openssl s_client -connect smtp.mailgun.org:587 -starttls smtp&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The first part of the session looked like this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;250 STARTTLS
+---
+Post-Handshake New Session Ticket arrived:
+SSL-Session:
+    Protocol  : TLSv1.3
+    Cipher    : TLS_AES_128_GCM_SHA256
+    Session-ID: 7E83FE3CC7D65BE60AF56A2E049C09A27AB33DF834454617B81C0469A32EEC62
+    Session-ID-ctx:
+    Resumption PSK: 4A7C875CECCCA5633D3FF2107857EAF220FF561B782AAC3AC416385612E08AAB
+    PSK identity: None
+    PSK identity hint: None
+    SRP username: None
+    TLS session ticket lifetime hint: 604800 (seconds)
+    TLS session ticket:
+    0000 - 4a 79 8c 03 d5 1e 3f 5d-dc b2 2d b6 38 db 4e 10   Jy....?]..-.8.N.
+    0010 - 91 b6 1d 44 d2 95 c9 50-f3 f9 a7 89 8d 0e b9 7e   ...D...P.......~
+    0020 - f1 d6 52 da 3d 84 f5 ee-58 72 a8 81 1e 0f ad c7   ..R.=...Xr......
+    0030 - c7 76 8f 8c d9 d9 56 8f-f3 72 de 0e bf 17 b0 2f   .v....V..r...../
+    0040 - 72 a7 98 cd 92 46 da 45-fc b8 a9 d4 6e 73 71 f5   r....F.E....nsq.
+    0050 - 74 f2 1d eb 83 b3 01 83-77 3f 7a e0 9a 36 4a fe   t.......w?z..6J.
+    0060 - b3 89 3e c7 4c aa 87 eb-6d 46 42 46 73 8f 35 1f   ..&amp;gt;.L...mFBFs.5.
+    0070 - 8c                                                .
+
+    Start Time: 1630180065
+    Timeout   : 7200 (sec)
+    Verify return code: 0 (ok)
+    Extended master secret: no
+    Max Early Data: 0
+---
+read R BLOCK
+EHLO
+250-smtp-out-n02.prod.us-west-2.postgun.com
+250-AUTH PLAIN LOGIN
+250-SIZE 52428800
+250-8BITMIME
+250-SMTPUTF8
+250 PIPELINING
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;By running &lt;code&gt;EHLO&lt;/code&gt;, I was able to see the different operations this
+SMTP server supports. In the output above, we can see that one of
+those operations is &lt;code&gt;AUTH PLAIN&lt;/code&gt;. I tried to authenticate with invalid
+credentials, and saw this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;AUTH PLAIN BADPASSWORD
+501 Invalid response encoding
+535 Authentication failed
+closed
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;This means that after a client provides bad credentials, Mailgun's
+SMTP implementation immediately terminates the connection. But, when
+&lt;code&gt;colombe&lt;/code&gt; encountered a failure to authenticate, it tried to clean up
+the session like this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;properly_quit_and_fail&lt;/span&gt; &lt;span class="n"&gt;ctx&lt;/span&gt; &lt;span class="n"&gt;err&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="k"&gt;open&lt;/span&gt; &lt;span class="nc"&gt;Monad&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt;&lt;span class="n"&gt;txts&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;send&lt;/span&gt; &lt;span class="n"&gt;ctx&lt;/span&gt; &lt;span class="nn"&gt;Value&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nc"&gt;Quit&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&amp;gt;=&lt;/span&gt; &lt;span class="k"&gt;fun&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;recv&lt;/span&gt; &lt;span class="n"&gt;ctx&lt;/span&gt; &lt;span class="nn"&gt;Value&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nc"&gt;PP_221&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="nc"&gt;Error&lt;/span&gt; &lt;span class="n"&gt;err&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;So &lt;code&gt;colombe&lt;/code&gt; tried to send a &lt;code&gt;QUIT&lt;/code&gt; message and await a &lt;code&gt;221 Bye&lt;/code&gt;, but
+that message never arrived because the server had already closed the
+connection.&lt;/p&gt;
+&lt;h2&gt;Fixing the problem&lt;/h2&gt;
+&lt;p&gt;Once I understood the problem, I realized I could avoid the issue by
+revising &lt;code&gt;properly_quit_and_fail&lt;/code&gt; to prevent waiting on a response
+from the server. Effectively, this meant changing a &lt;code&gt;let*&lt;/code&gt; to a &lt;code&gt;let&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;properly_quit_and_fail&lt;/span&gt; &lt;span class="n"&gt;ctx&lt;/span&gt; &lt;span class="n"&gt;err&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="k"&gt;open&lt;/span&gt; &lt;span class="nc"&gt;Monad&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt;&lt;span class="n"&gt;txts&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;send&lt;/span&gt; &lt;span class="n"&gt;ctx&lt;/span&gt; &lt;span class="nn"&gt;Value&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nc"&gt;Quit&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&amp;gt;=&lt;/span&gt; &lt;span class="k"&gt;fun&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;recv&lt;/span&gt; &lt;span class="n"&gt;ctx&lt;/span&gt; &lt;span class="nn"&gt;Value&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nc"&gt;PP_221&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="nc"&gt;Error&lt;/span&gt; &lt;span class="n"&gt;err&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;I also filed this
+&lt;a href="https://github.com/mirage/colombe/issues/46"&gt;issue&lt;/a&gt;, which prompted
+one of the maintainers to
+&lt;a href="https://github.com/mirage/colombe/pull/47"&gt;refactor&lt;/a&gt; how connections
+are managed, with a much more thorough solution than what I had
+done. (Many thanks to Calascibetta Romain for fixing my issue so
+quickly!) Once merged, other &lt;code&gt;colombe&lt;/code&gt; users shouldn't encounter the
+stack overflow issues I described here.&lt;/p&gt;
+&lt;h2&gt;Final Thoughts&lt;/h2&gt;
+&lt;p&gt;This was an interesting bug to investigate because it covered a number
+of unfamiliar topics. I didn't know much about SMTP when I started,
+and I learned a couple useful facts while debugging:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;SMTP sessions consist of a handful of commands that are fairly easy
+  to understand.&lt;/li&gt;
+&lt;li&gt;OpenSSL's tooling makes it easy to test SMTP by hand.&lt;/li&gt;
+&lt;li&gt;Even very commonly used mail services like Mailgun may not work
+  exactly the way you expect from reading RFCs or other documentation!&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;I also learned some useful techniques I can reuse the next time I need
+to debug OCaml problems:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;When writing test apps, enable logging (at info level) from the
+  beginning!&lt;/li&gt;
+&lt;li&gt;Use &lt;code&gt;dune install&lt;/code&gt; to add instrumentation and temporary bug fixes to
+  libraries.&lt;/li&gt;
+&lt;li&gt;Developer tooling like &lt;code&gt;merlin&lt;/code&gt; is very helpful for efficiently
+  navigating unfamiliar code.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;Feedback&lt;/h2&gt;
+&lt;p&gt;If you found this post useful (or conversely, found an error), send me
+an email. I'm interested in adding more tutorial resources to the
+OCaml ecosystem and would happy to hear suggestions about how to make
+these resources better. My contact information is listed on the
+&lt;a href="/"&gt;About&lt;/a&gt; page.&lt;/p&gt;</content><category term="OCaml, SMTP, Debugging"></category></entry><entry><title>Thoughts on running a job search in 2021</title><link href="https://jsthomas.github.io/job-search-2021.html" rel="alternate"></link><published>2021-08-17T00:00:00-04:00</published><updated>2021-08-17T00:00:00-04:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2021-08-17:/job-search-2021.html</id><summary type="html">&lt;p&gt;Some notes from my most recent job search.&lt;/p&gt;</summary><content type="html">&lt;p&gt;I recently wrapped up a job search. My new job starts as I'm in the
 process of leaving the &lt;a href="https://www.recurse.com/"&gt;Recurse Center&lt;/a&gt;, so
 I thought this would be a good time to summarize my impressions of the
 job market for software developers in 2021.&lt;/p&gt;
