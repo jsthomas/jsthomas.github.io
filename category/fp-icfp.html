@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Joe Thomas | articles in the "FP, ICFP" category</title>
+    <link rel="shortcut icon" type="image/png" href="https://jsthomas.github.io/favicon.png">
+    <link rel="shortcut icon" type="image/x-icon" href="https://jsthomas.github.io/favicon.ico">
+    <link href="https://jsthomas.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Joe Thomas Full Atom Feed" />
+    <link href="https://jsthomas.github.io/feeds/fp-icfp.atom.xml" type="application/atom+xml" rel="alternate" title="Joe Thomas Categories Atom Feed" />
+    <link rel="stylesheet" href="https://jsthomas.github.io/theme/css/main.css" type="text/css" />
+    <link rel="stylesheet" href="https://jsthomas.github.io/theme/css/pygments.css" type="text/css" />
+    <meta name="generator" content="Pelican" />
+    <meta name="description" content="" />
+    <meta name="author" content="Joe Thomas" />
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+
+                <li class="ephemeral selected"><a href="https://jsthomas.github.io/category/fp-icfp.html">FP, ICFP</a></li>
+                <li><a href="https://jsthomas.github.io/">About</a></li>
+                <li><a href="https://jsthomas.github.io/pages/works.html">Works</a></li>
+                <li><a href="https://jsthomas.github.io/blog">Blog</a></li>
+            </ul>
+        </nav>
+        <div class="header_box">
+            <h1><a href="https://jsthomas.github.io/">Joe Thomas</a></h1>
+        </div>
+    </header>
+    <div id="wrapper">
+        <div id="content">            <h4 class="date">Aug 30, 2021</h4>
+
+            <article class="post">
+                <h2 class="title">
+                    <a href="https://jsthomas.github.io/icfp-2021.html" rel="bookmark" title="Permanent Link to &quot;Things I learned at ICFP 2021&quot;">Things I learned at ICFP 2021</a>
+                </h2>
+
+                
+                
+
+                <p>Last week I attended ICFP for the first time. Due to the pandemic, the
+conference was entirely online. This made it really easy and
+inexpensive to attend (were it in person, I would've had to fly to
+Korea), but also made it harder to meet people and benefit from "the
+hallway track".</p>
+<p>Despite the circumstances, there were a number of interesting
+sessions. Below is a summary of some of the projects I learned about
+at the conference. Some caveats:</p>
+<ul>
+<li>
+<p>ICFP has a lot of parallel tracks. I was focused primarily on ML and
+  OCaml sessions, so I'm sure there were interesting talks that I
+  missed.</p>
+</li>
+<li>
+<p>I missed some talks due to timezone issues.</p>
+</li>
+<li>
+<p>I'm approaching the conference as someone who primarily works on the
+  backend of analytics applications, so I wasn't as interested in new
+  results about PL theory.</p>
+</li>
+</ul>
+<p>I think conferences are a great way to hear about new technologies,
+but for depth you have to study on your own afterwards. As such, this
+post is a bit of a "listicle" capturing topics I might want to
+investigate later.</p>
+<h1>Keynote</h1>
+<p>Ravi Chugh gave an interesting keynote about how programming language
+techniques can be applied to human-computer interaction problems. He
+demonstrated a 2D graphics editor called Sketch-n-sketch where the
+user could create an image using a GUI or a programming language, and
+synchronize between the two.</p>
+<p>Before this session, I didn't realize how much research has been done
+into applying FP/PL techniques to human/computer interfaces. It would
+be interesting to apply similar techniques to a 3D animation system
+like Blender. When I used to work on animation (long, long ago), I
+wanted GUI capabilities for building individual models in a scene but
+would have preferred a programming language when rigging characters or
+automating certain motions. Debugging GUI-based automation was
+no fun at all.</p>
+<h1>Historical Talks</h1>
+<p>Don Syme gave a talk about the history of F#. This covered the
+original motivation for the language, it's interactions with the C#
+community, and the impact of Object Orient Programming's popularity on
+PL research. Xavier Leroy gave a presentation about the history of
+OCaml (this year was the language's 25th anniversary), and also
+commented on the impact of OO. It was interesting to hear about how
+OCaml was used for teaching programming in Universities and how this
+language related to research in automated theorem proving.</p>
+<h1>Research and Industry Talks</h1>
+<p>Marten Agren gave a talk about how Standard Chartered uses a strict
+version of Haskell for their work, and how FP is especially suited to
+scalable inter-operation with spreadsheets. Before this talk, I didn't
+know that some people use Haskell without lazy evaluation.</p>
+<p>Denis Merigoux gave a <a href="https://youtu.be/jmHwAh_-IOU">presentation</a>
+about a new DSL called <a href="https://github.com/CatalaLang">Catala</a> that
+makes it possible to model laws (e.g. tax law) with code. The compiler
+for the language is written in OCaml. Naturally, the correctness of
+these types of systems is quite important; errors mean that essential
+social services aren't delivered (e.g. paychecks for government
+workers). It's interesting to think about other areas where this work
+could be applied beyond tax law. For example, most utility costs are
+also a matter of public record and having an open, formally verified
+system for calculating those costs would help ensure rate payers are
+billed fairly.</p>
+<h2>Talks about tooling and libraries</h2>
+<p>The OCaml workshop featured several exciting talks about improvements
+to the OCaml ecosystem.</p>
+<p>Laurent Mazare spoke about how Jane Street makes OCaml libraries
+accessible from within python, with a special focus on Jupyter
+notebooks. As someone who has worked supporting data scientists in the
+past, this seems like a great way to get the benefits of the Python
+data science ecosystem while building primarily in a strongly typed
+language. I'm not sure what this work means for projects like Owl that
+try to provide a similar feature set as Numpy/SciPy/Pandas in OCaml.</p>
+<p>Di Long Li and Gabriel Radanne presented a new library called
+<a href="https://github.com/daypack-dev/timere"><code>timere</code></a> that makes it easier
+to work with dates and times. The library simplifies solving
+recurrence-rule problems like "tell me which Christmases fall on a
+Wednesday from now on". I think this is a great development,
+especially if you're building an application that works with time
+series data from a business domain. Gabriel Radanne also presented
+<a href="https://github.com/Drup/dowsing"><code>dowsing</code></a> a tool that allows the
+user to search OCaml codebases using a type signature. This is a bit
+like <a href="https://hoogle.haskell.org/">hoogle</a>, but the underlying
+techniques used to enable search are quite different.</p>
+<p>Thomas Leonard gave an impressive talk about applying the new effect
+system in multicore OCaml to the <code>angstrom</code> library, demonstrating
+performance on par with Rust. I think it will be exciting to start
+using effects as they become available in the next year or two.</p>
+<p>Two different teams discussed their efforts to improve the state of
+OCaml documentation, so that a site similar to
+<a href="https://hackage.haskell.org/">hackage</a> could be generated directly
+from OPAM. This seems like a great way to lower one of the barriers to
+entry for maintainers and make OCaml documentation more consistent.</p>
+<p>Gargi Sharma presented work that a team at Tarides is doing on
+<a href="https://github.com/ocurrent/current-bench"><code>current-bench</code></a>, a system
+for analyzing benchmarking data that integrates with OCaml CI
+systems. Using their tools, one can track trends in benchmark data
+over time and identify builds that improved or degraded
+performance. This system also provides a nice example of how to build
+an analytics app using FP techniques. They use <code>rescript</code> for their
+frontend, <code>hasura</code> to serve analytics results via GraphQL, and an
+OCaml program for ingesting performance data into their database.</p>
+<h1>Takeaways</h1>
+<p>There was a lot of focus on "ecosystem tooling" at the OCaml workshop
+and considerable excitement about the upcoming release of multicore
+OCaml. I didn't hear much about work on the frontend (ReasonML,
+Bucklescript, Rescript) or updates about applications of OCaml to
+statistics/numerical computing. Possibly this was just a function of
+the unusual pandemic environment or the nature of a conference with a
+more academic focus. In any case, I'm excited to dive into some of
+these new tools, and especially to start getting the benefits of
+improved documentation and search capabilities for OCaml libraries.</p>
+                <div class="clear"></div>
+
+                <div class="info">
+                    <a href="https://jsthomas.github.io/icfp-2021.html">posted at 00:00</a>
+                    &nbsp;&middot;&nbsp;<a href="https://jsthomas.github.io/category/fp-icfp.html" rel="tag">FP, ICFP</a>
+                </div>
+            </article>
+
+        </div>
+        <div class="clear"></div>
+    </div>
+     <!-- Global site tag (gtag.js) - Google Analytics -->
+     <script async src="https://www.googletagmanager.com/gtag/js?id=G-8L9H76FSM5"></script>
+     <script>
+       window.dataLayer = window.dataLayer || [];
+       function gtag(){dataLayer.push(arguments);}
+       gtag('js', new Date());
+
+       gtag('config', 'G-8L9H76FSM5');
+     </script>
+</body>
+</html>

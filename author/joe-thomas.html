@@ -29,7 +29,138 @@
         </div>
     </header>
     <div id="wrapper">
-        <div id="content">            <h4 class="date">Aug 25, 2021</h4>
+        <div id="content">            <h4 class="date">Aug 30, 2021</h4>
+
+            <article class="post">
+                <h2 class="title">
+                    <a href="https://jsthomas.github.io/icfp-2021.html" rel="bookmark" title="Permanent Link to &quot;Things I learned at ICFP 2021&quot;">Things I learned at ICFP 2021</a>
+                </h2>
+
+                
+                
+
+                <p>Last week I attended ICFP for the first time. Due to the pandemic, the
+conference was entirely online. This made it really easy and
+inexpensive to attend (were it in person, I would've had to fly to
+Korea), but also made it harder to meet people and benefit from "the
+hallway track".</p>
+<p>Despite the circumstances, there were a number of interesting
+sessions. Below is a summary of some of the projects I learned about
+at the conference. Some caveats:</p>
+<ul>
+<li>
+<p>ICFP has a lot of parallel tracks. I was focused primarily on ML and
+  OCaml sessions, so I'm sure there were interesting talks that I
+  missed.</p>
+</li>
+<li>
+<p>I missed some talks due to timezone issues.</p>
+</li>
+<li>
+<p>I'm approaching the conference as someone who primarily works on the
+  backend of analytics applications, so I wasn't as interested in new
+  results about PL theory.</p>
+</li>
+</ul>
+<p>I think conferences are a great way to hear about new technologies,
+but for depth you have to study on your own afterwards. As such, this
+post is a bit of a "listicle" capturing topics I might want to
+investigate later.</p>
+<h1>Keynote</h1>
+<p>Ravi Chugh gave an interesting keynote about how programming language
+techniques can be applied to human-computer interaction problems. He
+demonstrated a 2D graphics editor called Sketch-n-sketch where the
+user could create an image using a GUI or a programming language, and
+synchronize between the two.</p>
+<p>Before this session, I didn't realize how much research has been done
+into applying FP/PL techniques to human/computer interfaces. It would
+be interesting to apply similar techniques to a 3D animation system
+like Blender. When I used to work on animation (long, long ago), I
+wanted GUI capabilities for building individual models in a scene but
+would have preferred a programming language when rigging characters or
+automating certain motions. Debugging GUI-based automation was
+no fun at all.</p>
+<h1>Historical Talks</h1>
+<p>Don Syme gave a talk about the history of F#. This covered the
+original motivation for the language, it's interactions with the C#
+community, and the impact of Object Orient Programming's popularity on
+PL research. Xavier Leroy gave a presentation about the history of
+OCaml (this year was the language's 25th anniversary), and also
+commented on the impact of OO. It was interesting to hear about how
+OCaml was used for teaching programming in Universities and how this
+language related to research in automated theorem proving.</p>
+<h1>Research and Industry Talks</h1>
+<p>Marten Agren gave a talk about how Standard Chartered uses a strict
+version of Haskell for their work, and how FP is especially suited to
+scalable inter-operation with spreadsheets. Before this talk, I didn't
+know that some people use Haskell without lazy evaluation.</p>
+<p>Denis Merigoux gave a <a href="https://youtu.be/jmHwAh_-IOU">presentation</a>
+about a new DSL called <a href="https://github.com/CatalaLang">Catala</a> that
+makes it possible to model laws (e.g. tax law) with code. The compiler
+for the language is written in OCaml. Naturally, the correctness of
+these types of systems is quite important; errors mean that essential
+social services aren't delivered (e.g. paychecks for government
+workers). It's interesting to think about other areas where this work
+could be applied beyond tax law. For example, most utility costs are
+also a matter of public record and having an open, formally verified
+system for calculating those costs would help ensure rate payers are
+billed fairly.</p>
+<h2>Talks about tooling and libraries</h2>
+<p>The OCaml workshop featured several exciting talks about improvements
+to the OCaml ecosystem.</p>
+<p>Laurent Mazare spoke about how Jane Street makes OCaml libraries
+accessible from within python, with a special focus on Jupyter
+notebooks. As someone who has worked supporting data scientists in the
+past, this seems like a great way to get the benefits of the Python
+data science ecosystem while building primarily in a strongly typed
+language. I'm not sure what this work means for projects like Owl that
+try to provide a similar feature set as Numpy/SciPy/Pandas in OCaml.</p>
+<p>Di Long Li and Gabriel Radanne presented a new library called
+<a href="https://github.com/daypack-dev/timere"><code>timere</code></a> that makes it easier
+to work with dates and times. The library simplifies solving
+recurrence-rule problems like "tell me which Christmases fall on a
+Wednesday from now on". I think this is a great development,
+especially if you're building an application that works with time
+series data from a business domain. Gabriel Radanne also presented
+<a href="https://github.com/Drup/dowsing"><code>dowsing</code></a> a tool that allows the
+user to search OCaml codebases using a type signature. This is a bit
+like <a href="https://hoogle.haskell.org/">hoogle</a>, but the underlying
+techniques used to enable search are quite different.</p>
+<p>Thomas Leonard gave an impressive talk about applying the new effect
+system in multicore OCaml to the <code>angstrom</code> library, demonstrating
+performance on par with Rust. I think it will be exciting to start
+using effects as they become available in the next year or two.</p>
+<p>Two different teams discussed their efforts to improve the state of
+OCaml documentation, so that a site similar to
+<a href="https://hackage.haskell.org/">hackage</a> could be generated directly
+from OPAM. This seems like a great way to lower one of the barriers to
+entry for maintainers and make OCaml documentation more consistent.</p>
+<p>Gargi Sharma presented work that a team at Tarides is doing on
+<a href="https://github.com/ocurrent/current-bench"><code>current-bench</code></a>, a system
+for analyzing benchmarking data that integrates with OCaml CI
+systems. Using their tools, one can track trends in benchmark data
+over time and identify builds that improved or degraded
+performance. This system also provides a nice example of how to build
+an analytics app using FP techniques. They use <code>rescript</code> for their
+frontend, <code>hasura</code> to serve analytics results via GraphQL, and an
+OCaml program for ingesting performance data into their database.</p>
+<h1>Takeaways</h1>
+<p>There was a lot of focus on "ecosystem tooling" at the OCaml workshop
+and considerable excitement about the upcoming release of multicore
+OCaml. I didn't hear much about work on the frontend (ReasonML,
+Bucklescript, Rescript) or updates about applications of OCaml to
+statistics/numerical computing. Possibly this was just a function of
+the unusual pandemic environment or the nature of a conference with a
+more academic focus. In any case, I'm excited to dive into some of
+these new tools, and especially to start getting the benefits of
+improved documentation and search capabilities for OCaml libraries.</p>
+                <div class="clear"></div>
+
+                <div class="info">
+                    <a href="https://jsthomas.github.io/icfp-2021.html">posted at 00:00</a>
+                    &nbsp;&middot;&nbsp;<a href="https://jsthomas.github.io/category/fp-icfp.html" rel="tag">FP, ICFP</a>
+                </div>
+            </article>            <h4 class="date">Aug 25, 2021</h4>
 
             <article class="post">
                 <h2 class="title">
@@ -2521,188 +2652,16 @@ graphviz is very useful for tasks like this.</p>
                     <a href="https://jsthomas.github.io/math-genealogy-visualizer.html">posted at 00:00</a>
                     &nbsp;&middot;&nbsp;<a href="https://jsthomas.github.io/category/python-projects.html" rel="tag">Python, Projects</a>
                 </div>
-            </article>            <h4 class="date">Dec 10, 2013</h4>
-
-            <article class="post">
-                <h2 class="title">
-                    <a href="https://jsthomas.github.io/vkeyboard.html" rel="bookmark" title="Permanent Link to &quot;A Camera-Based Virtual Keyboard System&quot;">A Camera-Based Virtual Keyboard System</a>
-                </h2>
-
-                
-                
-
-                <p>In the Fall of 2013, I developed a camera-based keyboard system as my
-term project for an image analysis course. This page provides a brief
-summary of my project.</p>
-<p>In my system, a webcam looks down on a user's hands, which rest on a
-paper keyboard template. My program collects images from the webcam to
-determine when and where the user touches the keyboard template. When
-the user touches a key, my program produces the corresponding letter
-as output.</p>
-<p>Virtual keyboards are still actively researched in computer science
-and electrical engineering. The system I implemented uses techniques
-published in [1]-[3] between 2010 and 2013. Camera-based virtual
-keyboards require a number of interesting image analysis techniques to
-implement. They are particularly of interest in mobile applications
-and in areas where one would like to avoid the cost of a physical
-keyboard (for example, projects providing computers to people in the
-developing world).</p>
-<h1>Processing Steps</h1>
-<p>The virtual keyboard system I implemented needed to solve three main
-problems:</p>
-<ol>
-<li>
-<p>Detect the locations of the user's fingertips.</p>
-</li>
-<li>
-<p>Detect whether any fingertips are in contact with the tabletop.</p>
-</li>
-<li>
-<p>When a fingertip touches the tabletop, determine which key was
-pressed on the keyboard.</p>
-</li>
-</ol>
-<p>The first problem can be solved by segmenting an input image <span class="math">\(I\)</span> into
-two regions: one representing the hands and another representing the
-background. For each connected component of the hand region, we can
-extract a contour <span class="math">\(\gamma\)</span> that traverses the boundary
-counterclockwise. Places where <span class="math">\(\gamma\)</span> has high curvature (the
-places where <span class="math">\(\gamma\)</span> bends the most sharply) typically correspond to
-fingertips.</p>
-<p><img alt="Virtual keyboard processing steps." src="https://jsthomas.github.io/images/vkeyboard/kb_processing.png" style="width: 1680px; height: auto;"/></p>
-<p>I addressed the second problem using a technique called <em>shadow
-analysis</em>, which is discussed in [1]. With this technique, we perform
-another segmentation on <span class="math">\(I\)</span>, to locate the regions in the image that
-represent the shadows of the user's hands. Then, we examine small
-neighborhoods near the user's fingertips. If the proportion of
-shadow-pixels in a given neighborhood is above a certain threshold, we
-infer that the corresponding fingertip is not in contact with the
-tabletop (because it has a shadow). Otherwise, we declare that
-fingertip to be touching the keyboard.</p>
-<p>The last problem is solved by making some assumptions about the
-geometry of the keyboard and imaging system. I assumed that the
-keyboard template displays four easily identifiable control points
-arranged in a rectangle, and that the front edge of the control
-rectangle is parallel to the <span class="math">\(x\)</span>-axis of the camera's coordinate
-system. With these additional assumptions, it isn't too hard to invert
-the perspective projection and recover the keyboard-space coordinates
-of each keypress from the image-space coordinates of the fingertips.</p>
-<h1>Results</h1>
-<p>After implementing my virtual keyboard system in python, I analyzed
-its performance under different lighting and usage conditions. My
-tests suggest that a camera-based user interface that uses shadow
-analysis will work best under conditions where one has fine control
-over the lighting conditions and the user does not need to enter very
-much data at one time. For example, a camera-based user interface
-would work well in an interactive museum exhibit, but it might not be
-a very good tool for word processing in a dark coffee shop. Currently,
-camera-based keyboards cannot provide the speed and accuracy
-achievable on physical keyboards (but for that matter, neither do
-touchscreen keyboards).</p>
-<h1>Downloads</h1>
-<p>Below are links to the paper and code I wrote for the term project. I
-used the code within <a href="http://ipython.org/">ipython</a> to conduct my
-experiments, and used the <a href="http://opencv.org/">OpenCV</a> project to get
-data from the camera. OpenCV's support for python is still under
-development, so if you examine my code you may have to adapt it to
-work with your particular hardware and copy of OpenCV.</p>
-<ul>
-<li>
-<p>Paper:
-  <a href="https://jsthomas.github.io/docs/vkeyboard/vkeyboard.pdf">A Camera Based Virtual Keyboard with Touch Detection by Shadow Analysis</a></p>
-</li>
-<li>
-<p>Project Code: <a href="https://jsthomas.github.io/docs/vkeyboard/vkeyboard.zip">vkeyboard.zip</a></p>
-</li>
-</ul>
-<h2>References</h2>
-<ol>
-<li>
-<p>Y. Adajania, J. Gosalia, A. Kanade, H. Mehta, and N. Shekokar. Virtual
-keyboard using shadow analysis. In Emerging Trends in Engineering and
-Technology (ICETET), 2010 3rd International Conference on, page 163 to
-165, 2010.</p>
-</li>
-<li>
-<p>E. Posner, N. Starzicki, and E. Katz. A single camera based floating virtual
-keyboard with improved touch detection. In Electrical Electronics Engineers
-in Israel (IEEEI), 2012 IEEE 27th Convention of, page 1 to 5, 2012.</p>
-</li>
-<li>
-<p>M. Hagara and J. Pucik. Fingertip detection for virtual keyboard
-based on camera. In Radioelektronika (RADIOELEKTRONIKA), 2013 23rd
-International Conference, page 356 to 360, 2013.</p>
-</li>
-</ol>
-<script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
-    var align = "center",
-        indent = "0em",
-        linebreak = "false";
-
-    if (false) {
-        align = (screen.width < 768) ? "left" : align;
-        indent = (screen.width < 768) ? "0em" : indent;
-        linebreak = (screen.width < 768) ? 'true' : linebreak;
-    }
-
-    var mathjaxscript = document.createElement('script');
-    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
-    mathjaxscript.type = 'text/javascript';
-    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
-
-    var configscript = document.createElement('script');
-    configscript.type = 'text/x-mathjax-config';
-    configscript[(window.opera ? "innerHTML" : "text")] =
-        "MathJax.Hub.Config({" +
-        "    config: ['MMLorHTML.js']," +
-        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'none' } }," +
-        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
-        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
-        "    displayAlign: '"+ align +"'," +
-        "    displayIndent: '"+ indent +"'," +
-        "    showMathMenu: true," +
-        "    messageStyle: 'normal'," +
-        "    tex2jax: { " +
-        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
-        "        displayMath: [ ['$$','$$'] ]," +
-        "        processEscapes: true," +
-        "        preview: 'TeX'," +
-        "    }, " +
-        "    'HTML-CSS': { " +
-        "        availableFonts: ['STIX', 'TeX']," +
-        "        preferredFont: 'STIX'," +
-        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
-        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
-        "    }, " +
-        "}); " +
-        "if ('default' !== 'default') {" +
-            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
-                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
-                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
-                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
-                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
-                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
-            "});" +
-            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
-                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
-                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
-                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
-                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
-                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
-            "});" +
-        "}";
-
-    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
-    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
-}
-</script>
-                <div class="clear"></div>
-
-                <div class="info">
-                    <a href="https://jsthomas.github.io/vkeyboard.html">posted at 00:00</a>
-                    &nbsp;&middot;&nbsp;<a href="https://jsthomas.github.io/category/python.html" rel="tag">Python</a>
-                </div>
             </article>
+
+                <div class="clear"></div>
+                <div class="pages">
+
+
+                    <a href="https://jsthomas.github.io/author/joe-thomas2.html" class="next_page">Next&nbsp;&rarr;</a>
+
+                    <span>Page 1 of 2</span>
+                </div>
 
         </div>
         <div class="clear"></div>
