@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Joe Thomas - FP, Elm</title><link href="https://jsthomas.github.io/" rel="alternate"></link><link href="https://jsthomas.github.io/feeds/fp-elm.atom.xml" rel="self"></link><id>https://jsthomas.github.io/</id><updated>2021-09-03T00:00:00-04:00</updated><entry><title>Writing a Simple Browser Game in Elm</title><link href="https://jsthomas.github.io/elm-space-battle.html" rel="alternate"></link><published>2021-09-03T00:00:00-04:00</published><updated>2021-09-03T00:00:00-04:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2021-09-03:/elm-space-battle.html</id><summary type="html">&lt;p&gt;A user experience report from a first time Elm user&lt;/p&gt;</summary><content type="html">&lt;p&gt;TL;DR : This week I built a little spaceship game using Elm! You can
+play the game &lt;a href="https://jsthomas.github.io/static/elm-space-battle/index.html"&gt;here&lt;/a&gt; (it
+probably won't work well on mobile or if you have a tiny screen) and
+see the source code
+&lt;a href="https://github.com/jsthomas/elm-space-battle"&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;Here's a screenshot:&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt="A screenshot of my
+game." src="https://jsthomas.github.io/images/elm-space-battle/game_small.png" style="width: 595px; height: auto;"/&gt;&lt;/p&gt;
+&lt;h1&gt;Context&lt;/h1&gt;
+&lt;p&gt;This was my last week at Recurse Center; after Labor Day, I head back
+to full time work as a data engineer. One of my main RC projects,
+&lt;a href="https://github.com/jsthomas/tidy-email"&gt;tidy-email&lt;/a&gt;, is waiting on
+some upstream changes on OPAM before it can be released. In light of
+all this, I decided to work on a short term project this week, and
+learn a bit of &lt;a href="https://elm-lang.org/"&gt;Elm&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;My reasons for learning Elm are twofold. First, I think this
+technology is a great example of how to make strongly typed functional
+programming accessible to a wider audience. It's worth studying just
+for the sake of examining how ideas are presented, because I can
+re-use those skills to build user-friendly OCaml projects. Second, the
+"Elm Architecture" is widely used in front-end programming and I'd
+like to fill in some of the gaps in my front-end skill-set.&lt;/p&gt;
+&lt;h1&gt;Defining the Project&lt;/h1&gt;
+&lt;p&gt;I wanted this week's project to be small in scope and entertaining, so
+I decided to build a game similar to the 1962 game &lt;em&gt;Spacewar!&lt;/em&gt;,
+written for the PDP-1 at MIT. You can read more about this game
+&lt;a href="https://en.wikipedia.org/wiki/Spacewar!"&gt;here&lt;/a&gt; and play an emulated
+version &lt;a href="https://www.masswerk.at/spacewar/"&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;img alt="The original spacewar on a DEC
+monitor." src="https://jsthomas.github.io/images/elm-space-battle/Spacewar_screenshot_small.png" style="width: 600px; height: auto;"/&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;Spacewar!&lt;/em&gt; features two rocket ships orbiting a star; the objective
+is to destroy the other player's ship by shooting it with a
+torpedo. The star exerts a gravitational pull on the two rockets,
+which complicates the ship's trajectories. A player that gets too
+close to the star loses. Player's that fly off the screen reappear on
+the opposite side, just like in Asteroids.&lt;/p&gt;
+&lt;p&gt;After playing with &lt;em&gt;Spacewar!&lt;/em&gt; for a bit, I decided on the following
+rules for my game:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;The game should be single player instead of two player, with simple
+  AI opponents.&lt;/li&gt;
+&lt;li&gt;The player's should have a finite number of torpedoes, which
+  replenish as they are used.&lt;/li&gt;
+&lt;li&gt;The AI opponents should be able to shoot their own torpedoes at the
+  player.&lt;/li&gt;
+&lt;li&gt;Both the player and torpedoes should be influenced by gravity.&lt;/li&gt;
+&lt;li&gt;There should be a display at the top of the screen tracking how many
+  torpedoes the player has left and how many enemies they need to
+  destroy.&lt;/li&gt;
+&lt;li&gt;The player can lose by colliding with the sun, a torpedo, or an
+  enemy.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1&gt;Getting set up with Elm&lt;/h1&gt;
+&lt;p&gt;I was quite impressed with how simple it was to get set up with
+&lt;code&gt;elm&lt;/code&gt;. There is a single executable that handles compiling Elm source
+files, downloading dependencies from the internet, and serving an Elm
+&lt;code&gt;repl&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;I read &lt;a href="https://elmprogramming.com/"&gt;Beginning Elm&lt;/a&gt; to get a feel for
+the language. If you're coming to Elm from another strongly typed
+language like OCaml or Haskell, this guide is a pretty fast read. I
+appreciated that it provided chapters on the Elm architecture and how
+to make requests against a JSON API, so that I could jump right to
+those topics and start learning what I wanted to know.&lt;/p&gt;
+&lt;p&gt;I also found the online code editor
+&lt;a href="https://ellie-app.com/62Dy7vxsBHZa1"&gt;Ellie&lt;/a&gt; quite helpful for running
+little experiments without installing anything, especially as I wanted
+to learn more about the elm-canvas library.&lt;/p&gt;
+&lt;p&gt;The main Elm documentation
+&lt;a href="https://package.elm-lang.org/packages/joakin/elm-canvas/4.3.0/"&gt;page&lt;/a&gt;
+provided a concise overview of the graphics package I wanted to
+use. Overall, I was quite happy with the quality of the documentation,
+though I did encounter a number of dead links on stack overflow.&lt;/p&gt;
+&lt;p&gt;I used VSCode with the &lt;code&gt;Elm&lt;/code&gt; extension for my development work. This
+was straightforward to install. Syntax and error highlighting worked
+fine. I found the error highlighter to be quite aggressive. Part way
+through adding a new function definition, the highlighter would mark
+the entire source file as a single error, which was distracting. I
+didn't bother to get live-reloading working because the project was so
+small, but this would've been nice to have.&lt;/p&gt;
+&lt;h1&gt;Thoughts on the Elm Architecture&lt;/h1&gt;
+&lt;p&gt;The Elm Architecture is worth expanding on a bit, and is summed up by
+the following diagram in &lt;em&gt;Beginning Elm&lt;/em&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img alt="Elm architecture diagram" src="https://jsthomas.github.io/images/elm-space-battle/elm-arch.png" style="width: 1022px; height: auto;"/&gt;&lt;/p&gt;
+&lt;p&gt;The Elm runtime is responsible for handling all side-effects, so that
+Elm programmers only need to work with pure functions and immutable
+data. To define the application, we provide the runtime with a handful
+of important definitions:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;A model that defines the state of the game at a moment in time.&lt;/li&gt;
+&lt;li&gt;An initial model state, to be used when the app loads.&lt;/li&gt;
+&lt;li&gt;A view function, that explains how to render the model in the browser.&lt;/li&gt;
+&lt;li&gt;An update rule, that explains how to transform one model into
+  another model based on inputs from the runtime.&lt;/li&gt;
+&lt;li&gt;Finally, any subscriptions the app needs. In my case, the app
+  subscribes to events from the keyboard and events from a timer, and
+  these events dictate how to update the model.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;I found that separating effectful code from pure code was very
+convenient. It greatly simplified reasoning about my game logic. I
+found that it natural to express different "game rules" in terms of
+transformations on the &lt;code&gt;Model&lt;/code&gt;, like this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="nv"&gt;removeOldTorpedos&lt;/span&gt; &lt;span class="nf"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;Model&lt;/span&gt; &lt;span class="nf"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kt"&gt;Model&lt;/span&gt;
+&lt;span class="nv"&gt;removeOldTorpedos&lt;/span&gt; &lt;span class="nv"&gt;model&lt;/span&gt; &lt;span class="nf"&gt;=&lt;/span&gt;
+    &lt;span class="kr"&gt;let&lt;/span&gt; &lt;span class="nv"&gt;torpedoLifetime&lt;/span&gt; &lt;span class="nf"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;60&lt;/span&gt; &lt;span class="nf"&gt;*&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt; &lt;span class="kr"&gt;in&lt;/span&gt;  &lt;span class="c1"&gt;-- ~ 2 seconds&lt;/span&gt;
+    &lt;span class="kr"&gt;let&lt;/span&gt; &lt;span class="nv"&gt;isLive&lt;/span&gt; &lt;span class="nv"&gt;b&lt;/span&gt; &lt;span class="nf"&gt;=&lt;/span&gt; &lt;span class="nv"&gt;model&lt;/span&gt;&lt;span class="nf"&gt;.&lt;/span&gt;&lt;span class="nv"&gt;time&lt;/span&gt; &lt;span class="nf"&gt;-&lt;/span&gt; &lt;span class="nv"&gt;b&lt;/span&gt;&lt;span class="nf"&gt;.&lt;/span&gt;&lt;span class="nv"&gt;created&lt;/span&gt; &lt;span class="nf"&gt;&amp;lt;&lt;/span&gt; &lt;span class="nv"&gt;torpedoLifetime&lt;/span&gt; &lt;span class="kr"&gt;in&lt;/span&gt;
+    &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="nv"&gt;model&lt;/span&gt; &lt;span class="nf"&gt;|&lt;/span&gt; &lt;span class="nv"&gt;torpedos&lt;/span&gt; &lt;span class="nf"&gt;=&lt;/span&gt; &lt;span class="kt"&gt;List&lt;/span&gt;&lt;span class="nf"&gt;.&lt;/span&gt;&lt;span class="nv"&gt;filter&lt;/span&gt; &lt;span class="nv"&gt;isLive&lt;/span&gt; &lt;span class="nv"&gt;model&lt;/span&gt;&lt;span class="nf"&gt;.&lt;/span&gt;&lt;span class="nv"&gt;torpedos&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;h1&gt;Developer Experience&lt;/h1&gt;
+&lt;p&gt;Building a game in Elm was quite pleasant. The compiler's error
+messages are easy to interpret and the type system enables aggressive
+refactoring that would have been difficult for me to do in
+JavaScript. I found it quite easy to evolve my design as I worked and
+I didn't need to refer back to &lt;em&gt;Beginning Elm&lt;/em&gt; or the documentation
+very often.&lt;/p&gt;
+&lt;p&gt;Overall I found Elm much easier to understand than rescript. I think
+this was in part because there are better-established conventions
+about how to build with Elm, and rescript is newer. I also found Elm's
+syntax easier to understand coming from OCaml than the JS/OCaml hybrid
+syntax in rescript.&lt;/p&gt;
+&lt;p&gt;I started the project with a very simple goal: Display a static scene
+with a background of stars, a yellow sun at the center, and two space
+ships. From there, I started to add simple physics, the ability to
+respond to keyboard events, and a simple collision detection
+system.&lt;/p&gt;
+&lt;p&gt;I really enjoyed how the compiler enabled me to explore "what-if"
+scenarios, like "What if I wanted to make the torpedoes change colors
+over time?". I found myself working in this cycle:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Ask a what-if question.&lt;/li&gt;
+&lt;li&gt;Change the data model to support that question.&lt;/li&gt;
+&lt;li&gt;Fix the errors identified by the compiler.&lt;/li&gt;
+&lt;li&gt;Compile.&lt;/li&gt;
+&lt;li&gt;Try the game and reflect on whether it was more fun.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;This tight development loop allowed me to spend most of my time
+"discovering" the right definitions for my game rather than fighting
+with confusing JavaScript bugs. Once I had a canvas and keyboard
+inputs working (which required a bit of research), the game came
+together quite quickly.&lt;/p&gt;
+&lt;h1&gt;Conclusion&lt;/h1&gt;
+&lt;p&gt;Fundamentally, I think Elm was easy to start using for two reasons:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;It cleanly separates pure computations from ones with side effects,
+  via the Elm Architecture.&lt;/li&gt;
+&lt;li&gt;The Elm team spent time making the tools easy to use and created
+  well-written tutorials explaining the language.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;This is definitely a tool I'd consider using for future front-end work
+and I'd recommend it to other developers who are interested in
+exploring strongly typed functional programming for the first time.&lt;/p&gt;
+&lt;h1&gt;Feedback&lt;/h1&gt;
+&lt;p&gt;If you found this post useful (or conversely, think that the advice
+here is bad), send me an email. My contact information is listed on
+the &lt;a href="/"&gt;About&lt;/a&gt; page.&lt;/p&gt;</content><category term="FP, Elm"></category></entry></feed>
