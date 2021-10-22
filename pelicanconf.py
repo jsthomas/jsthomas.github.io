@@ -17,6 +17,8 @@ THEME = './themes/blue-penguin'
 PLUGIN_PATHS = ['./plugins']
 PLUGINS = ['render_math', 'better_figures_and_images']
 
+READERS = {"html": None}
+
 # Feed generation is usually not desired when developing
 FEED_ALL_ATOM = None
 CATEGORY_FEED_ATOM = None
@@ -36,7 +38,7 @@ SOCIAL = (('You can add links in your config file', '#'),
 
 DEFAULT_PAGINATION = 10
 
-STATIC_PATHS = ['images', 'docs']
+STATIC_PATHS = ['images', 'docs', 'static']
 
 SHOW_ARTICLE_AUTHOR = False
 DISPLAY_FOOTER = False
