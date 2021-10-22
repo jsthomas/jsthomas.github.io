@@ -29,7 +29,201 @@
         </div>
     </header>
     <div id="wrapper">
-        <div id="content">            <h4 class="date">Sep 03, 2021</h4>
+        <div id="content">            <h4 class="date">Oct 20, 2021</h4>
+
+            <article class="post">
+                <h2 class="title">
+                    <a href="https://jsthomas.github.io/first-opam-package.html" rel="bookmark" title="Permanent Link to &quot;What I learned publishing an open source package&quot;">What I learned publishing an open source package</a>
+                </h2>
+
+                
+                
+
+                <p>Today I published my first package on OPAM! You can find <code>tidy_email</code>
+and its sub-libraries (<code>tidy_email_mailgun</code>, <code>tidy_email_sendgrid</code>,
+and <code>tidy_email_smtp</code>)
+<a href="https://opam.ocaml.org/packages/tidy_email/tidy_email.0.0.1/">here</a>. This
+wrapped up a goal I wanted to accomplish while at <a href="https://www.recurse.com/">Recurse
+Center</a>: Writing a simple (but useful) OCaml
+library and making it available via <code>opam</code>.</p>
+<p>I chose this project for several reasons:</p>
+<ol>
+<li>I wanted more experience designing small APIs in OCaml.</li>
+<li>I thought releasing a small library would help me understand how
+"open source maintainer" work differs from paid closed-source
+application development.</li>
+<li>I wanted to learn more about the mechanics/process of packaging
+   code for OPAM.</li>
+</ol>
+<p>The rest of this post explains the process I used and which parts
+worked well. Most of this discussion is applicable to general open
+source development, but some of the tooling-related points are
+specific to OCaml.</p>
+<h1>Picking a Topic</h1>
+<p>When I started my batch at RC, I knew that I wanted to publish
+<em>something</em>, but hadn't settled on a topic. Contributing to other
+projects was a valuable source of ideas. After working on a couple of
+issues for the web framework
+<a href="https://github.com/aantron/dream">Dream</a>, I wrote a small <a href="https://jsthomas.github.io/ocaml-email.html">blog
+post</a> showing how to
+build a simple email feature with Mailgun. That started a discussion
+with other Dream contributors about how to simplify the implementation
+of email features.</p>
+<p>After a few more conversations, I decided to write an "adapter"
+library that creates a consistent interface across different email
+services. Instead of having to study Mailgun or Sendgrid's REST API
+and worry about the details of making HTTP requests, you can install
+<code>tidy_email</code>, provide your API keys, and use a <code>send</code> function that
+consumes a simple email type. The library also makes switching email
+providers as simple as changing your credentials.</p>
+<p>I intentionally kept the scope of the library very small, since this
+allowed me to complete the project in a short time frame
+while learning several new skills/systems.</p>
+<h1>Looking at "Prior Art"</h1>
+<p>Before I started implementing, I researched existing libraries that
+dealt with email. This took time but paid dividends by helping me to
+avoid re-inventing existing functionality. I learned more about
+<a href="https://github.com/oxidizing/letters/"><code>letters</code></a>, a library for
+sending email via SMTP and supporting libraries like
+<a href="https://github.com/mirage/mrmime"><code>mrmime</code></a> for parsing and
+generating email. Later, I utilized some of these libraries while
+adding an SMTP option to <code>tidy_email</code>.</p>
+<p>Investigating other work in the OCaml web development space helped me
+to articulate some of the design goals for my library.  I looked at
+the web framework
+<a href="https://github.com/oxidizing/sihl/tree/master/sihl-email">sihl</a>,
+which has email among it's many capabilities, and realized I wanted to
+make a very "slim" library that didn't couple sending email with other
+dependencies related to SQL, HTTP, etc.</p>
+<h1>Picking a Name</h1>
+<p>Naming things is hard! I spent some time looking through OPAM to see
+which names were already taken (<code>emile</code>, <code>letters</code>). Ultimately, I
+decided on these constraints:</p>
+<ul>
+<li>The name needed to be short, easy to search and remember.</li>
+<li>Ideally it would have only simple English words in it.</li>
+<li>The name should relate to email in an obvious way.</li>
+</ul>
+<p>I settled on <code>tidy_email</code> based on Dream's description as a "tidy,
+feature-complete web framework". The goal of the library would be to
+provide a "tidy" (i.e. well-designed, beginner-friendly) API for
+sending mail, and hopefully appeal to people who also like Dream.</p>
+<p>One mistake I made early on was not sticking to a consistent naming
+scheme; I had <code>tidy-email</code>, <code>tidy_email</code>, and "tidy email" in
+different places. Fortunately, github makes it fairly easy to re-name
+a repo if you change your mind later; it will even redirect from the
+old repo name to the new one.</p>
+<h1>Writing a First Draft</h1>
+<p>Even though <code>tidy_email</code> is quite simple. It took me some time to set
+all the resources up.</p>
+<p>Before I could get an account with Sendgrid, I had to register a
+domain and create a simple website. I used AWS for this because I was
+already familiar with it from past jobs. I also needed to register for
+Mailgun and create keys for API and SMTP access. At some point, I had
+accumulated enough credentials that I needed to set up password
+management to stay organized.</p>
+<p>Once I had access to services, I was able to write a first draft of
+the library. This turned out to be harder than I expected! I wasted a
+lot of time over-complicating my code with new concepts I had learned
+(functors and higher order modules). Eventually I came to my senses
+and wrote a much simpler implementation.</p>
+<p>I found keeping good notes to be quite helpful in this phase. Later, I
+turned these notes into documentation explaining how to set up mail
+services and some relevant trade-offs when choosing a service (tl;dr:
+Mailgun was the easiest, lowest-commitment way to get started).</p>
+<h1>Getting Feedback</h1>
+<p>My main advice is: Don't go it alone. Having someone (ideally a more
+experienced maintainer) review early drafts of work was really
+valuable for staying on track. This helped me:</p>
+<ul>
+<li>Understand how new users would think.</li>
+<li>Re-order things to make them easier for first-time users to understand.</li>
+<li>Remove confusing or superfluous parts of my API.</li>
+<li>Leverage github features I wasn't aware of (actions and secrets).</li>
+</ul>
+<p>I also found it helpful to attend <a href="https://discuss.ocaml.org/t/ocaml-cafe-wed-oct-13-1pm-u-s-central/8610">OCaml
+Cafe</a>
+(this is currently meeting on Zoom). A lecture about <code>dune</code> given by
+Rudi Grinberg showed me some techniques that made managing multiple
+<code>.opam</code> files much easier.</p>
+<h1>Testing</h1>
+<p>I didn't keep a careful count of my hours but I estimate that more
+than half were spent writing unit and integration tests. Setting these
+up early made it much easier to iterate on my design and accept pull
+requests. Github actions were pretty straightforward to configure
+(specified with a simple YAML
+<a href="https://github.com/jsthomas/tidy_email/blob/main/.github/workflows/test.yml">file</a>)
+after looking at a few examples. I appreciated not having to sign up
+for yet another service in order to get a simple CI system working.</p>
+<p>In <code>tidy_email</code>, an "integration test" is just a small executable that
+tries to send an email to a mailbox. I used github secrets to add API
+keys to my project so that integration tests could run securely on an
+PR/merge that I made. It would've been nice to be able to run
+integration tests on outside PRs automatically, but there isn't really
+a way to do that securely.</p>
+<p>Integration tests ended up being very advantageous for shaking out
+problems that new users are likely to encounter. For example, by
+testing with (intentionally) invalid SMTP credentials, I
+<a href="https://jsthomas.github.io/smtp-debugging.html">learned</a> that Mailgun
+can terminate SMTP connections in a way that is hard for <code>colombe</code> to
+handle. Debugging this example gave me some valuable experience
+digging into <code>tidy_email</code>'s dependencies and helped me file a good bug
+report to help improve <code>colombe</code>.</p>
+<h1>Documentation</h1>
+<p>I spent more time than expected writing documentation. The main lesson
+I learned is: <em>Don't bury the lede.</em> When people look at your repo,
+they have limited time. Therefore, the first things you should show
+them are</p>
+<ol>
+<li>A simple, one sentence summary of what the library does.</li>
+<li>A minimal working example (code) illustrating the library in action.</li>
+</ol>
+<p>Everything that comes after this introduction should be in the service
+of getting the user set up as painlessly as possible. In my case, that
+meant adding sign-up links to the relevant services the library
+supports. I also provided a brief explanation of the trade-offs when
+choosing a service.</p>
+<p><code>tidy_email</code> is small enough that I didn't write documentation beyond
+a readme, comments in the code, and folders of working examples. I
+think for a project any larger than this, I would have had to invest
+some time thinking about how to generate and host a static site with
+documentation (e.g. ReadTheDocs).</p>
+<h1>Release</h1>
+<p>Publishing my code on <a href="https://opam.ocaml.org/">opam</a> was relatively
+painless. To sum up the process:</p>
+<ol>
+<li>I ran <code>dune build</code> one final time and verified my opam files were
+   up to date.</li>
+<li>I created a "tag" for my project (<code>git tag -a 0.0.1 &amp;&amp; git push origin 0.0.1</code>).</li>
+<li>I ran "opam publish", which created a <a href="https://github.com/ocaml/opam-repository/pull/19816">pull
+   request</a> on
+   <code>ocaml/opam-repository</code>.</li>
+<li>~12 hours later my PR passed CI and was approved.</li>
+<li>About 6 hours after that, my PR was merged and showed up on <code>opam</code>.</li>
+</ol>
+<p>My <a href="https://github.com/ocaml/opam-repository/pull/19634">first
+attempt</a> at
+publishing didn't pass CI because of some simple mistakes I made in my
+<code>.opam</code> files. Fixing these was relatively straightforward after
+reading the docs and looking at some other repos for reference.</p>
+<h1>Final Thoughts</h1>
+<p>None of the work involved with releasing <code>tidy_email</code> was especially
+<em>hard</em>, but there were <em>many</em> small tasks to understand. Compared to
+paid application development work, I found that this project had more
+"admin work": signing up for services, configuring things, and writing
+prose.</p>
+<p>Overall, I found this type of work quite rewarding. It has been fun to
+see new people discover and star the repo on Github. The project
+motivated me to learn aspects of email that I would not have otherwise
+explored. Given how much open source software I use, it feels great
+to make a small contribution to the community.</p>
+                <div class="clear"></div>
+
+                <div class="info">
+                    <a href="https://jsthomas.github.io/first-opam-package.html">posted at 00:00</a>
+                    &nbsp;&middot;&nbsp;<a href="https://jsthomas.github.io/category/oss-projects.html" rel="tag">OSS, Projects</a>
+                </div>
+            </article>            <h4 class="date">Sep 03, 2021</h4>
 
             <article class="post">
                 <h2 class="title">
@@ -2433,260 +2627,6 @@ post.</p>
                 <div class="info">
                     <a href="https://jsthomas.github.io/map-comparison.html">posted at 00:00</a>
                     &nbsp;&middot;&nbsp;<a href="https://jsthomas.github.io/category/ocaml.html" rel="tag">OCaml</a>
-                </div>
-            </article>            <h4 class="date">May 01, 2017</h4>
-
-            <article class="post">
-                <h2 class="title">
-                    <a href="https://jsthomas.github.io/mgptree-refactor.html" rel="bookmark" title="Permanent Link to &quot;Refactoring Python Code&quot;">Refactoring Python Code</a>
-                </h2>
-
-                
-                
-
-                <p>Recently, a friend from grad-school asked me about an
-<a href="https://github.com/jsthomas/mgptree">experimental python data visualization tool</a>
-I wrote in 2012. Since the code had rotted (to the point that it no
-longer worked), and my understanding of python has changed quite a bit
-since I originally wrote it, I thought this would be a good
-opportunity to write about my current processes for debugging and refactoring.</p>
-<h2>What's this supposed to do again?</h2>
-<p>The premise of the program is pretty simple:</p>
-<ol>
-<li>
-<p>The
-   <a href="https://www.genealogy.math.ndsu.nodak.edu/">Mathematics Genealogy Project (MGP)</a>
-   lets us search for advisor-advisee relationships between names.</p>
-</li>
-<li>
-<p>We want to take a list of names <span class="math">\(L\)</span> and an integer <span class="math">\(n\)</span>, and look up
-   <span class="math">\(n\)</span> generations of mathematicians, starting from <span class="math">\(L\)</span>.</p>
-</li>
-<li>
-<p>Then, we want to render the digraph of advisee-advisor
-   relationships using the <a href="http://graphviz.org/"><code>graphviz</code></a> program
-   <code>dot</code>.</p>
-</li>
-</ol>
-<p>Looking at this code it's surprising some of the things I did and
-didn't know:</p>
-<ol>
-<li>
-<p>Prior to 2014, I wasn't in the habit of using virtual environments
-   and <code>pip</code>. For this project, that's not really a big deal because
-   there aren't a lot of dependencies.</p>
-</li>
-<li>
-<p>I wasn't aware of <code>pylint</code>. Today, I find that <code>pylint</code> makes it a
-   lot easier to write clean python and refactor existing code.</p>
-</li>
-</ol>
-<p>Some things that haven't changed:</p>
-<ol>
-<li>
-<p>I still think graphviz is really great. It makes plotting directed
-   graphs <em>so</em> easy, and it's easy to decorate them with a lot of
-   metadata.</p>
-</li>
-<li>
-<p><code>argparse</code> makes it easy to write a command line interface that
-   works just like other familiar unix tools. I especially like that
-   adds <code>-h</code> options for displaying help, which are invaluable when
-   building a more extensive CLI tool.</p>
-</li>
-</ol>
-<h2>Phase 1: Cleaning up lint issues.</h2>
-<p>Whenever I'm starting on unfamiliar python code, I like to begin with
-<code>pylint</code>'s suggestions.</p>
-<div class="highlight"><pre><span></span><code><span class="o">```</span>
-<span class="p">...</span>
-<span class="k">C</span><span class="p">:</span><span class="mi">384</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="n">Invalid</span> <span class="k">method</span> <span class="n">name</span> <span class="ss">"extractPersonalData"</span> <span class="p">(</span><span class="n">invalid</span><span class="o">-</span><span class="n">name</span><span class="p">)</span>
-<span class="k">C</span><span class="p">:</span><span class="mi">384</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="n">Missing</span> <span class="k">method</span> <span class="n">docstring</span> <span class="p">(</span><span class="n">missing</span><span class="o">-</span><span class="n">docstring</span><span class="p">)</span>
-<span class="k">C</span><span class="p">:</span><span class="mi">391</span><span class="p">,</span><span class="mi">11</span><span class="p">:</span> <span class="k">Do</span> <span class="k">not</span> <span class="n">use</span> <span class="o">`</span><span class="n">len</span><span class="p">(</span><span class="n">SEQUENCE</span><span class="p">)</span><span class="o">`</span> <span class="k">as</span> <span class="n">condition</span> <span class="n">value</span> <span class="p">(</span><span class="n">len</span><span class="o">-</span><span class="k">as</span><span class="o">-</span><span class="n">condition</span><span class="p">)</span>
-<span class="k">C</span><span class="p">:</span><span class="mi">395</span><span class="p">,</span><span class="mi">11</span><span class="p">:</span> <span class="k">Do</span> <span class="k">not</span> <span class="n">use</span> <span class="o">`</span><span class="n">len</span><span class="p">(</span><span class="n">SEQUENCE</span><span class="p">)</span><span class="o">`</span> <span class="k">as</span> <span class="n">condition</span> <span class="n">value</span> <span class="p">(</span><span class="n">len</span><span class="o">-</span><span class="k">as</span><span class="o">-</span><span class="n">condition</span><span class="p">)</span>
-<span class="k">C</span><span class="p">:</span><span class="mi">399</span><span class="p">,</span><span class="mi">11</span><span class="p">:</span> <span class="k">Do</span> <span class="k">not</span> <span class="n">use</span> <span class="o">`</span><span class="n">len</span><span class="p">(</span><span class="n">SEQUENCE</span><span class="p">)</span><span class="o">`</span> <span class="k">as</span> <span class="n">condition</span> <span class="n">value</span> <span class="p">(</span><span class="n">len</span><span class="o">-</span><span class="k">as</span><span class="o">-</span><span class="n">condition</span><span class="p">)</span>
-<span class="k">C</span><span class="p">:</span><span class="mi">402</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="n">Missing</span> <span class="k">method</span> <span class="n">docstring</span> <span class="p">(</span><span class="n">missing</span><span class="o">-</span><span class="n">docstring</span><span class="p">)</span>
-<span class="k">C</span><span class="p">:</span><span class="mi">405</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="n">Missing</span> <span class="k">method</span> <span class="n">docstring</span> <span class="p">(</span><span class="n">missing</span><span class="o">-</span><span class="n">docstring</span><span class="p">)</span>
-<span class="n">W</span><span class="p">:</span><span class="mi">408</span><span class="p">,</span><span class="mi">12</span><span class="p">:</span> <span class="n">Unused</span> <span class="k">variable</span> <span class="s1">'name'</span> <span class="p">(</span><span class="n">unused</span><span class="o">-</span><span class="k">variable</span><span class="p">)</span>
-
-<span class="c1">---------------------------------------------------------------------</span>
-<span class="n">Your</span> <span class="n">code</span> <span class="n">has</span> <span class="n">been</span> <span class="n">rated</span> <span class="k">at</span> <span class="o">-</span><span class="mi">1</span><span class="p">.</span><span class="mi">83</span><span class="o">/</span><span class="mi">10</span>
-<span class="o">```</span>
-</code></pre></div>
-<p>Pylint scored my original code -1.83/10. D'oh. It turns out one of the
-things I wasn't following in 2012 was PEP8, which means I had a lot of
-formatting/whitespace issues. Fixing these, my score rose to
-6.94/10.</p>
-<p>One thing that I really like about <code>pylint</code> is how it dramatically
-simplifies finding unused variables in my code. Sometimes, I even use
-this to help me refactor more systematically: First I change whatever
-lines I planned to simplify, then I let <code>pylint</code> confirm that I can
-get rid of the variables I'd planned to eliminate. It turns out I had
-four unused variables in 430 lines of code, all easy to fix.</p>
-<p>Another convention I wasn't following in 2012 is the use of
-docstrings. Instead, I was writing big block comments, like:</p>
-<div class="highlight"><pre><span></span><code><span class="c1">################################################################################</span>
-<span class="c1"># Procedure: validate_scrape</span>
-<span class="c1">#</span>
-<span class="c1"># Input: Parser and options objects from optparse</span>
-<span class="c1">#</span>
-<span class="c1"># Output: A list of well-formed name tuples.</span>
-<span class="c1">#</span>
-<span class="c1"># Effects: Checks the options object to confirm the inputs are well formed.</span>
-<span class="c1">#</span>
-<span class="c1">################################################################################</span>
-</code></pre></div>
-<p>Now that I work with jupyter and ipython more often, I have a better
-appreciation for docstrings. It's really helpful to be able to do
-<code>function_i_dont_remember ?</code> at a REPL and immediately pull up
-documentation without context switching.</p>
-<h2>Phase 2: Cleaning up the output.</h2>
-<p>After fixing documentation, the next issue I wanted to improve was the
-script's lack of logging. For some reason, I'd thought it would be a
-good idea to send everything directly to <code>stdout</code> or <code>stderr</code>. I even
-added a <code>verbose</code> command line flag, and then introduced conditionals
-in my code, like:</p>
-<div class="highlight"><pre><span></span><code><span class="k">if</span> <span class="n">OPTIONS</span><span class="o">.</span><span class="n">verbose_on</span><span class="p">:</span>
-    <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"Searching MGP for </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">.</span><span class="se">\n</span><span class="s2">"</span> <span class="o">%</span> <span class="p">(</span><span class="n">last</span><span class="p">,</span> <span class="n">first</span><span class="p">,</span> <span class="n">middle</span><span class="p">))</span>
-</code></pre></div>
-<p>To simplify this, I introduced the <code>logging</code> package with a simple
-configuration:</p>
-<div class="highlight"><pre><span></span><code><span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
-                    <span class="nb">format</span><span class="o">=</span><span class="s1">'</span><span class="si">%(asctime)s</span><span class="s1"> </span><span class="si">%(message)s</span><span class="s1">'</span><span class="p">,</span>
-                    <span class="n">datefmt</span><span class="o">=</span><span class="s1">'%m/</span><span class="si">%d</span><span class="s1">/%Y %I:%M:%S %p'</span><span class="p">)</span>
-</code></pre></div>
-<p>which let me write logs at several different levels whose visibility
-can be adjusted in the configuration.</p>
-<h2>Phase 3: Fixing bugs.</h2>
-<p>At this point, I'd resolved most of the obvious issues I wanted to
-fix, and narrowed down <code>pylint</code>'s suggestions to four issues, two of
-which were TODOs I'd notice while addressing other issues:</p>
-<div class="highlight"><pre><span></span><code><span class="o">*************</span> <span class="n">Module</span> <span class="n">mgptree</span>
-<span class="n">W</span><span class="p">:</span> <span class="mi">58</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span> <span class="n">TODO</span><span class="p">:</span> <span class="n">Refactor</span> <span class="k">options</span> <span class="k">to</span> <span class="n">be</span> <span class="n">either</span> <span class="n">completely</span> <span class="k">global</span> <span class="k">or</span> <span class="k">not</span><span class="p">.</span> <span class="p">(</span><span class="n">fixme</span><span class="p">)</span>
-<span class="n">W</span><span class="p">:</span><span class="mi">158</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span> <span class="n">TODO</span><span class="p">:</span> <span class="n">Consider</span> <span class="n">refactor</span> <span class="n">here</span><span class="p">.</span> <span class="p">(</span><span class="n">fixme</span><span class="p">)</span>
-<span class="n">W</span><span class="p">:</span> <span class="mi">36</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="k">Using</span> <span class="n">the</span> <span class="k">global</span> <span class="k">statement</span> <span class="p">(</span><span class="k">global</span><span class="o">-</span><span class="k">statement</span><span class="p">)</span>
-<span class="n">R</span><span class="p">:</span><span class="mi">208</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span> <span class="n">Too</span> <span class="n">many</span> <span class="n">instance</span> <span class="n">attributes</span> <span class="p">(</span><span class="mi">8</span><span class="o">/</span><span class="mi">7</span><span class="p">)</span> <span class="p">(</span><span class="n">too</span><span class="o">-</span><span class="n">many</span><span class="o">-</span><span class="n">instance</span><span class="o">-</span><span class="n">attributes</span><span class="p">)</span>
-
-<span class="c1">--------------------------------------------------------------------</span>
-<span class="n">Your</span> <span class="n">code</span> <span class="n">has</span> <span class="n">been</span> <span class="n">rated</span> <span class="k">at</span> <span class="mi">9</span><span class="p">.</span><span class="mi">77</span><span class="o">/</span><span class="mi">10</span>
-</code></pre></div>
-<p>Fixing the whitespace/formatting issues turned out to be a good way to
-re-familiarize myself with the code before attempting to fix the
-functional issues.</p>
-<p>After running <code>mgptree</code> on a couple simple examples and looking at the
-logs, I realized that the main functional issue was in the function
-<code>fetch_id_num</code>. This function is supposed to take a tuple of names
-(first, middle, and last) and determine the ID number of the
-mathematician with that name in the MGP service (if the lookup fails
-or returns multiple answers, we return <code>None</code>). The function is
-supposed to do this by using <code>requests</code> to make a POST to the URL
-associated with the PHP script that handles users' searches on the MGP
-site, and then scraping the resulting reply.</p>
-<p>Looking at the MGP website, it didn't appear to be very different from
-what I remembered seeing in 2012, so I was puzzled why my scraping
-code had stopped working. After running my function a few times in an
-<code>ipython</code> shell, I realized my main error was my URL. Like a lot of
-websites, the math genealogy has moved to HTTPS since 2012. Fixing
-that and one other formatting change in the pages' <code>&lt;title&gt;</code> section
-and my scraping code was working properly again.</p>
-<h2>Wrapping Up</h2>
-<p>Overall, the improvements I made to my script were pretty trivial,
-but they illustrate some practices that I think are really helpful for
-increasing one's personal productivity:</p>
-<ol>
-<li>
-<p><em>Restoring an Invariant</em>: When I don't know what to do next (or
-   where to start), I find <code>pylint</code> and <code>nosetests</code> are great
-   guides. Both tools specify an invariant (no lint errors above a
-   certain level, all unit tests passing, etc.) that should be
-   maintained whenever code gets committed. If the invariant isn't
-   satisfied, the next steps are clear: Investigate why, and fix it.</p>
-</li>
-<li>
-<p><em>One Thing a Time:</em> Even though my changes were simple, I made a
-   total of 8 commits to get my code back in working order. Each one
-   focusses on a single issue I wanted to improve in the code
-   (i.e. remove all whitespace lint errors). I find it can be really
-   easy to start "improving" two or three issues at the same time, and
-   then do a poor job on all of them (or get stuck). For me, following
-   the rule of one issue per commit has been a great way to stay
-   organized and break larger problems into manageable pieces.</p>
-</li>
-</ol>
-<p>I can see a couple of areas I might want to improve in the future. It
-would be nice to to store scraped data in an <code>sqlite</code> database, which
-might simplify computing other graph-based presentations of the
-dataset (for example, finding all of the students descended from a
-particular mathematician). It might also be cool to convert this to a
-django or flask app, so that people unfamiliar with the command line
-can generate their own graphs.</p>
-<script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
-    var align = "center",
-        indent = "0em",
-        linebreak = "false";
-
-    if (false) {
-        align = (screen.width < 768) ? "left" : align;
-        indent = (screen.width < 768) ? "0em" : indent;
-        linebreak = (screen.width < 768) ? 'true' : linebreak;
-    }
-
-    var mathjaxscript = document.createElement('script');
-    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
-    mathjaxscript.type = 'text/javascript';
-    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
-
-    var configscript = document.createElement('script');
-    configscript.type = 'text/x-mathjax-config';
-    configscript[(window.opera ? "innerHTML" : "text")] =
-        "MathJax.Hub.Config({" +
-        "    config: ['MMLorHTML.js']," +
-        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'none' } }," +
-        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
-        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
-        "    displayAlign: '"+ align +"'," +
-        "    displayIndent: '"+ indent +"'," +
-        "    showMathMenu: true," +
-        "    messageStyle: 'normal'," +
-        "    tex2jax: { " +
-        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
-        "        displayMath: [ ['$$','$$'] ]," +
-        "        processEscapes: true," +
-        "        preview: 'TeX'," +
-        "    }, " +
-        "    'HTML-CSS': { " +
-        "        availableFonts: ['STIX', 'TeX']," +
-        "        preferredFont: 'STIX'," +
-        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
-        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
-        "    }, " +
-        "}); " +
-        "if ('default' !== 'default') {" +
-            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
-                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
-                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
-                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
-                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
-                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
-            "});" +
-            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
-                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
-                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
-                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
-                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
-                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
-            "});" +
-        "}";
-
-    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
-    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
-}
-</script>
-                <div class="clear"></div>
-
-                <div class="info">
-                    <a href="https://jsthomas.github.io/mgptree-refactor.html">posted at 00:00</a>
-                    &nbsp;&middot;&nbsp;<a href="https://jsthomas.github.io/category/python-projects-refactoring.html" rel="tag">Python, Projects, Refactoring</a>
                 </div>
             </article>
 

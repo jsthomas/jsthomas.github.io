@@ -1,5 +1,189 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Joe Thomas</title><link href="https://jsthomas.github.io/" rel="alternate"></link><link href="https://jsthomas.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jsthomas.github.io/</id><updated>2021-09-03T00:00:00-04:00</updated><entry><title>Writing a Simple Browser Game in Elm</title><link href="https://jsthomas.github.io/elm-space-battle.html" rel="alternate"></link><published>2021-09-03T00:00:00-04:00</published><updated>2021-09-03T00:00:00-04:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2021-09-03:/elm-space-battle.html</id><summary type="html">&lt;p&gt;A user experience report from a first time Elm user&lt;/p&gt;</summary><content type="html">&lt;p&gt;TL;DR : This week I built a little spaceship game using Elm! You can
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Joe Thomas</title><link href="https://jsthomas.github.io/" rel="alternate"></link><link href="https://jsthomas.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jsthomas.github.io/</id><updated>2021-10-20T00:00:00-04:00</updated><entry><title>What I learned publishing an open source package</title><link href="https://jsthomas.github.io/first-opam-package.html" rel="alternate"></link><published>2021-10-20T00:00:00-04:00</published><updated>2021-10-20T00:00:00-04:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2021-10-20:/first-opam-package.html</id><summary type="html">&lt;p&gt;Today I published my first package on OPAM! You can find &lt;code&gt;tidy_email&lt;/code&gt;
+and its sub-libraries (&lt;code&gt;tidy_email_mailgun&lt;/code&gt;, &lt;code&gt;tidy_email_sendgrid&lt;/code&gt;,
+and &lt;code&gt;tidy_email_smtp&lt;/code&gt;)
+&lt;a href="https://opam.ocaml.org/packages/tidy_email/tidy_email.0.0.1/"&gt;here&lt;/a&gt;. This
+wrapped up a goal I wanted to accomplish while at &lt;a href="https://www.recurse.com/"&gt;Recurse
+Center&lt;/a&gt;: Writing a simple (but useful) OCaml
+library and making it available via &lt;code&gt;opam&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;I chose this project …&lt;/p&gt;</summary><content type="html">&lt;p&gt;Today I published my first package on OPAM! You can find &lt;code&gt;tidy_email&lt;/code&gt;
+and its sub-libraries (&lt;code&gt;tidy_email_mailgun&lt;/code&gt;, &lt;code&gt;tidy_email_sendgrid&lt;/code&gt;,
+and &lt;code&gt;tidy_email_smtp&lt;/code&gt;)
+&lt;a href="https://opam.ocaml.org/packages/tidy_email/tidy_email.0.0.1/"&gt;here&lt;/a&gt;. This
+wrapped up a goal I wanted to accomplish while at &lt;a href="https://www.recurse.com/"&gt;Recurse
+Center&lt;/a&gt;: Writing a simple (but useful) OCaml
+library and making it available via &lt;code&gt;opam&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;I chose this project for several reasons:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;I wanted more experience designing small APIs in OCaml.&lt;/li&gt;
+&lt;li&gt;I thought releasing a small library would help me understand how
+"open source maintainer" work differs from paid closed-source
+application development.&lt;/li&gt;
+&lt;li&gt;I wanted to learn more about the mechanics/process of packaging
+   code for OPAM.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;The rest of this post explains the process I used and which parts
+worked well. Most of this discussion is applicable to general open
+source development, but some of the tooling-related points are
+specific to OCaml.&lt;/p&gt;
+&lt;h1&gt;Picking a Topic&lt;/h1&gt;
+&lt;p&gt;When I started my batch at RC, I knew that I wanted to publish
+&lt;em&gt;something&lt;/em&gt;, but hadn't settled on a topic. Contributing to other
+projects was a valuable source of ideas. After working on a couple of
+issues for the web framework
+&lt;a href="https://github.com/aantron/dream"&gt;Dream&lt;/a&gt;, I wrote a small &lt;a href="https://jsthomas.github.io/ocaml-email.html"&gt;blog
+post&lt;/a&gt; showing how to
+build a simple email feature with Mailgun. That started a discussion
+with other Dream contributors about how to simplify the implementation
+of email features.&lt;/p&gt;
+&lt;p&gt;After a few more conversations, I decided to write an "adapter"
+library that creates a consistent interface across different email
+services. Instead of having to study Mailgun or Sendgrid's REST API
+and worry about the details of making HTTP requests, you can install
+&lt;code&gt;tidy_email&lt;/code&gt;, provide your API keys, and use a &lt;code&gt;send&lt;/code&gt; function that
+consumes a simple email type. The library also makes switching email
+providers as simple as changing your credentials.&lt;/p&gt;
+&lt;p&gt;I intentionally kept the scope of the library very small, since this
+allowed me to complete the project in a short time frame
+while learning several new skills/systems.&lt;/p&gt;
+&lt;h1&gt;Looking at "Prior Art"&lt;/h1&gt;
+&lt;p&gt;Before I started implementing, I researched existing libraries that
+dealt with email. This took time but paid dividends by helping me to
+avoid re-inventing existing functionality. I learned more about
+&lt;a href="https://github.com/oxidizing/letters/"&gt;&lt;code&gt;letters&lt;/code&gt;&lt;/a&gt;, a library for
+sending email via SMTP and supporting libraries like
+&lt;a href="https://github.com/mirage/mrmime"&gt;&lt;code&gt;mrmime&lt;/code&gt;&lt;/a&gt; for parsing and
+generating email. Later, I utilized some of these libraries while
+adding an SMTP option to &lt;code&gt;tidy_email&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Investigating other work in the OCaml web development space helped me
+to articulate some of the design goals for my library.  I looked at
+the web framework
+&lt;a href="https://github.com/oxidizing/sihl/tree/master/sihl-email"&gt;sihl&lt;/a&gt;,
+which has email among it's many capabilities, and realized I wanted to
+make a very "slim" library that didn't couple sending email with other
+dependencies related to SQL, HTTP, etc.&lt;/p&gt;
+&lt;h1&gt;Picking a Name&lt;/h1&gt;
+&lt;p&gt;Naming things is hard! I spent some time looking through OPAM to see
+which names were already taken (&lt;code&gt;emile&lt;/code&gt;, &lt;code&gt;letters&lt;/code&gt;). Ultimately, I
+decided on these constraints:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;The name needed to be short, easy to search and remember.&lt;/li&gt;
+&lt;li&gt;Ideally it would have only simple English words in it.&lt;/li&gt;
+&lt;li&gt;The name should relate to email in an obvious way.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;I settled on &lt;code&gt;tidy_email&lt;/code&gt; based on Dream's description as a "tidy,
+feature-complete web framework". The goal of the library would be to
+provide a "tidy" (i.e. well-designed, beginner-friendly) API for
+sending mail, and hopefully appeal to people who also like Dream.&lt;/p&gt;
+&lt;p&gt;One mistake I made early on was not sticking to a consistent naming
+scheme; I had &lt;code&gt;tidy-email&lt;/code&gt;, &lt;code&gt;tidy_email&lt;/code&gt;, and "tidy email" in
+different places. Fortunately, github makes it fairly easy to re-name
+a repo if you change your mind later; it will even redirect from the
+old repo name to the new one.&lt;/p&gt;
+&lt;h1&gt;Writing a First Draft&lt;/h1&gt;
+&lt;p&gt;Even though &lt;code&gt;tidy_email&lt;/code&gt; is quite simple. It took me some time to set
+all the resources up.&lt;/p&gt;
+&lt;p&gt;Before I could get an account with Sendgrid, I had to register a
+domain and create a simple website. I used AWS for this because I was
+already familiar with it from past jobs. I also needed to register for
+Mailgun and create keys for API and SMTP access. At some point, I had
+accumulated enough credentials that I needed to set up password
+management to stay organized.&lt;/p&gt;
+&lt;p&gt;Once I had access to services, I was able to write a first draft of
+the library. This turned out to be harder than I expected! I wasted a
+lot of time over-complicating my code with new concepts I had learned
+(functors and higher order modules). Eventually I came to my senses
+and wrote a much simpler implementation.&lt;/p&gt;
+&lt;p&gt;I found keeping good notes to be quite helpful in this phase. Later, I
+turned these notes into documentation explaining how to set up mail
+services and some relevant trade-offs when choosing a service (tl;dr:
+Mailgun was the easiest, lowest-commitment way to get started).&lt;/p&gt;
+&lt;h1&gt;Getting Feedback&lt;/h1&gt;
+&lt;p&gt;My main advice is: Don't go it alone. Having someone (ideally a more
+experienced maintainer) review early drafts of work was really
+valuable for staying on track. This helped me:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Understand how new users would think.&lt;/li&gt;
+&lt;li&gt;Re-order things to make them easier for first-time users to understand.&lt;/li&gt;
+&lt;li&gt;Remove confusing or superfluous parts of my API.&lt;/li&gt;
+&lt;li&gt;Leverage github features I wasn't aware of (actions and secrets).&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;I also found it helpful to attend &lt;a href="https://discuss.ocaml.org/t/ocaml-cafe-wed-oct-13-1pm-u-s-central/8610"&gt;OCaml
+Cafe&lt;/a&gt;
+(this is currently meeting on Zoom). A lecture about &lt;code&gt;dune&lt;/code&gt; given by
+Rudi Grinberg showed me some techniques that made managing multiple
+&lt;code&gt;.opam&lt;/code&gt; files much easier.&lt;/p&gt;
+&lt;h1&gt;Testing&lt;/h1&gt;
+&lt;p&gt;I didn't keep a careful count of my hours but I estimate that more
+than half were spent writing unit and integration tests. Setting these
+up early made it much easier to iterate on my design and accept pull
+requests. Github actions were pretty straightforward to configure
+(specified with a simple YAML
+&lt;a href="https://github.com/jsthomas/tidy_email/blob/main/.github/workflows/test.yml"&gt;file&lt;/a&gt;)
+after looking at a few examples. I appreciated not having to sign up
+for yet another service in order to get a simple CI system working.&lt;/p&gt;
+&lt;p&gt;In &lt;code&gt;tidy_email&lt;/code&gt;, an "integration test" is just a small executable that
+tries to send an email to a mailbox. I used github secrets to add API
+keys to my project so that integration tests could run securely on an
+PR/merge that I made. It would've been nice to be able to run
+integration tests on outside PRs automatically, but there isn't really
+a way to do that securely.&lt;/p&gt;
+&lt;p&gt;Integration tests ended up being very advantageous for shaking out
+problems that new users are likely to encounter. For example, by
+testing with (intentionally) invalid SMTP credentials, I
+&lt;a href="https://jsthomas.github.io/smtp-debugging.html"&gt;learned&lt;/a&gt; that Mailgun
+can terminate SMTP connections in a way that is hard for &lt;code&gt;colombe&lt;/code&gt; to
+handle. Debugging this example gave me some valuable experience
+digging into &lt;code&gt;tidy_email&lt;/code&gt;'s dependencies and helped me file a good bug
+report to help improve &lt;code&gt;colombe&lt;/code&gt;.&lt;/p&gt;
+&lt;h1&gt;Documentation&lt;/h1&gt;
+&lt;p&gt;I spent more time than expected writing documentation. The main lesson
+I learned is: &lt;em&gt;Don't bury the lede.&lt;/em&gt; When people look at your repo,
+they have limited time. Therefore, the first things you should show
+them are&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;A simple, one sentence summary of what the library does.&lt;/li&gt;
+&lt;li&gt;A minimal working example (code) illustrating the library in action.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Everything that comes after this introduction should be in the service
+of getting the user set up as painlessly as possible. In my case, that
+meant adding sign-up links to the relevant services the library
+supports. I also provided a brief explanation of the trade-offs when
+choosing a service.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;tidy_email&lt;/code&gt; is small enough that I didn't write documentation beyond
+a readme, comments in the code, and folders of working examples. I
+think for a project any larger than this, I would have had to invest
+some time thinking about how to generate and host a static site with
+documentation (e.g. ReadTheDocs).&lt;/p&gt;
+&lt;h1&gt;Release&lt;/h1&gt;
+&lt;p&gt;Publishing my code on &lt;a href="https://opam.ocaml.org/"&gt;opam&lt;/a&gt; was relatively
+painless. To sum up the process:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;I ran &lt;code&gt;dune build&lt;/code&gt; one final time and verified my opam files were
+   up to date.&lt;/li&gt;
+&lt;li&gt;I created a "tag" for my project (&lt;code&gt;git tag -a 0.0.1 &amp;amp;&amp;amp; git push origin 0.0.1&lt;/code&gt;).&lt;/li&gt;
+&lt;li&gt;I ran "opam publish", which created a &lt;a href="https://github.com/ocaml/opam-repository/pull/19816"&gt;pull
+   request&lt;/a&gt; on
+   &lt;code&gt;ocaml/opam-repository&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;~12 hours later my PR passed CI and was approved.&lt;/li&gt;
+&lt;li&gt;About 6 hours after that, my PR was merged and showed up on &lt;code&gt;opam&lt;/code&gt;.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;My &lt;a href="https://github.com/ocaml/opam-repository/pull/19634"&gt;first
+attempt&lt;/a&gt; at
+publishing didn't pass CI because of some simple mistakes I made in my
+&lt;code&gt;.opam&lt;/code&gt; files. Fixing these was relatively straightforward after
+reading the docs and looking at some other repos for reference.&lt;/p&gt;
+&lt;h1&gt;Final Thoughts&lt;/h1&gt;
+&lt;p&gt;None of the work involved with releasing &lt;code&gt;tidy_email&lt;/code&gt; was especially
+&lt;em&gt;hard&lt;/em&gt;, but there were &lt;em&gt;many&lt;/em&gt; small tasks to understand. Compared to
+paid application development work, I found that this project had more
+"admin work": signing up for services, configuring things, and writing
+prose.&lt;/p&gt;
+&lt;p&gt;Overall, I found this type of work quite rewarding. It has been fun to
+see new people discover and star the repo on Github. The project
+motivated me to learn aspects of email that I would not have otherwise
+explored. Given how much open source software I use, it feels great
+to make a small contribution to the community.&lt;/p&gt;</content><category term="OSS, Projects"></category></entry><entry><title>Writing a Simple Browser Game in Elm</title><link href="https://jsthomas.github.io/elm-space-battle.html" rel="alternate"></link><published>2021-09-03T00:00:00-04:00</published><updated>2021-09-03T00:00:00-04:00</updated><author><name>Joe Thomas</name></author><id>tag:jsthomas.github.io,2021-09-03:/elm-space-battle.html</id><summary type="html">&lt;p&gt;A user experience report from a first time Elm user&lt;/p&gt;</summary><content type="html">&lt;p&gt;TL;DR : This week I built a little spaceship game using Elm! You can
 play the game &lt;a href="https://jsthomas.github.io/static/elm-space-battle/index.html"&gt;here&lt;/a&gt; (it
 probably won't work well on mobile or if you have a tiny screen) and
 see the source code
