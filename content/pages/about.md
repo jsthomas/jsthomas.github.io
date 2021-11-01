@@ -14,10 +14,6 @@ my professional work has focused on helping machine learning
 applications succeed in cloud computing environments. I'm interested
 in programming languages, data science, and mathematics.
 
-Currently, I'm attending the [Recurse
-Center](https://www.recurse.com/), where I'm making open source
-contributions to the OCaml ecosystem.
-
 ## Contact Information and Resume
 
 The best way to reach me is by email. My email address is `jsthomas@protonmail.com`.

@@ -4,7 +4,13 @@ Author: Joe Thomas
 
 Here is a selection of public projects I've worked on over the years.
 
-#Papers
+# Open Source
+
+* [tidy_email](https://github.com/jsthomas/tidy_email) : An OCaml
+  library that makes it easy to send email with Mailgun, Sendgrid, and
+  SMTP.
+
+# Papers
 
 * (With David Glickenstein) : [Duality structures and discrete conformal variations of piecewise constant curvature surfaces](http://www.sciencedirect.com/science/article/pii/S0001870816314682) : Advances in Mathematics, Volume 320, 7 November 2017.
 
