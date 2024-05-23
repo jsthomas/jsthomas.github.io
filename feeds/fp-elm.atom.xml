@@ -6,7 +6,7 @@ see the source code
 &lt;a href="https://github.com/jsthomas/elm-space-battle"&gt;here&lt;/a&gt;.&lt;/p&gt;
 &lt;p&gt;&lt;em&gt;Here's a screenshot:&lt;/em&gt;&lt;/p&gt;
 &lt;p&gt;&lt;img alt="A screenshot of my
-game." src="https://jsthomas.github.io/images/elm-space-battle/game_small.png" style="width: 595px; height: auto;"/&gt;&lt;/p&gt;
+game." src="https://jsthomas.github.io/images/elm-space-battle/game_small.png"&gt;&lt;/p&gt;
 &lt;h1&gt;Context&lt;/h1&gt;
 &lt;p&gt;This was my last week at Recurse Center; after Labor Day, I head back
 to full time work as a data engineer. One of my main RC projects,
@@ -28,7 +28,7 @@ written for the PDP-1 at MIT. You can read more about this game
 &lt;a href="https://en.wikipedia.org/wiki/Spacewar!"&gt;here&lt;/a&gt; and play an emulated
 version &lt;a href="https://www.masswerk.at/spacewar/"&gt;here&lt;/a&gt;.&lt;/p&gt;
 &lt;p&gt;&lt;img alt="The original spacewar on a DEC
-monitor." src="https://jsthomas.github.io/images/elm-space-battle/Spacewar_screenshot_small.png" style="width: 600px; height: auto;"/&gt;&lt;/p&gt;
+monitor." src="https://jsthomas.github.io/images/elm-space-battle/Spacewar_screenshot_small.png"&gt;&lt;/p&gt;
 &lt;p&gt;&lt;em&gt;Spacewar!&lt;/em&gt; features two rocket ships orbiting a star; the objective
 is to destroy the other player's ship by shooting it with a
 torpedo. The star exerts a gravitational pull on the two rockets,
@@ -81,7 +81,7 @@ small, but this would've been nice to have.&lt;/p&gt;
 &lt;h1&gt;Thoughts on the Elm Architecture&lt;/h1&gt;
 &lt;p&gt;The Elm Architecture is worth expanding on a bit, and is summed up by
 the following diagram in &lt;em&gt;Beginning Elm&lt;/em&gt;:&lt;/p&gt;
-&lt;p&gt;&lt;img alt="Elm architecture diagram" src="https://jsthomas.github.io/images/elm-space-battle/elm-arch.png" style="width: 1022px; height: auto;"/&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt="Elm architecture diagram" src="https://jsthomas.github.io/images/elm-space-battle/elm-arch.png"&gt;&lt;/p&gt;
 &lt;p&gt;The Elm runtime is responsible for handling all side-effects, so that
 Elm programmers only need to work with pure functions and immutable
 data. To define the application, we provide the runtime with a handful
@@ -106,6 +106,7 @@ transformations on the &lt;code&gt;Model&lt;/code&gt;, like this:&lt;/p&gt;
     &lt;span class="kr"&gt;let&lt;/span&gt; &lt;span class="nv"&gt;isLive&lt;/span&gt; &lt;span class="nv"&gt;b&lt;/span&gt; &lt;span class="nf"&gt;=&lt;/span&gt; &lt;span class="nv"&gt;model&lt;/span&gt;&lt;span class="nf"&gt;.&lt;/span&gt;&lt;span class="nv"&gt;time&lt;/span&gt; &lt;span class="nf"&gt;-&lt;/span&gt; &lt;span class="nv"&gt;b&lt;/span&gt;&lt;span class="nf"&gt;.&lt;/span&gt;&lt;span class="nv"&gt;created&lt;/span&gt; &lt;span class="nf"&gt;&amp;lt;&lt;/span&gt; &lt;span class="nv"&gt;torpedoLifetime&lt;/span&gt; &lt;span class="kr"&gt;in&lt;/span&gt;
     &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="nv"&gt;model&lt;/span&gt; &lt;span class="nf"&gt;|&lt;/span&gt; &lt;span class="nv"&gt;torpedos&lt;/span&gt; &lt;span class="nf"&gt;=&lt;/span&gt; &lt;span class="kt"&gt;List&lt;/span&gt;&lt;span class="nf"&gt;.&lt;/span&gt;&lt;span class="nv"&gt;filter&lt;/span&gt; &lt;span class="nv"&gt;isLive&lt;/span&gt; &lt;span class="nv"&gt;model&lt;/span&gt;&lt;span class="nf"&gt;.&lt;/span&gt;&lt;span class="nv"&gt;torpedos&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;h1&gt;Developer Experience&lt;/h1&gt;
 &lt;p&gt;Building a game in Elm was quite pleasant. The compiler's error
 messages are easy to interpret and the type system enables aggressive

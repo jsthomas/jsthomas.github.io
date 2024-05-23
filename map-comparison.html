@@ -50,6 +50,7 @@ expecting</p>
    <span class="bp">[]</span> <span class="o">-&gt;</span> <span class="bp">[]</span>
   <span class="o">|</span> <span class="n">a</span><span class="o">::</span><span class="n">l</span> <span class="o">-&gt;</span> <span class="k">let</span> <span class="n">r</span> <span class="o">=</span> <span class="n">f</span> <span class="n">a</span> <span class="k">in</span> <span class="n">r</span> <span class="o">::</span> <span class="n">map</span> <span class="n">f</span> <span class="n">l</span>
 </code></pre></div>
+
 <p>but I was surprised to learn there are actually several
 implementations of <code>map</code> in the OCaml ecosystem. I wanted to know more
 about these different implementations and their performance
@@ -105,6 +106,7 @@ unrolled version of <code>stdlib</code> looks like:</p>
     <span class="k">let</span> <span class="n">f3</span> <span class="o">=</span> <span class="n">f</span> <span class="n">x3</span> <span class="k">in</span>
     <span class="n">f1</span> <span class="o">::</span> <span class="n">f2</span> <span class="o">::</span> <span class="n">f3</span> <span class="o">::</span> <span class="n">map</span> <span class="n">tl</span>
 </code></pre></div>
+
 <p>We get to choose how many elements to unroll (here I picked 3); some
 profiling is needed to decide the most appropriate number.</p>
 <p>The second trick I call "hybridizing". The <code>stdlib</code> version is faster,
@@ -202,53 +204,57 @@ which I'll refer to as <code>batt-hybr</code>. Other test details:</p>
 <p>The library also allows us to produce 95% confidence intervals and
 <span class="math">\(R^2\)</span> values for the time estimates.</p>
 <p><strong>Map Benchmark, N = 100</strong></p>
-<div class="highlight"><pre><span></span><code><span class="err">┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐</span>
-<span class="err">│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │</span>
-<span class="err">├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤</span>
-<span class="err">│ ntr        │     1.00 │ 741.20ns │ -0.23% +0.22% │ 609.01w │    0.53w │    0.53w │    100.00% │</span>
-<span class="err">│ containers │     1.00 │ 439.55ns │ -0.64% +0.67% │ 304.03w │    0.17w │    0.17w │     59.30% │</span>
-<span class="err">│ batteries  │     1.00 │ 581.65ns │ -0.14% +0.16% │ 309.01w │    0.35w │    0.35w │     78.47% │</span>
-<span class="err">│ base       │     1.00 │ 438.63ns │ -0.19% +0.20% │ 304.03w │    0.16w │    0.16w │     59.18% │</span>
-<span class="err">│ stdlib     │     1.00 │ 610.45ns │ -0.10% +0.11% │ 304.01w │    0.17w │    0.17w │     82.36% │</span>
-<span class="err">│ batt-hybr  │     1.00 │ 426.76ns │ -0.15% +0.17% │ 304.03w │    0.17w │    0.17w │     57.58% │</span>
-<span class="err">└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘</span>
+<div class="highlight"><pre><span></span><code>┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐
+│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │
+├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤
+│ ntr        │     1.00 │ 741.20ns │ -0.23% +0.22% │ 609.01w │    0.53w │    0.53w │    100.00% │
+│ containers │     1.00 │ 439.55ns │ -0.64% +0.67% │ 304.03w │    0.17w │    0.17w │     59.30% │
+│ batteries  │     1.00 │ 581.65ns │ -0.14% +0.16% │ 309.01w │    0.35w │    0.35w │     78.47% │
+│ base       │     1.00 │ 438.63ns │ -0.19% +0.20% │ 304.03w │    0.16w │    0.16w │     59.18% │
+│ stdlib     │     1.00 │ 610.45ns │ -0.10% +0.11% │ 304.01w │    0.17w │    0.17w │     82.36% │
+│ batt-hybr  │     1.00 │ 426.76ns │ -0.15% +0.17% │ 304.03w │    0.17w │    0.17w │     57.58% │
+└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘
 </code></pre></div>
+
 <p><strong>Map Benchmark, N = 1000</strong></p>
-<div class="highlight"><pre><span></span><code><span class="err">┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐</span>
-<span class="err">│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │</span>
-<span class="err">├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤</span>
-<span class="err">│ ntr        │     1.00 │   8.84us │ -0.14% +0.15% │  6.01kw │   52.08w │   52.08w │    100.00% │</span>
-<span class="err">│ containers │     1.00 │   5.07us │ -0.13% +0.15% │  3.00kw │   17.23w │   17.23w │     57.34% │</span>
-<span class="err">│ batteries  │     1.00 │   6.57us │ -0.14% +0.14% │  3.01kw │   34.71w │   34.71w │     74.32% │</span>
-<span class="err">│ base       │     1.00 │   4.99us │ -0.20% +0.24% │  3.00kw │   17.08w │   17.08w │     56.44% │</span>
-<span class="err">│ stdlib     │     1.00 │   6.84us │ -0.10% +0.10% │  3.00kw │   17.22w │   17.22w │     77.34% │</span>
-<span class="err">│ batt-hybr  │     1.00 │   4.96us │ -0.13% +0.13% │  3.00kw │   17.07w │   17.07w │     56.10% │</span>
-<span class="err">└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘</span>
+<div class="highlight"><pre><span></span><code>┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐
+│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │
+├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤
+│ ntr        │     1.00 │   8.84us │ -0.14% +0.15% │  6.01kw │   52.08w │   52.08w │    100.00% │
+│ containers │     1.00 │   5.07us │ -0.13% +0.15% │  3.00kw │   17.23w │   17.23w │     57.34% │
+│ batteries  │     1.00 │   6.57us │ -0.14% +0.14% │  3.01kw │   34.71w │   34.71w │     74.32% │
+│ base       │     1.00 │   4.99us │ -0.20% +0.24% │  3.00kw │   17.08w │   17.08w │     56.44% │
+│ stdlib     │     1.00 │   6.84us │ -0.10% +0.10% │  3.00kw │   17.22w │   17.22w │     77.34% │
+│ batt-hybr  │     1.00 │   4.96us │ -0.13% +0.13% │  3.00kw │   17.07w │   17.07w │     56.10% │
+└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘
 </code></pre></div>
+
 <p><strong>Map Benchmark, N = 10,000</strong></p>
-<div class="highlight"><pre><span></span><code><span class="err">┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐</span>
-<span class="err">│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │</span>
-<span class="err">├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤</span>
-<span class="err">│ ntr        │     0.99 │ 203.11us │ -0.45% +0.53% │ 60.01kw │   5.40kw │   5.40kw │    100.00% │</span>
-<span class="err">│ containers │     1.00 │ 144.95us │ -0.50% +0.60% │ 48.01kw │   3.04kw │   3.04kw │     71.37% │</span>
-<span class="err">│ batteries  │     1.00 │ 136.87us │ -0.51% +0.63% │ 30.01kw │   3.64kw │   3.64kw │     67.39% │</span>
-<span class="err">│ base       │     1.00 │ 130.85us │ -0.34% +0.39% │ 44.98kw │   2.66kw │   2.66kw │     64.42% │</span>
-<span class="err">│ stdlib     │     1.00 │ 118.70us │ -0.30% +0.29% │ 30.00kw │   1.80kw │   1.80kw │     58.44% │</span>
-<span class="err">│ batt-hybr  │     1.00 │ 106.91us │ -0.42% +0.52% │ 30.01kw │   2.22kw │   2.22kw │     52.64% │</span>
-<span class="err">└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘</span>
+<div class="highlight"><pre><span></span><code>┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐
+│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │
+├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤
+│ ntr        │     0.99 │ 203.11us │ -0.45% +0.53% │ 60.01kw │   5.40kw │   5.40kw │    100.00% │
+│ containers │     1.00 │ 144.95us │ -0.50% +0.60% │ 48.01kw │   3.04kw │   3.04kw │     71.37% │
+│ batteries  │     1.00 │ 136.87us │ -0.51% +0.63% │ 30.01kw │   3.64kw │   3.64kw │     67.39% │
+│ base       │     1.00 │ 130.85us │ -0.34% +0.39% │ 44.98kw │   2.66kw │   2.66kw │     64.42% │
+│ stdlib     │     1.00 │ 118.70us │ -0.30% +0.29% │ 30.00kw │   1.80kw │   1.80kw │     58.44% │
+│ batt-hybr  │     1.00 │ 106.91us │ -0.42% +0.52% │ 30.01kw │   2.22kw │   2.22kw │     52.64% │
+└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘
 </code></pre></div>
+
 <p><strong>Map Benchmark, N = 100,000</strong></p>
-<div class="highlight"><pre><span></span><code><span class="err">┌────────────┬──────────┬──────────┬───────────────┬──────────┬──────────┬──────────┬────────────┐</span>
-<span class="err">│ Name       │ Time R^2 │ Time/Run │          95ci │  mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │</span>
-<span class="err">├────────────┼──────────┼──────────┼───────────────┼──────────┼──────────┼──────────┼────────────┤</span>
-<span class="err">│ ntr        │     0.98 │  10.27ms │ -2.39% +2.32% │ 600.02kw │ 411.83kw │ 411.83kw │     94.33% │</span>
-<span class="err">│ containers │     0.99 │  10.62ms │ -2.19% +1.83% │ 588.02kw │ 404.91kw │ 404.91kw │     97.61% │</span>
-<span class="err">│ batteries  │     1.00 │   7.19ms │ -0.78% +0.79% │ 300.02kw │ 300.35kw │ 300.35kw │     66.02% │</span>
-<span class="err">│ base       │     0.99 │  10.88ms │ -1.54% +1.41% │ 584.99kw │ 397.60kw │ 397.60kw │    100.00% │</span>
-<span class="err">│ stdlib     │     0.99 │   6.33ms │ -1.08% +1.07% │ 300.01kw │ 171.73kw │ 171.73kw │     58.18% │</span>
-<span class="err">│ batt-hybr  │     0.93 │   6.09ms │ -4.30% +4.63% │ 300.02kw │ 285.46kw │ 285.46kw │     55.93% │</span>
-<span class="err">└────────────┴──────────┴──────────┴───────────────┴──────────┴──────────┴──────────┴────────────┘</span>
+<div class="highlight"><pre><span></span><code>┌────────────┬──────────┬──────────┬───────────────┬──────────┬──────────┬──────────┬────────────┐
+│ Name       │ Time R^2 │ Time/Run │          95ci │  mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │
+├────────────┼──────────┼──────────┼───────────────┼──────────┼──────────┼──────────┼────────────┤
+│ ntr        │     0.98 │  10.27ms │ -2.39% +2.32% │ 600.02kw │ 411.83kw │ 411.83kw │     94.33% │
+│ containers │     0.99 │  10.62ms │ -2.19% +1.83% │ 588.02kw │ 404.91kw │ 404.91kw │     97.61% │
+│ batteries  │     1.00 │   7.19ms │ -0.78% +0.79% │ 300.02kw │ 300.35kw │ 300.35kw │     66.02% │
+│ base       │     0.99 │  10.88ms │ -1.54% +1.41% │ 584.99kw │ 397.60kw │ 397.60kw │    100.00% │
+│ stdlib     │     0.99 │   6.33ms │ -1.08% +1.07% │ 300.01kw │ 171.73kw │ 171.73kw │     58.18% │
+│ batt-hybr  │     0.93 │   6.09ms │ -4.30% +4.63% │ 300.02kw │ 285.46kw │ 285.46kw │     55.93% │
+└────────────┴──────────┴──────────┴───────────────┴──────────┴──────────┴──────────┴────────────┘
 </code></pre></div>
+
 <p>A few things I noticed about the data:</p>
 <ul>
 <li>
@@ -308,12 +314,13 @@ that measures how long it takes to write 4096 bytes to a Unix pipe
 using <code>Lwt_unix.write</code>, and then read it back using <code>Lwt_unix.read</code>. Using
 <code>core_bench</code>, I found:</p>
 <p><strong>Unix Pipe Read/Write Benchmark</strong></p>
-<div class="highlight"><pre><span></span><code><span class="err">┌─────────┬──────────┬───────────────┬─────────┬────────────┐</span>
-<span class="err">│Time R^2 │ Time/Run │          95ci │ mWd/Run │ Percentage │</span>
-<span class="err">├─────────┼──────────┼───────────────┼─────────┼────────────┤</span>
-<span class="err">│    1.00 │ 893.33ns │ -0.16% +0.18% │  56.00w │    100.00% │</span>
-<span class="err">└─────────┴──────────┴───────────────┴─────────┴────────────┘</span>
+<div class="highlight"><pre><span></span><code>┌─────────┬──────────┬───────────────┬─────────┬────────────┐
+│Time R^2 │ Time/Run │          95ci │ mWd/Run │ Percentage │
+├─────────┼──────────┼───────────────┼─────────┼────────────┤
+│    1.00 │ 893.33ns │ -0.16% +0.18% │  56.00w │    100.00% │
+└─────────┴──────────┴───────────────┴─────────┴────────────┘
 </code></pre></div>
+
 <p>It seems reasonable to estimate that <code>Lwt_list.map_p</code> would primarily
 be applied to IO operations like the ones in this experiment. In that
 case, the data suggest the cost per element of applying the slowest
@@ -346,130 +353,132 @@ of allocating space on the heap. This produced data like the
 following:</p>
 <p><strong>Summary Statistics, <span class="math">\(N=10^3\)</span> Garbage Collected Map Benchmark Times (μs)</strong></p>
 <table class="dataframe">
-<thead>
-<tr>
-<th></th>
-<th>Std. Lib.</th>
-<th>NTR</th>
-<th>Base</th>
-<th>Batteries</th>
-<th>Containers</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<th>Mean</th>
-<td>27.18</td>
-<td>27.21</td>
-<td>11.23</td>
-<td>19.03</td>
-<td>13.06</td>
-</tr>
-<tr>
-<th>Min</th>
-<td>15.97</td>
-<td>14.07</td>
-<td>6.91</td>
-<td>9.06</td>
-<td>7.87</td>
-</tr>
-<tr>
-<th>25%</th>
-<td>18.84</td>
-<td>17.88</td>
-<td>7.15</td>
-<td>10.97</td>
-<td>10.01</td>
-</tr>
-<tr>
-<th>50%</th>
-<td>20.03</td>
-<td>19.07</td>
-<td>8.11</td>
-<td>15.50</td>
-<td>10.01</td>
-</tr>
-<tr>
-<th>75%</th>
-<td>23.13</td>
-<td>22.17</td>
-<td>12.87</td>
-<td>18.84</td>
-<td>10.97</td>
-</tr>
-<tr>
-<th>Max</th>
-<td>849.01</td>
-<td>576.02</td>
-<td>379.80</td>
-<td>622.03</td>
-<td>434.88</td>
-</tr>
-</tbody>
+  <thead>
+    <tr>
+      <th></th>
+      <th>Std. Lib.</th>
+      <th>NTR</th>
+      <th>Base</th>
+      <th>Batteries</th>
+      <th>Containers</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Mean</th>
+      <td>27.18</td>
+      <td>27.21</td>
+      <td>11.23</td>
+      <td>19.03</td>
+      <td>13.06</td>
+    </tr>
+    <tr>
+      <th>Min</th>
+      <td>15.97</td>
+      <td>14.07</td>
+      <td>6.91</td>
+      <td>9.06</td>
+      <td>7.87</td>
+    </tr>
+    <tr>
+      <th>25%</th>
+      <td>18.84</td>
+      <td>17.88</td>
+      <td>7.15</td>
+      <td>10.97</td>
+      <td>10.01</td>
+    </tr>
+    <tr>
+      <th>50%</th>
+      <td>20.03</td>
+      <td>19.07</td>
+      <td>8.11</td>
+      <td>15.50</td>
+      <td>10.01</td>
+    </tr>
+    <tr>
+      <th>75%</th>
+      <td>23.13</td>
+      <td>22.17</td>
+      <td>12.87</td>
+      <td>18.84</td>
+      <td>10.97</td>
+    </tr>
+    <tr>
+      <th>Max</th>
+      <td>849.01</td>
+      <td>576.02</td>
+      <td>379.80</td>
+      <td>622.03</td>
+      <td>434.88</td>
+    </tr>
+  </tbody>
 </table>
+
 <p><strong>Summary Statistics, <span class="math">\(N=10^4\)</span> Garbage Collected Map Benchmark Times (μs)</strong></p>
 <table class="dataframe">
-<thead>
-<tr>
-<th></th>
-<th>Std. Lib.</th>
-<th>NTR</th>
-<th>Base</th>
-<th>Batteries</th>
-<th>Containers</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<th>Mean</th>
-<td>230.23</td>
-<td>216.60</td>
-<td>141.39</td>
-<td>144.59</td>
-<td>161.56</td>
-</tr>
-<tr>
-<th>Min</th>
-<td>77.01</td>
-<td>73.91</td>
-<td>61.04</td>
-<td>54.84</td>
-<td>63.18</td>
-</tr>
-<tr>
-<th>25%</th>
-<td>97.04</td>
-<td>86.07</td>
-<td>67.95</td>
-<td>58.89</td>
-<td>70.81</td>
-</tr>
-<tr>
-<th>50%</th>
-<td>121.95</td>
-<td>99.90</td>
-<td>75.10</td>
-<td>61.99</td>
-<td>77.01</td>
-</tr>
-<tr>
-<th>75%</th>
-<td>193.83</td>
-<td>284.91</td>
-<td>148.59</td>
-<td>118.26</td>
-<td>175.24</td>
-</tr>
-<tr>
-<th>Max</th>
-<td>12719.87</td>
-<td>2753.97</td>
-<td>2960.21</td>
-<td>3616.09</td>
-<td>13603.93</td>
-</tr>
-</tbody>
+  <thead>
+    <tr>
+      <th></th>
+      <th>Std. Lib.</th>
+      <th>NTR</th>
+      <th>Base</th>
+      <th>Batteries</th>
+      <th>Containers</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Mean</th>
+      <td>230.23</td>
+      <td>216.60</td>
+      <td>141.39</td>
+      <td>144.59</td>
+      <td>161.56</td>
+    </tr>
+    <tr>
+      <th>Min</th>
+      <td>77.01</td>
+      <td>73.91</td>
+      <td>61.04</td>
+      <td>54.84</td>
+      <td>63.18</td>
+    </tr>
+    <tr>
+      <th>25%</th>
+      <td>97.04</td>
+      <td>86.07</td>
+      <td>67.95</td>
+      <td>58.89</td>
+      <td>70.81</td>
+    </tr>
+    <tr>
+      <th>50%</th>
+      <td>121.95</td>
+      <td>99.90</td>
+      <td>75.10</td>
+      <td>61.99</td>
+      <td>77.01</td>
+    </tr>
+    <tr>
+      <th>75%</th>
+      <td>193.83</td>
+      <td>284.91</td>
+      <td>148.59</td>
+      <td>118.26</td>
+      <td>175.24</td>
+    </tr>
+    <tr>
+      <th>Max</th>
+      <td>12719.87</td>
+      <td>2753.97</td>
+      <td>2960.21</td>
+      <td>3616.09</td>
+      <td>13603.93</td>
+    </tr>
+  </tbody>
 </table>
+
 <p>When we ignore the time spent on garbage collection, we see that <code>ntr</code>
 is surprisingly competitive, especially in comparison with <code>stdlib</code>;
 the difference between the two implementations, of course, is that

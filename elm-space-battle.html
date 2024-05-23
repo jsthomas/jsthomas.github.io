@@ -46,7 +46,7 @@ see the source code
 <a href="https://github.com/jsthomas/elm-space-battle">here</a>.</p>
 <p><em>Here's a screenshot:</em></p>
 <p><img alt="A screenshot of my
-game." src="https://jsthomas.github.io/images/elm-space-battle/game_small.png" style="width: 595px; height: auto;"/></p>
+game." src="https://jsthomas.github.io/images/elm-space-battle/game_small.png"></p>
 <h1>Context</h1>
 <p>This was my last week at Recurse Center; after Labor Day, I head back
 to full time work as a data engineer. One of my main RC projects,
@@ -68,7 +68,7 @@ written for the PDP-1 at MIT. You can read more about this game
 <a href="https://en.wikipedia.org/wiki/Spacewar!">here</a> and play an emulated
 version <a href="https://www.masswerk.at/spacewar/">here</a>.</p>
 <p><img alt="The original spacewar on a DEC
-monitor." src="https://jsthomas.github.io/images/elm-space-battle/Spacewar_screenshot_small.png" style="width: 600px; height: auto;"/></p>
+monitor." src="https://jsthomas.github.io/images/elm-space-battle/Spacewar_screenshot_small.png"></p>
 <p><em>Spacewar!</em> features two rocket ships orbiting a star; the objective
 is to destroy the other player's ship by shooting it with a
 torpedo. The star exerts a gravitational pull on the two rockets,
@@ -121,7 +121,7 @@ small, but this would've been nice to have.</p>
 <h1>Thoughts on the Elm Architecture</h1>
 <p>The Elm Architecture is worth expanding on a bit, and is summed up by
 the following diagram in <em>Beginning Elm</em>:</p>
-<p><img alt="Elm architecture diagram" src="https://jsthomas.github.io/images/elm-space-battle/elm-arch.png" style="width: 1022px; height: auto;"/></p>
+<p><img alt="Elm architecture diagram" src="https://jsthomas.github.io/images/elm-space-battle/elm-arch.png"></p>
 <p>The Elm runtime is responsible for handling all side-effects, so that
 Elm programmers only need to work with pure functions and immutable
 data. To define the application, we provide the runtime with a handful
@@ -146,6 +146,7 @@ transformations on the <code>Model</code>, like this:</p>
     <span class="kr">let</span> <span class="nv">isLive</span> <span class="nv">b</span> <span class="nf">=</span> <span class="nv">model</span><span class="nf">.</span><span class="nv">time</span> <span class="nf">-</span> <span class="nv">b</span><span class="nf">.</span><span class="nv">created</span> <span class="nf">&lt;</span> <span class="nv">torpedoLifetime</span> <span class="kr">in</span>
     <span class="p">{</span><span class="nv">model</span> <span class="nf">|</span> <span class="nv">torpedos</span> <span class="nf">=</span> <span class="kt">List</span><span class="nf">.</span><span class="nv">filter</span> <span class="nv">isLive</span> <span class="nv">model</span><span class="nf">.</span><span class="nv">torpedos</span><span class="p">}</span>
 </code></pre></div>
+
 <h1>Developer Experience</h1>
 <p>Building a game in Elm was quite pleasant. The compiler's error
 messages are easy to interpret and the type system enables aggressive

@@ -61,7 +61,7 @@ sending mail are:</p>
 </ol>
 <p>To test how easily I could satisfy these requirements, I built a web
 app that lets the user send an arbitary email.</p>
-<p><img alt="A screenshot of the email form." src="https://jsthomas.github.io/images/ocaml-email/screenshot.png" style="width: 671px; height: auto;"/></p>
+<p><img alt="A screenshot of the email form." src="https://jsthomas.github.io/images/ocaml-email/screenshot.png"></p>
 <p>The app has two parts:</p>
 <ul>
 <li>A server process responsible for showing the form above and
@@ -83,11 +83,11 @@ addresses. I utilized <code>Emile.of_string</code>, which generates a simple
 result type, like this:</p>
 <div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="n">form_post</span> <span class="n">request</span> <span class="o">=</span>
   <span class="k">match</span><span class="o">%</span><span class="n">lwt</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">form</span> <span class="n">request</span> <span class="k">with</span>
-    <span class="o">|</span> <span class="o">`</span><span class="nc">Ok</span> <span class="o">[</span><span class="s2">"address"</span><span class="o">,</span> <span class="n">address</span><span class="o">;</span> <span class="s2">"message"</span><span class="o">,</span> <span class="n">message</span><span class="o">;</span> <span class="s2">"subject"</span><span class="o">,</span> <span class="n">subject</span> <span class="o">]</span> <span class="o">-&gt;</span>
+    <span class="o">|</span> <span class="o">`</span><span class="nc">Ok</span> <span class="o">[</span><span class="s2">&quot;address&quot;</span><span class="o">,</span> <span class="n">address</span><span class="o">;</span> <span class="s2">&quot;message&quot;</span><span class="o">,</span> <span class="n">message</span><span class="o">;</span> <span class="s2">&quot;subject&quot;</span><span class="o">,</span> <span class="n">subject</span> <span class="o">]</span> <span class="o">-&gt;</span>
       <span class="k">let</span> <span class="n">parse</span> <span class="o">=</span> <span class="nn">Emile</span><span class="p">.</span><span class="n">of_string</span> <span class="n">address</span> <span class="k">in</span>
       <span class="k">let</span> <span class="n">alert</span> <span class="o">=</span> <span class="k">match</span> <span class="n">parse</span> <span class="k">with</span>
-        <span class="o">|</span> <span class="nc">Ok</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="nn">Printf</span><span class="p">.</span><span class="n">sprintf</span> <span class="s2">"Sent an email to %s."</span> <span class="n">address</span>
-        <span class="o">|</span> <span class="nc">Error</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="nn">Printf</span><span class="p">.</span><span class="n">sprintf</span> <span class="s2">"%s is not a valid email address."</span> <span class="n">address</span>
+        <span class="o">|</span> <span class="nc">Ok</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="nn">Printf</span><span class="p">.</span><span class="n">sprintf</span> <span class="s2">&quot;Sent an email to %s.&quot;</span> <span class="n">address</span>
+        <span class="o">|</span> <span class="nc">Error</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="nn">Printf</span><span class="p">.</span><span class="n">sprintf</span> <span class="s2">&quot;%s is not a valid email address.&quot;</span> <span class="n">address</span>
       <span class="k">in</span>
       <span class="k">let</span> <span class="n">queue_req</span> <span class="o">=</span> <span class="k">match</span> <span class="n">parse</span> <span class="k">with</span>
         <span class="o">|</span> <span class="nc">Ok</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="n">queue_email</span> <span class="n">address</span> <span class="n">subject</span> <span class="n">message</span>
@@ -97,6 +97,7 @@ result type, like this:</p>
         <span class="nn">Dream</span><span class="p">.</span><span class="n">html</span> <span class="o">(</span><span class="nn">Template</span><span class="p">.</span><span class="n">show_form</span> <span class="o">~</span><span class="n">alert</span> <span class="n">request</span><span class="o">))</span>
     <span class="o">|</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">empty</span> <span class="o">`</span><span class="nc">Bad_Request</span>
 </code></pre></div>
+
 <p>This way, if a user provides an invalid address, the form displays a simple
 warning message and won't queue any email tasks.</p>
 <h2>Queuing Tasks with RabbitMQ</h2>
@@ -122,11 +123,12 @@ success with the packages
 <p>The worker and server process share a common function for establishing
 a connection to RabbitMQ:</p>
 <div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="n">rabbit_connection</span> <span class="bp">()</span> <span class="o">=</span>
-  <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">connection</span> <span class="o">=</span> <span class="nn">Connection</span><span class="p">.</span><span class="n">connect</span> <span class="o">~</span><span class="n">id</span><span class="o">:</span><span class="s2">"dream"</span> <span class="s2">"localhost"</span> <span class="k">in</span>
-  <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">channel</span> <span class="o">=</span> <span class="nn">Connection</span><span class="p">.</span><span class="n">open_channel</span> <span class="o">~</span><span class="n">id</span><span class="o">:</span><span class="s2">"email"</span> <span class="nn">Channel</span><span class="p">.</span><span class="n">no_confirm</span> <span class="n">connection</span> <span class="k">in</span>
-  <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">queue</span> <span class="o">=</span> <span class="nn">Queue</span><span class="p">.</span><span class="n">declare</span> <span class="n">channel</span> <span class="o">~</span><span class="n">arguments</span><span class="o">:[</span><span class="nn">Rpc</span><span class="p">.</span><span class="nn">Server</span><span class="p">.</span><span class="n">queue_argument</span><span class="o">]</span> <span class="s2">"email"</span> <span class="k">in</span>
+  <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">connection</span> <span class="o">=</span> <span class="nn">Connection</span><span class="p">.</span><span class="n">connect</span> <span class="o">~</span><span class="n">id</span><span class="o">:</span><span class="s2">&quot;dream&quot;</span> <span class="s2">&quot;localhost&quot;</span> <span class="k">in</span>
+  <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">channel</span> <span class="o">=</span> <span class="nn">Connection</span><span class="p">.</span><span class="n">open_channel</span> <span class="o">~</span><span class="n">id</span><span class="o">:</span><span class="s2">&quot;email&quot;</span> <span class="nn">Channel</span><span class="p">.</span><span class="n">no_confirm</span> <span class="n">connection</span> <span class="k">in</span>
+  <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">queue</span> <span class="o">=</span> <span class="nn">Queue</span><span class="p">.</span><span class="n">declare</span> <span class="n">channel</span> <span class="o">~</span><span class="n">arguments</span><span class="o">:[</span><span class="nn">Rpc</span><span class="p">.</span><span class="nn">Server</span><span class="p">.</span><span class="n">queue_argument</span><span class="o">]</span> <span class="s2">&quot;email&quot;</span> <span class="k">in</span>
   <span class="nn">Lwt</span><span class="p">.</span><span class="n">return</span> <span class="o">(</span><span class="n">channel</span><span class="o">,</span> <span class="n">queue</span><span class="o">)</span>
 </code></pre></div>
+
 <p>I was initially little confused about why I needed a "channel" when I
 already had a connection to the broker. Both the worker and the server
 connect to the RabbitMQ Broker via TCP. It's common for clients to
@@ -148,6 +150,7 @@ connection", according to these <a href="https://www.rabbitmq.com/channels.html"
   <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="o">_</span> <span class="o">=</span> <span class="nn">Queue</span><span class="p">.</span><span class="n">publish</span> <span class="n">channel</span> <span class="n">queue</span> <span class="o">(</span><span class="nn">Message</span><span class="p">.</span><span class="n">make</span> <span class="n">text</span><span class="o">)</span> <span class="k">in</span>
   <span class="nn">Lwt</span><span class="p">.</span><span class="n">return_unit</span>
 </code></pre></div>
+
 <p>Here the server writes the address, subject, and text into a record
 type that can be serialized to JSON before being pushed into the queue.</p>
 <p>The worker process, <code>queue_worker</code>, is fairly simple to define:</p>
@@ -157,7 +160,7 @@ type that can be serialized to JSON before being pushed into the queue.</p>
     <span class="k">try</span>
       <span class="nc">Some</span> <span class="o">(</span><span class="n">text</span> <span class="o">|&gt;</span> <span class="nn">Yojson</span><span class="p">.</span><span class="nn">Safe</span><span class="p">.</span><span class="n">from_string</span> <span class="o">|&gt;</span> <span class="n">email_of_yojson</span><span class="o">)</span>
     <span class="k">with</span> <span class="o">_</span> <span class="o">-&gt;</span>
-      <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"Received invalid email record from RabbitMQ: %s"</span> <span class="n">text</span><span class="o">;</span>
+      <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">&quot;Received invalid email record from RabbitMQ: %s&quot;</span> <span class="n">text</span><span class="o">;</span>
       <span class="nc">None</span>
   <span class="k">in</span>
   <span class="k">match</span> <span class="n">email</span> <span class="k">with</span>
@@ -166,18 +169,19 @@ type that can be serialized to JSON before being pushed into the queue.</p>
 
 
 <span class="k">let</span> <span class="n">queue_worker</span> <span class="bp">()</span> <span class="o">=</span>
-  <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"Starting Queue Worker</span><span class="se">\n</span><span class="s2">"</span><span class="o">;</span>
+  <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">&quot;Starting Queue Worker</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">;</span>
   <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">channel</span><span class="o">,</span> <span class="n">queue</span> <span class="o">=</span> <span class="n">rabbit_connection</span> <span class="bp">()</span> <span class="k">in</span>
   <span class="k">let</span> <span class="k">rec</span> <span class="n">handle</span> <span class="bp">()</span> <span class="o">=</span>
     <span class="nn">Queue</span><span class="p">.</span><span class="n">get</span> <span class="o">~</span><span class="n">no_ack</span><span class="o">:</span><span class="bp">true</span> <span class="n">channel</span> <span class="n">queue</span> <span class="o">&gt;&gt;=</span> <span class="k">fun</span> <span class="n">message</span> <span class="o">-&gt;</span>
     <span class="k">let</span> <span class="n">task</span> <span class="o">=</span> <span class="k">match</span> <span class="n">message</span> <span class="k">with</span>
       <span class="o">|</span> <span class="nc">Some</span> <span class="n">m</span> <span class="o">-&gt;</span> <span class="n">flush</span> <span class="n">stdout</span><span class="o">;</span> <span class="n">handle_message</span> <span class="n">m</span>
-      <span class="o">|</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"No new tasks, waiting.</span><span class="se">\n</span><span class="s2">"</span><span class="o">;</span> <span class="n">flush</span> <span class="n">stdout</span><span class="o">;</span> <span class="nn">Lwt_unix</span><span class="p">.</span><span class="n">sleep</span> <span class="mi">5</span><span class="o">.</span>
+      <span class="o">|</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">&quot;No new tasks, waiting.</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">;</span> <span class="n">flush</span> <span class="n">stdout</span><span class="o">;</span> <span class="nn">Lwt_unix</span><span class="p">.</span><span class="n">sleep</span> <span class="mi">5</span><span class="o">.</span>
     <span class="k">in</span>
     <span class="n">task</span> <span class="o">&gt;&gt;=</span> <span class="n">handle</span>
   <span class="k">in</span>
   <span class="n">handle</span> <span class="bp">()</span>
 </code></pre></div>
+
 <p>The worker consists of an infinite loop. When the worker wakes and
 finds tasks in the queue, it uses <code>yojson</code> to deserialize the
 messages and passes them to <code>send_email</code>. If no work is available,
@@ -201,36 +205,38 @@ data, like this:</p>
    <span class="k">let</span> <span class="k">open</span> <span class="nc">Cohttp</span> <span class="k">in</span>
    <span class="k">let</span> <span class="k">open</span> <span class="nc">Cohttp_lwt_unix</span> <span class="k">in</span>
 
-   <span class="k">let</span> <span class="n">api_key</span> <span class="o">=</span> <span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">"MAILGUN_API_KEY"</span> <span class="k">in</span>
-   <span class="k">let</span> <span class="n">sender</span> <span class="o">=</span> <span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">"MAILGUN_SEND_ADDRESS"</span> <span class="k">in</span>
-   <span class="k">let</span> <span class="n">api_base</span> <span class="o">=</span> <span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">"MAILGUN_API_BASE"</span> <span class="k">in</span>
+   <span class="k">let</span> <span class="n">api_key</span> <span class="o">=</span> <span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">&quot;MAILGUN_API_KEY&quot;</span> <span class="k">in</span>
+   <span class="k">let</span> <span class="n">sender</span> <span class="o">=</span> <span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">&quot;MAILGUN_SEND_ADDRESS&quot;</span> <span class="k">in</span>
+   <span class="k">let</span> <span class="n">api_base</span> <span class="o">=</span> <span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">&quot;MAILGUN_API_BASE&quot;</span> <span class="k">in</span>
 
    <span class="k">let</span> <span class="n">params</span> <span class="o">=</span> <span class="o">[</span>
-     <span class="o">(</span><span class="s2">"from"</span><span class="o">,</span> <span class="o">[</span><span class="n">sender</span><span class="o">]);</span>
-     <span class="o">(</span><span class="s2">"to"</span><span class="o">,</span> <span class="o">[</span><span class="n">e</span><span class="o">.</span><span class="n">address</span><span class="o">]);</span>
-     <span class="o">(</span><span class="s2">"subject"</span><span class="o">,</span> <span class="o">[</span><span class="n">e</span><span class="o">.</span><span class="n">subject</span><span class="o">]);</span>
-     <span class="o">(</span><span class="s2">"text"</span><span class="o">,</span> <span class="o">[</span><span class="n">e</span><span class="o">.</span><span class="n">text</span><span class="o">])</span>
+     <span class="o">(</span><span class="s2">&quot;from&quot;</span><span class="o">,</span> <span class="o">[</span><span class="n">sender</span><span class="o">]);</span>
+     <span class="o">(</span><span class="s2">&quot;to&quot;</span><span class="o">,</span> <span class="o">[</span><span class="n">e</span><span class="o">.</span><span class="n">address</span><span class="o">]);</span>
+     <span class="o">(</span><span class="s2">&quot;subject&quot;</span><span class="o">,</span> <span class="o">[</span><span class="n">e</span><span class="o">.</span><span class="n">subject</span><span class="o">]);</span>
+     <span class="o">(</span><span class="s2">&quot;text&quot;</span><span class="o">,</span> <span class="o">[</span><span class="n">e</span><span class="o">.</span><span class="n">text</span><span class="o">])</span>
    <span class="o">]</span> <span class="k">in</span>
-   <span class="k">let</span> <span class="n">cred</span> <span class="o">=</span> <span class="o">`</span><span class="nc">Basic</span> <span class="o">(</span><span class="s2">"api"</span><span class="o">,</span> <span class="n">api_key</span><span class="o">)</span> <span class="k">in</span>
-   <span class="k">let</span> <span class="n">uri</span> <span class="o">=</span> <span class="n">api_base</span> <span class="o">^</span> <span class="s2">"/messages"</span> <span class="o">|&gt;</span> <span class="nn">Uri</span><span class="p">.</span><span class="n">of_string</span> <span class="k">in</span>
+   <span class="k">let</span> <span class="n">cred</span> <span class="o">=</span> <span class="o">`</span><span class="nc">Basic</span> <span class="o">(</span><span class="s2">&quot;api&quot;</span><span class="o">,</span> <span class="n">api_key</span><span class="o">)</span> <span class="k">in</span>
+   <span class="k">let</span> <span class="n">uri</span> <span class="o">=</span> <span class="n">api_base</span> <span class="o">^</span> <span class="s2">&quot;/messages&quot;</span> <span class="o">|&gt;</span> <span class="nn">Uri</span><span class="p">.</span><span class="n">of_string</span> <span class="k">in</span>
    <span class="k">let</span> <span class="n">headers</span> <span class="o">=</span> <span class="nn">Header</span><span class="p">.</span><span class="n">add_authorization</span> <span class="o">(</span><span class="nn">Header</span><span class="p">.</span><span class="n">init</span> <span class="bp">()</span><span class="o">)</span> <span class="n">cred</span> <span class="k">in</span>
    <span class="k">let</span> <span class="n">start</span> <span class="o">=</span>
-     <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"Initiating email send to %s.</span><span class="se">\n</span><span class="s2">"</span> <span class="n">e</span><span class="o">.</span><span class="n">address</span><span class="o">;</span>
+     <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">&quot;Initiating email send to %s.</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="n">e</span><span class="o">.</span><span class="n">address</span><span class="o">;</span>
      <span class="nn">Unix</span><span class="p">.</span><span class="n">gettimeofday</span> <span class="bp">()</span> <span class="k">in</span>
    <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">resp</span><span class="o">,</span> <span class="n">rbody</span> <span class="o">=</span> <span class="nn">Client</span><span class="p">.</span><span class="n">post_form</span> <span class="n">uri</span> <span class="o">~</span><span class="n">params</span> <span class="o">~</span><span class="n">headers</span> <span class="k">in</span>
    <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">finish</span> <span class="o">=</span> <span class="nn">Unix</span><span class="p">.</span><span class="n">gettimeofday</span> <span class="bp">()</span> <span class="o">|&gt;</span> <span class="nn">Lwt</span><span class="p">.</span><span class="n">return</span> <span class="k">in</span>
    <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">rbody_str</span> <span class="o">=</span> <span class="o">(</span><span class="nn">Cohttp_lwt</span><span class="p">.</span><span class="nn">Body</span><span class="p">.</span><span class="n">to_string</span> <span class="n">rbody</span><span class="o">)</span> <span class="k">in</span>
-   <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"API Response Status: %d.</span><span class="se">\n</span><span class="s2">"</span> <span class="o">(</span><span class="nn">Code</span><span class="p">.</span><span class="n">code_of_status</span> <span class="n">resp</span><span class="o">.</span><span class="n">status</span><span class="o">);</span>
-   <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"API Response body %s.</span><span class="se">\n</span><span class="s2">"</span> <span class="n">rbody_str</span><span class="o">;</span>
-   <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"Time to send an email: %.2fs</span><span class="se">\n</span><span class="s2">"</span> <span class="o">(</span><span class="n">finish</span> <span class="o">-.</span> <span class="n">start</span><span class="o">);</span>
+   <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">&quot;API Response Status: %d.</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">(</span><span class="nn">Code</span><span class="p">.</span><span class="n">code_of_status</span> <span class="n">resp</span><span class="o">.</span><span class="n">status</span><span class="o">);</span>
+   <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">&quot;API Response body %s.</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="n">rbody_str</span><span class="o">;</span>
+   <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">&quot;Time to send an email: %.2fs</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">(</span><span class="n">finish</span> <span class="o">-.</span> <span class="n">start</span><span class="o">);</span>
    <span class="nn">Lwt</span><span class="p">.</span><span class="n">return</span> <span class="bp">()</span>
 </code></pre></div>
+
 <p>The endpoint replies with either 200 and a JSON body like this:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-  <span class="nt">"id"</span><span class="p">:</span> <span class="s2">"&lt;some mailgun email address here&gt;"</span>
-  <span class="s2">"message"</span><span class="p">:</span> <span class="s2">"Queued. Thank you."</span>
+  <span class="nt">&quot;id&quot;</span><span class="p">:</span> <span class="nt">&quot;&lt;some mailgun email address here&gt;&quot;</span>
+  <span class="nt">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Queued. Thank you.&quot;</span>
 <span class="p">}</span>
 </code></pre></div>
+
 <p>or else a 400 and an explanation of why the request was rejected. In
 my tests, a successful API request typically took between 0.5 and 1
 seconds. For comparison, the webserver can serve the email form in
@@ -245,14 +251,14 @@ support with this script:</p>
 
 <span class="k">let</span> <span class="n">send_email</span> <span class="bp">()</span> <span class="o">=</span>
   <span class="k">let</span> <span class="n">config</span> <span class="o">=</span> <span class="o">(</span><span class="nn">Letters</span><span class="p">.</span><span class="nn">Config</span><span class="p">.</span><span class="n">make</span>
-      <span class="o">~</span><span class="n">username</span><span class="o">:</span> <span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">"MAILGUN_SMTP_USER"</span>
-      <span class="o">~</span><span class="n">password</span><span class="o">:</span> <span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">"MAILGUN_SMTP_PASSWORD"</span>
-      <span class="o">~</span><span class="n">hostname</span><span class="o">:</span><span class="s2">"smtp.mailgun.org"</span>
+      <span class="o">~</span><span class="n">username</span><span class="o">:</span> <span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">&quot;MAILGUN_SMTP_USER&quot;</span>
+      <span class="o">~</span><span class="n">password</span><span class="o">:</span> <span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">&quot;MAILGUN_SMTP_PASSWORD&quot;</span>
+      <span class="o">~</span><span class="n">hostname</span><span class="o">:</span><span class="s2">&quot;smtp.mailgun.org&quot;</span>
       <span class="o">~</span><span class="n">with_starttls</span><span class="o">:</span><span class="bp">true</span><span class="o">)</span>
   <span class="k">in</span>
-  <span class="k">let</span> <span class="n">sender</span> <span class="o">=</span> <span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">"MAILGUN_SMTP_SENDER"</span> <span class="k">in</span>
-  <span class="k">let</span> <span class="n">recipients</span> <span class="o">=</span> <span class="o">[</span><span class="nn">Letters</span><span class="p">.</span><span class="nc">To</span> <span class="o">(</span><span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">"EMAIL_ADDRESS"</span><span class="o">)]</span> <span class="k">in</span>
-  <span class="k">let</span> <span class="n">subject</span> <span class="o">=</span> <span class="s2">"Test email from mailgun."</span> <span class="k">in</span>
+  <span class="k">let</span> <span class="n">sender</span> <span class="o">=</span> <span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">&quot;MAILGUN_SMTP_SENDER&quot;</span> <span class="k">in</span>
+  <span class="k">let</span> <span class="n">recipients</span> <span class="o">=</span> <span class="o">[</span><span class="nn">Letters</span><span class="p">.</span><span class="nc">To</span> <span class="o">(</span><span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">&quot;EMAIL_ADDRESS&quot;</span><span class="o">)]</span> <span class="k">in</span>
+  <span class="k">let</span> <span class="n">subject</span> <span class="o">=</span> <span class="s2">&quot;Test email from mailgun.&quot;</span> <span class="k">in</span>
   <span class="k">let</span> <span class="n">mail</span> <span class="o">=</span> <span class="nn">Letters</span><span class="p">.</span><span class="n">build_email</span> <span class="o">~</span><span class="n">from</span><span class="o">:</span><span class="n">sender</span> <span class="o">~</span><span class="n">recipients</span> <span class="o">~</span><span class="n">subject</span> <span class="o">~</span><span class="n">body</span> <span class="k">in</span>
 
   <span class="nn">Printexc</span><span class="p">.</span><span class="n">record_backtrace</span> <span class="bp">true</span><span class="o">;</span>
@@ -262,16 +268,17 @@ support with this script:</p>
        <span class="nn">Letters</span><span class="p">.</span><span class="n">send</span> <span class="o">~</span><span class="n">config</span> <span class="o">~</span><span class="n">sender</span> <span class="o">~</span><span class="n">recipients</span> <span class="o">~</span><span class="n">message</span>
     <span class="k">with</span>
       <span class="n">e</span> <span class="o">-&gt;</span>
-      <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"Error. %s</span><span class="se">\n</span><span class="s2">"</span> <span class="o">(</span><span class="nn">Printexc</span><span class="p">.</span><span class="n">to_string</span> <span class="n">e</span><span class="o">);</span>
+      <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">&quot;Error. %s</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">(</span><span class="nn">Printexc</span><span class="p">.</span><span class="n">to_string</span> <span class="n">e</span><span class="o">);</span>
       <span class="nn">Printexc</span><span class="p">.</span><span class="n">print_backtrace</span> <span class="n">stdout</span><span class="o">;</span>
       <span class="nn">Lwt</span><span class="p">.</span><span class="n">return_unit</span>
    <span class="o">)</span>
-  <span class="o">|</span> <span class="nc">Error</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"Message synthesis failed."</span><span class="o">;</span> <span class="n">flush</span> <span class="n">stdout</span><span class="o">;</span> <span class="nn">Lwt</span><span class="p">.</span><span class="n">return_unit</span>
+  <span class="o">|</span> <span class="nc">Error</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">&quot;Message synthesis failed.&quot;</span><span class="o">;</span> <span class="n">flush</span> <span class="n">stdout</span><span class="o">;</span> <span class="nn">Lwt</span><span class="p">.</span><span class="n">return_unit</span>
 
 
 <span class="k">let</span> <span class="bp">()</span> <span class="o">=</span>
   <span class="nn">Lwt_main</span><span class="p">.</span><span class="n">run</span> <span class="o">@@</span> <span class="n">send_email</span> <span class="bp">()</span>
 </code></pre></div>
+
 <p>I ran into some
 <a href="https://github.com/oxidizing/letters/issues/35">difficulties</a> because
 Mailgun does not consistently follow RFC 4954 (thanks to Calascibetta
@@ -302,7 +309,7 @@ mechanism in the event that Mailgun is unavailable.</p>
 <p>I found the resources below helpful for working on this project:</p>
 <ul>
 <li>The <code>amqp-client</code>
-<a href="https://andersfugmann.github.io/amqp-client/amqp-client-lwt/index.html">documentation</a>,
+  <a href="https://andersfugmann.github.io/amqp-client/amqp-client-lwt/index.html">documentation</a>,
   especially the
   <a href="https://github.com/andersfugmann/amqp-client/tree/master/examples">examples</a>
   were helpful for setting up with RabbitMQ.</li>

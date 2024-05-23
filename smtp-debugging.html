@@ -48,8 +48,9 @@ wanted to make sure that these programs would fail gracefully if
 configured with the wrong credentials. But when I ran my example <a href="https://github.com/jsthomas/tidy-email/blob/main/smtp/example/send.ml">SMTP
 app</a>
 with an invalid password, I saw this:</p>
-<div class="highlight"><pre><span></span><code><span class="err">Send failed. Details: Error: Stack overflow</span>
+<div class="highlight"><pre><span></span><code><span class="k">Send</span> <span class="nv">failed</span>. <span class="nv">Details</span>: <span class="nv">Error</span>: <span class="nv">Stack</span> <span class="nv">overflow</span>
 </code></pre></div>
+
 <p>I expected to see some sort of "not authorized" message. Why was
 this happening? This post summarizes how I debugged this problem.</p>
 <h2>Context</h2>
@@ -88,30 +89,31 @@ invaluable for efficiently working with unfamiliar code.</p>
 <code>strace</code> on my test app. This tool produces a log of all system calls
 made by the app under test. This results in a <em>lot</em> of output; here is
 an excerpt of what I saw:</p>
-<div class="highlight"><pre><span></span><code><span class="err">read(5, "220 Mailgun Influx ready\r\n", 4096) = 26</span>
-<span class="err">read(5, 0x56132a92d460, 4096)           = -1 EAGAIN (Resource temporarily unavailable)</span>
-<span class="err">write(5, "EHLO glenmeretechnologies.com\r\n", 31) = 31</span>
-<span class="err">getpid()                                = 15565</span>
-<span class="err">epoll_wait(3, [{EPOLLIN, {u32=5, u64=8589934597}}], 64, 9879) = 1</span>
-<span class="err">read(5, "250-smtp-out-n02.prod.us-west-2."..., 4096) = 144</span>
-<span class="err">read(5, 0x56132a92d460, 4096)           = -1 EAGAIN (Resource temporarily unavailable)</span>
-<span class="err">write(5, "STARTTLS\r\n", 10)            = 10</span>
-<span class="err">getpid()                                = 15565</span>
-<span class="err">epoll_wait(3, [{EPOLLIN, {u32=5, u64=8589934597}}], 64, 9840) = 1</span>
-<span class="err">read(5, "220 Go ahead\r\n", 4096)       = 14</span>
-<span class="err">brk(0x56132a954000)                     = 0x56132a954000</span>
-<span class="err">brk(0x56132a975000)                     = 0x56132a975000</span>
-<span class="err">brk(0x56132a996000)                     = 0x56132a996000</span>
-<span class="err">read(5, 0x56132a92d460, 4096)           = -1 EAGAIN (Resource temporarily unavailable)</span>
-<span class="err">write(5, "\26\3\3\2\0\1\0\1\374\3\0033y\374\354\246\200\2749u\7\375P\226\273\37\342|\257\235\277h"..., 517) = 517</span>
-<span class="err">getpid()                                = 15565</span>
-<span class="err">epoll_wait(3, [{EPOLLIN, {u32=5, u64=8589934597}}], 64, 9796) = 1</span>
-<span class="err">read(5, "\26\3\3\0Z\2\0\0V\3\3\22c1v\234\367\0\322fR\230\264\236;\314\f\23\234$\245\33"..., 4096) = 3389</span>
-<span class="err">read(5, 0x56132a92d460, 4096)           = -1 EAGAIN (Resource temporarily unavailable)</span>
-<span class="err">...</span>
-<span class="err">read(5, "", 4096)                       = 0</span>
-<span class="err">(last line repeats hundreds of times)</span>
+<div class="highlight"><pre><span></span><code><span class="k">read</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;220 Mailgun Influx ready\r\n&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">4096</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">26</span><span class="w"></span>
+<span class="k">read</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="mh">0x56132a92d460</span><span class="p">,</span><span class="w"> </span><span class="mi">4096</span><span class="p">)</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="w"> </span><span class="n">EAGAIN</span><span class="w"> </span><span class="p">(</span><span class="n">Resource</span><span class="w"> </span><span class="n">temporarily</span><span class="w"> </span><span class="n">unavailable</span><span class="p">)</span><span class="w"></span>
+<span class="k">write</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;EHLO glenmeretechnologies.com\r\n&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">31</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">31</span><span class="w"></span>
+<span class="n">getpid</span><span class="p">()</span><span class="w">                                </span><span class="o">=</span><span class="w"> </span><span class="mi">15565</span><span class="w"></span>
+<span class="n">epoll_wait</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="o">[</span><span class="n">{EPOLLIN, {u32=5, u64=8589934597}}</span><span class="o">]</span><span class="p">,</span><span class="w"> </span><span class="mi">64</span><span class="p">,</span><span class="w"> </span><span class="mi">9879</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"></span>
+<span class="k">read</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;250-smtp-out-n02.prod.us-west-2.&quot;</span><span class="p">...,</span><span class="w"> </span><span class="mi">4096</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">144</span><span class="w"></span>
+<span class="k">read</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="mh">0x56132a92d460</span><span class="p">,</span><span class="w"> </span><span class="mi">4096</span><span class="p">)</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="w"> </span><span class="n">EAGAIN</span><span class="w"> </span><span class="p">(</span><span class="n">Resource</span><span class="w"> </span><span class="n">temporarily</span><span class="w"> </span><span class="n">unavailable</span><span class="p">)</span><span class="w"></span>
+<span class="k">write</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;STARTTLS\r\n&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">)</span><span class="w">            </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span><span class="w"></span>
+<span class="n">getpid</span><span class="p">()</span><span class="w">                                </span><span class="o">=</span><span class="w"> </span><span class="mi">15565</span><span class="w"></span>
+<span class="n">epoll_wait</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="o">[</span><span class="n">{EPOLLIN, {u32=5, u64=8589934597}}</span><span class="o">]</span><span class="p">,</span><span class="w"> </span><span class="mi">64</span><span class="p">,</span><span class="w"> </span><span class="mi">9840</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"></span>
+<span class="k">read</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;220 Go ahead\r\n&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">4096</span><span class="p">)</span><span class="w">       </span><span class="o">=</span><span class="w"> </span><span class="mi">14</span><span class="w"></span>
+<span class="n">brk</span><span class="p">(</span><span class="mh">0x56132a954000</span><span class="p">)</span><span class="w">                     </span><span class="o">=</span><span class="w"> </span><span class="mh">0x56132a954000</span><span class="w"></span>
+<span class="n">brk</span><span class="p">(</span><span class="mh">0x56132a975000</span><span class="p">)</span><span class="w">                     </span><span class="o">=</span><span class="w"> </span><span class="mh">0x56132a975000</span><span class="w"></span>
+<span class="n">brk</span><span class="p">(</span><span class="mh">0x56132a996000</span><span class="p">)</span><span class="w">                     </span><span class="o">=</span><span class="w"> </span><span class="mh">0x56132a996000</span><span class="w"></span>
+<span class="k">read</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="mh">0x56132a92d460</span><span class="p">,</span><span class="w"> </span><span class="mi">4096</span><span class="p">)</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="w"> </span><span class="n">EAGAIN</span><span class="w"> </span><span class="p">(</span><span class="n">Resource</span><span class="w"> </span><span class="n">temporarily</span><span class="w"> </span><span class="n">unavailable</span><span class="p">)</span><span class="w"></span>
+<span class="k">write</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;\26\3\3\2\0\1\0\1\374\3\0033y\374\354\246\200\2749u\7\375P\226\273\37\342|\257\235\277h&quot;</span><span class="p">...,</span><span class="w"> </span><span class="mi">517</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">517</span><span class="w"></span>
+<span class="n">getpid</span><span class="p">()</span><span class="w">                                </span><span class="o">=</span><span class="w"> </span><span class="mi">15565</span><span class="w"></span>
+<span class="n">epoll_wait</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="o">[</span><span class="n">{EPOLLIN, {u32=5, u64=8589934597}}</span><span class="o">]</span><span class="p">,</span><span class="w"> </span><span class="mi">64</span><span class="p">,</span><span class="w"> </span><span class="mi">9796</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"></span>
+<span class="k">read</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;\26\3\3\0Z\2\0\0V\3\3\22c1v\234\367\0\322fR\230\264\236;\314\f\23\234$\245\33&quot;</span><span class="p">...,</span><span class="w"> </span><span class="mi">4096</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3389</span><span class="w"></span>
+<span class="k">read</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="mh">0x56132a92d460</span><span class="p">,</span><span class="w"> </span><span class="mi">4096</span><span class="p">)</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="w"> </span><span class="n">EAGAIN</span><span class="w"> </span><span class="p">(</span><span class="n">Resource</span><span class="w"> </span><span class="n">temporarily</span><span class="w"> </span><span class="n">unavailable</span><span class="p">)</span><span class="w"></span>
+<span class="p">...</span><span class="w"></span>
+<span class="k">read</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">4096</span><span class="p">)</span><span class="w">                       </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"></span>
+<span class="p">(</span><span class="k">last</span><span class="w"> </span><span class="n">line</span><span class="w"> </span><span class="n">repeats</span><span class="w"> </span><span class="n">hundreds</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="n">times</span><span class="p">)</span><span class="w"></span>
 </code></pre></div>
+
 <p>From this output, I was able to glean a couple of things:</p>
 <ol>
 <li>
@@ -140,7 +142,7 @@ with an example of a successful SMTP session (<code>S</code> = Server, <code>C</
 <span class="n">S</span><span class="o">:</span> <span class="mi">250</span> <span class="n">Ok</span>
 <span class="n">C</span><span class="o">:</span> <span class="n">DATA</span>
 <span class="n">S</span><span class="o">:</span> <span class="mi">354</span> <span class="n">End</span> <span class="n">data</span> <span class="k">with</span> <span class="o">&lt;</span><span class="n">CR</span><span class="o">&gt;&lt;</span><span class="n">LF</span><span class="o">&gt;.&lt;</span><span class="n">CR</span><span class="o">&gt;&lt;</span><span class="n">LF</span><span class="o">&gt;</span>
-<span class="n">C</span><span class="o">:</span> <span class="n">From</span><span class="o">:</span> <span class="s2">"Bob Example"</span> <span class="o">&lt;</span><span class="n">bob</span><span class="err">@</span><span class="n">example</span><span class="o">.</span><span class="na">com</span><span class="o">&gt;</span>
+<span class="n">C</span><span class="o">:</span> <span class="n">From</span><span class="o">:</span> <span class="s2">&quot;Bob Example&quot;</span> <span class="o">&lt;</span><span class="n">bob</span><span class="err">@</span><span class="n">example</span><span class="o">.</span><span class="na">com</span><span class="o">&gt;</span>
 <span class="n">C</span><span class="o">:</span> <span class="n">To</span><span class="o">:</span> <span class="n">Alice</span> <span class="n">Example</span> <span class="o">&lt;</span><span class="n">alice</span><span class="err">@</span><span class="n">example</span><span class="o">.</span><span class="na">com</span><span class="o">&gt;</span>
 <span class="n">C</span><span class="o">:</span> <span class="n">Cc</span><span class="o">:</span> <span class="n">theboss</span><span class="err">@</span><span class="n">example</span><span class="o">.</span><span class="na">com</span>
 <span class="n">C</span><span class="o">:</span> <span class="n">Date</span><span class="o">:</span> <span class="n">Tue</span><span class="o">,</span> <span class="mi">15</span> <span class="n">Jan</span> <span class="mi">2008</span> <span class="mi">16</span><span class="o">:</span><span class="mi">02</span><span class="o">:</span><span class="mi">43</span> <span class="o">-</span><span class="mi">0500</span>
@@ -155,6 +157,7 @@ with an example of a successful SMTP session (<code>S</code> = Server, <code>C</
 <span class="n">C</span><span class="o">:</span> <span class="n">QUIT</span>
 <span class="n">S</span><span class="o">:</span> <span class="mi">221</span> <span class="n">Bye</span>
 </code></pre></div>
+
 <p>Unfortunately, this excerpt doesn't explain much about how a session
 using STARTTLS should look. Since I saw some successful <code>read</code> calls
 in my strace output, with arguments that weren't readable text, I
@@ -170,6 +173,7 @@ in <code>colombe</code>:</p>
 <div class="highlight"><pre><span></span><code>  <span class="nn">Logs</span><span class="p">.</span><span class="n">set_reporter</span> <span class="o">(</span><span class="nn">Logs</span><span class="p">.</span><span class="n">format_reporter</span> <span class="bp">()</span><span class="o">);</span>
   <span class="nn">Logs</span><span class="p">.</span><span class="n">set_level</span> <span class="o">(</span><span class="nc">Some</span> <span class="nn">Logs</span><span class="p">.</span><span class="nc">Info</span><span class="o">);</span>
 </code></pre></div>
+
 <p>When I took a look at the log output, I saw:</p>
 <div class="highlight"><pre><span></span><code><span class="p">...</span><span class="w"></span>
 <span class="nl">send</span><span class="p">:</span><span class="w"> </span><span class="o">[</span><span class="n">INFO</span><span class="o">]</span><span class="w"> </span><span class="k">Return</span><span class="w"></span>
@@ -185,7 +189,7 @@ in <code>colombe</code>:</p>
 <span class="nl">send</span><span class="p">:</span><span class="w"> </span><span class="o">[</span><span class="n">INFO</span><span class="o">]</span><span class="w"> </span><span class="k">Return</span><span class="w"></span>
 <span class="nl">send</span><span class="p">:</span><span class="w"> </span><span class="o">[</span><span class="n">INFO</span><span class="o">]</span><span class="w"> </span><span class="k">READ</span><span class="w"> </span><span class="err">:</span><span class="w"></span>
 <span class="nl">send</span><span class="p">:</span><span class="w"> </span><span class="o">[</span><span class="n">INFO</span><span class="o">]</span><span class="w"> </span><span class="k">Return</span><span class="w"></span>
-<span class="nl">send</span><span class="p">:</span><span class="w"> </span><span class="o">[</span><span class="n">WARNING</span><span class="o">]</span><span class="w"> </span><span class="n">The</span><span class="w"> </span><span class="n">server</span><span class="w"> </span><span class="n">send</span><span class="w"> </span><span class="n">an</span><span class="w"> </span><span class="n">invalid</span><span class="w"> </span><span class="n">base64</span><span class="w"> </span><span class="k">value</span><span class="err">:</span><span class="w"> </span><span class="ss">"Go ahead"</span><span class="w"></span>
+<span class="nl">send</span><span class="p">:</span><span class="w"> </span><span class="o">[</span><span class="n">WARNING</span><span class="o">]</span><span class="w"> </span><span class="n">The</span><span class="w"> </span><span class="n">server</span><span class="w"> </span><span class="n">send</span><span class="w"> </span><span class="n">an</span><span class="w"> </span><span class="n">invalid</span><span class="w"> </span><span class="n">base64</span><span class="w"> </span><span class="k">value</span><span class="err">:</span><span class="w"> </span><span class="ss">&quot;Go ahead&quot;</span><span class="w"></span>
 <span class="nl">send</span><span class="p">:</span><span class="w"> </span><span class="o">[</span><span class="n">INFO</span><span class="o">]</span><span class="w"> </span><span class="k">READ</span><span class="w"> </span><span class="err">:</span><span class="w"></span>
 <span class="nl">send</span><span class="p">:</span><span class="w"> </span><span class="o">[</span><span class="n">INFO</span><span class="o">]</span><span class="w"> </span><span class="k">Return</span><span class="w"></span>
 <span class="nl">send</span><span class="p">:</span><span class="w"> </span><span class="o">[</span><span class="n">INFO</span><span class="o">]</span><span class="w"> </span><span class="n">Response</span><span class="w"> </span><span class="mi">535</span><span class="w"> </span><span class="n">Authentication</span><span class="w"> </span><span class="n">failed</span><span class="w"></span>
@@ -195,6 +199,7 @@ in <code>colombe</code>:</p>
 <span class="p">(</span><span class="n">repeats</span><span class="p">,</span><span class="w"> </span><span class="n">hundreds</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="n">times</span><span class="p">)</span><span class="w"></span>
 <span class="p">...</span><span class="w"></span>
 </code></pre></div>
+
 <p>Similar to the <code>strace</code> results, I could see many failed reads. But
 this time I could see they occurred after a <code>535 Authentication
 failed</code> message came back from the server.</p>
@@ -205,11 +210,13 @@ to ensure that my test app would build against my modified version of
 repo, I ran</p>
 <div class="highlight"><pre><span></span><code>dune build src <span class="o">&amp;&amp;</span> dune install colombe <span class="o">&amp;&amp;</span> dune build sendmail <span class="o">&amp;&amp;</span> dune install sendmail
 </code></pre></div>
+
 <p>This pinned both <code>colombe</code> and <code>sendmail</code> to my local versions on
 disk. Because <code>letters</code> uses these two libraries, I also needed to go
 to my <code>letters</code> repo and run:</p>
 <div class="highlight"><pre><span></span><code>dune build . <span class="o">&amp;&amp;</span> dune install letters
 </code></pre></div>
+
 <p>With these two steps taken care of, I could use <code>dune</code> to execute my
 test app and see the custom instrumentation that I'd added to the
 underlying libraries.</p>
@@ -218,8 +225,9 @@ underlying libraries.</p>
 problems immediately after trying to quit the SMTP session by sending
 a <code>QUIT</code>. After some google searching, I learned that <code>openssl</code>
 allows you to run an SMTP session interactively. To test, I ran:</p>
-<div class="highlight"><pre><span></span><code><span class="err">openssl s_client -connect smtp.mailgun.org:587 -starttls smtp</span>
+<div class="highlight"><pre><span></span><code><span class="nv">openssl</span> <span class="nv">s_client</span> <span class="o">-</span><span class="k">connect</span> <span class="nv">smtp</span>.<span class="nv">mailgun</span>.<span class="nv">org</span>:<span class="mi">587</span> <span class="o">-</span><span class="nv">starttls</span> <span class="nv">smtp</span>
 </code></pre></div>
+
 <p>The first part of the session looked like this:</p>
 <div class="highlight"><pre><span></span><code>250 STARTTLS
 ---
@@ -259,6 +267,7 @@ EHLO
 250-SMTPUTF8
 250 PIPELINING
 </code></pre></div>
+
 <p>By running <code>EHLO</code>, I was able to see the different operations this
 SMTP server supports. In the output above, we can see that one of
 those operations is <code>AUTH PLAIN</code>. I tried to authenticate with invalid
@@ -268,6 +277,7 @@ credentials, and saw this:</p>
 535 Authentication failed
 closed
 </code></pre></div>
+
 <p>This means that after a client provides bad credentials, Mailgun's
 SMTP implementation immediately terminates the connection. But, when
 <code>colombe</code> encountered a failure to authenticate, it tried to clean up
@@ -277,6 +287,7 @@ the session like this:</p>
   <span class="k">let</span><span class="o">*</span> <span class="o">_</span><span class="n">txts</span> <span class="o">=</span> <span class="n">send</span> <span class="n">ctx</span> <span class="nn">Value</span><span class="p">.</span><span class="nc">Quit</span> <span class="bp">()</span> <span class="o">&gt;&gt;=</span> <span class="k">fun</span> <span class="bp">()</span> <span class="o">-&gt;</span> <span class="n">recv</span> <span class="n">ctx</span> <span class="nn">Value</span><span class="p">.</span><span class="nc">PP_221</span> <span class="k">in</span>
   <span class="nc">Error</span> <span class="n">err</span>
 </code></pre></div>
+
 <p>So <code>colombe</code> tried to send a <code>QUIT</code> message and await a <code>221 Bye</code>, but
 that message never arrived because the server had already closed the
 connection.</p>
@@ -289,6 +300,7 @@ from the server. Effectively, this meant changing a <code>let*</code> to a <code
   <span class="k">let</span> <span class="o">_</span><span class="n">txts</span> <span class="o">=</span> <span class="n">send</span> <span class="n">ctx</span> <span class="nn">Value</span><span class="p">.</span><span class="nc">Quit</span> <span class="bp">()</span> <span class="o">&gt;&gt;=</span> <span class="k">fun</span> <span class="bp">()</span> <span class="o">-&gt;</span> <span class="n">recv</span> <span class="n">ctx</span> <span class="nn">Value</span><span class="p">.</span><span class="nc">PP_221</span> <span class="k">in</span>
   <span class="nc">Error</span> <span class="n">err</span>
 </code></pre></div>
+
 <p>I also filed this
 <a href="https://github.com/mirage/colombe/issues/46">issue</a>, which prompted
 one of the maintainers to

@@ -21,7 +21,7 @@ sending mail are:&lt;/p&gt;
 &lt;/ol&gt;
 &lt;p&gt;To test how easily I could satisfy these requirements, I built a web
 app that lets the user send an arbitary email.&lt;/p&gt;
-&lt;p&gt;&lt;img alt="A screenshot of the email form." src="https://jsthomas.github.io/images/ocaml-email/screenshot.png" style="width: 671px; height: auto;"/&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt="A screenshot of the email form." src="https://jsthomas.github.io/images/ocaml-email/screenshot.png"&gt;&lt;/p&gt;
 &lt;p&gt;The app has two parts:&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;A server process responsible for showing the form above and
@@ -43,11 +43,11 @@ addresses. I utilized &lt;code&gt;Emile.of_string&lt;/code&gt;, which generates 
 result type, like this:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;form_post&lt;/span&gt; &lt;span class="n"&gt;request&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
   &lt;span class="k"&gt;match&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;form&lt;/span&gt; &lt;span class="n"&gt;request&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt;
-    &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;`&lt;/span&gt;&lt;span class="nc"&gt;Ok&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;"address"&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;address&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="s2"&gt;"message"&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="s2"&gt;"subject"&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;subject&lt;/span&gt; &lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
+    &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;`&lt;/span&gt;&lt;span class="nc"&gt;Ok&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;address&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;address&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;message&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;subject&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;subject&lt;/span&gt; &lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
       &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;parse&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Emile&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;of_string&lt;/span&gt; &lt;span class="n"&gt;address&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
       &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;alert&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;match&lt;/span&gt; &lt;span class="n"&gt;parse&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt;
-        &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Ok&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sprintf&lt;/span&gt; &lt;span class="s2"&gt;"Sent an email to %s."&lt;/span&gt; &lt;span class="n"&gt;address&lt;/span&gt;
-        &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Error&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sprintf&lt;/span&gt; &lt;span class="s2"&gt;"%s is not a valid email address."&lt;/span&gt; &lt;span class="n"&gt;address&lt;/span&gt;
+        &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Ok&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sprintf&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;Sent an email to %s.&amp;quot;&lt;/span&gt; &lt;span class="n"&gt;address&lt;/span&gt;
+        &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Error&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sprintf&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;%s is not a valid email address.&amp;quot;&lt;/span&gt; &lt;span class="n"&gt;address&lt;/span&gt;
       &lt;span class="k"&gt;in&lt;/span&gt;
       &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;queue_req&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;match&lt;/span&gt; &lt;span class="n"&gt;parse&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt;
         &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Ok&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;queue_email&lt;/span&gt; &lt;span class="n"&gt;address&lt;/span&gt; &lt;span class="n"&gt;subject&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;
@@ -57,6 +57,7 @@ result type, like this:&lt;/p&gt;
         &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;html&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nn"&gt;Template&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;show_form&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;alert&lt;/span&gt; &lt;span class="n"&gt;request&lt;/span&gt;&lt;span class="o"&gt;))&lt;/span&gt;
     &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;empty&lt;/span&gt; &lt;span class="o"&gt;`&lt;/span&gt;&lt;span class="nc"&gt;Bad_Request&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;This way, if a user provides an invalid address, the form displays a simple
 warning message and won't queue any email tasks.&lt;/p&gt;
 &lt;h2&gt;Queuing Tasks with RabbitMQ&lt;/h2&gt;
@@ -82,11 +83,12 @@ success with the packages
 &lt;p&gt;The worker and server process share a common function for establishing
 a connection to RabbitMQ:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;rabbit_connection&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
-  &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="n"&gt;connection&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Connection&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;connect&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;id&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="s2"&gt;"dream"&lt;/span&gt; &lt;span class="s2"&gt;"localhost"&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
-  &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="n"&gt;channel&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Connection&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;open_channel&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;id&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="s2"&gt;"email"&lt;/span&gt; &lt;span class="nn"&gt;Channel&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;no_confirm&lt;/span&gt; &lt;span class="n"&gt;connection&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
-  &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="n"&gt;queue&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Queue&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;declare&lt;/span&gt; &lt;span class="n"&gt;channel&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;arguments&lt;/span&gt;&lt;span class="o"&gt;:[&lt;/span&gt;&lt;span class="nn"&gt;Rpc&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nn"&gt;Server&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;queue_argument&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="s2"&gt;"email"&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="n"&gt;connection&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Connection&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;connect&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;id&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;dream&amp;quot;&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;localhost&amp;quot;&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="n"&gt;channel&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Connection&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;open_channel&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;id&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;email&amp;quot;&lt;/span&gt; &lt;span class="nn"&gt;Channel&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;no_confirm&lt;/span&gt; &lt;span class="n"&gt;connection&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="n"&gt;queue&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Queue&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;declare&lt;/span&gt; &lt;span class="n"&gt;channel&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;arguments&lt;/span&gt;&lt;span class="o"&gt;:[&lt;/span&gt;&lt;span class="nn"&gt;Rpc&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nn"&gt;Server&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;queue_argument&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;email&amp;quot;&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
   &lt;span class="nn"&gt;Lwt&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;return&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;channel&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;queue&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;I was initially little confused about why I needed a "channel" when I
 already had a connection to the broker. Both the worker and the server
 connect to the RabbitMQ Broker via TCP. It's common for clients to
@@ -108,6 +110,7 @@ connection", according to these &lt;a href="https://www.rabbitmq.com/channels.ht
   &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Queue&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;publish&lt;/span&gt; &lt;span class="n"&gt;channel&lt;/span&gt; &lt;span class="n"&gt;queue&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nn"&gt;Message&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;make&lt;/span&gt; &lt;span class="n"&gt;text&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
   &lt;span class="nn"&gt;Lwt&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;return_unit&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;Here the server writes the address, subject, and text into a record
 type that can be serialized to JSON before being pushed into the queue.&lt;/p&gt;
 &lt;p&gt;The worker process, &lt;code&gt;queue_worker&lt;/code&gt;, is fairly simple to define:&lt;/p&gt;
@@ -117,7 +120,7 @@ type that can be serialized to JSON before being pushed into the queue.&lt;/p&gt
     &lt;span class="k"&gt;try&lt;/span&gt;
       &lt;span class="nc"&gt;Some&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;text&lt;/span&gt; &lt;span class="o"&gt;|&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Yojson&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nn"&gt;Safe&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;from_string&lt;/span&gt; &lt;span class="o"&gt;|&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;email_of_yojson&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
     &lt;span class="k"&gt;with&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
-      &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;"Received invalid email record from RabbitMQ: %s"&lt;/span&gt; &lt;span class="n"&gt;text&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+      &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;Received invalid email record from RabbitMQ: %s&amp;quot;&lt;/span&gt; &lt;span class="n"&gt;text&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
       &lt;span class="nc"&gt;None&lt;/span&gt;
   &lt;span class="k"&gt;in&lt;/span&gt;
   &lt;span class="k"&gt;match&lt;/span&gt; &lt;span class="n"&gt;email&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt;
@@ -126,18 +129,19 @@ type that can be serialized to JSON before being pushed into the queue.&lt;/p&gt
 
 
 &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;queue_worker&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
-  &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;"Starting Queue Worker&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+  &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;Starting Queue Worker&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
   &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="n"&gt;channel&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;queue&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;rabbit_connection&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="k"&gt;rec&lt;/span&gt; &lt;span class="n"&gt;handle&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
     &lt;span class="nn"&gt;Queue&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;no_ack&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="bp"&gt;true&lt;/span&gt; &lt;span class="n"&gt;channel&lt;/span&gt; &lt;span class="n"&gt;queue&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&amp;gt;=&lt;/span&gt; &lt;span class="k"&gt;fun&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
     &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;task&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;match&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt;
       &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Some&lt;/span&gt; &lt;span class="n"&gt;m&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;flush&lt;/span&gt; &lt;span class="n"&gt;stdout&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="n"&gt;handle_message&lt;/span&gt; &lt;span class="n"&gt;m&lt;/span&gt;
-      &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;"No new tasks, waiting.&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="n"&gt;flush&lt;/span&gt; &lt;span class="n"&gt;stdout&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="nn"&gt;Lwt_unix&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sleep&lt;/span&gt; &lt;span class="mi"&gt;5&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;
+      &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;No new tasks, waiting.&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="n"&gt;flush&lt;/span&gt; &lt;span class="n"&gt;stdout&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="nn"&gt;Lwt_unix&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sleep&lt;/span&gt; &lt;span class="mi"&gt;5&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;
     &lt;span class="k"&gt;in&lt;/span&gt;
     &lt;span class="n"&gt;task&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&amp;gt;=&lt;/span&gt; &lt;span class="n"&gt;handle&lt;/span&gt;
   &lt;span class="k"&gt;in&lt;/span&gt;
   &lt;span class="n"&gt;handle&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;The worker consists of an infinite loop. When the worker wakes and
 finds tasks in the queue, it uses &lt;code&gt;yojson&lt;/code&gt; to deserialize the
 messages and passes them to &lt;code&gt;send_email&lt;/code&gt;. If no work is available,
@@ -161,36 +165,38 @@ data, like this:&lt;/p&gt;
    &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="k"&gt;open&lt;/span&gt; &lt;span class="nc"&gt;Cohttp&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
    &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="k"&gt;open&lt;/span&gt; &lt;span class="nc"&gt;Cohttp_lwt_unix&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
 
-   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;api_key&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Sys&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getenv&lt;/span&gt; &lt;span class="s2"&gt;"MAILGUN_API_KEY"&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
-   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;sender&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Sys&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getenv&lt;/span&gt; &lt;span class="s2"&gt;"MAILGUN_SEND_ADDRESS"&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
-   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;api_base&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Sys&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getenv&lt;/span&gt; &lt;span class="s2"&gt;"MAILGUN_API_BASE"&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;api_key&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Sys&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getenv&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;MAILGUN_API_KEY&amp;quot;&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;sender&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Sys&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getenv&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;MAILGUN_SEND_ADDRESS&amp;quot;&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;api_base&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Sys&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getenv&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;MAILGUN_API_BASE&amp;quot;&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
 
    &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;params&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;
-     &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"from"&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;sender&lt;/span&gt;&lt;span class="o"&gt;]);&lt;/span&gt;
-     &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"to"&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;address&lt;/span&gt;&lt;span class="o"&gt;]);&lt;/span&gt;
-     &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"subject"&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;subject&lt;/span&gt;&lt;span class="o"&gt;]);&lt;/span&gt;
-     &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"text"&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;text&lt;/span&gt;&lt;span class="o"&gt;])&lt;/span&gt;
+     &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;from&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;sender&lt;/span&gt;&lt;span class="o"&gt;]);&lt;/span&gt;
+     &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;to&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;address&lt;/span&gt;&lt;span class="o"&gt;]);&lt;/span&gt;
+     &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;subject&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;subject&lt;/span&gt;&lt;span class="o"&gt;]);&lt;/span&gt;
+     &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;text&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;text&lt;/span&gt;&lt;span class="o"&gt;])&lt;/span&gt;
    &lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
-   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;cred&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;`&lt;/span&gt;&lt;span class="nc"&gt;Basic&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"api"&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;api_key&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
-   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;uri&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;api_base&lt;/span&gt; &lt;span class="o"&gt;^&lt;/span&gt; &lt;span class="s2"&gt;"/messages"&lt;/span&gt; &lt;span class="o"&gt;|&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Uri&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;of_string&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;cred&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;`&lt;/span&gt;&lt;span class="nc"&gt;Basic&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;api&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;api_key&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;uri&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;api_base&lt;/span&gt; &lt;span class="o"&gt;^&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;/messages&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;|&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Uri&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;of_string&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
    &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;headers&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Header&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;add_authorization&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nn"&gt;Header&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;init&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="n"&gt;cred&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
    &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;start&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
-     &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;"Initiating email send to %s.&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;address&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+     &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;Initiating email send to %s.&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;address&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
      &lt;span class="nn"&gt;Unix&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;gettimeofday&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
    &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="n"&gt;resp&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;rbody&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Client&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;post_form&lt;/span&gt; &lt;span class="n"&gt;uri&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;params&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;headers&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
    &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="n"&gt;finish&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Unix&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;gettimeofday&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="o"&gt;|&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Lwt&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;return&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
    &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="n"&gt;rbody_str&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nn"&gt;Cohttp_lwt&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nn"&gt;Body&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;to_string&lt;/span&gt; &lt;span class="n"&gt;rbody&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
-   &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;"API Response Status: %d.&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nn"&gt;Code&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;code_of_status&lt;/span&gt; &lt;span class="n"&gt;resp&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;status&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
-   &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;"API Response body %s.&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="n"&gt;rbody_str&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
-   &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;"Time to send an email: %.2fs&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;finish&lt;/span&gt; &lt;span class="o"&gt;-.&lt;/span&gt; &lt;span class="n"&gt;start&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+   &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;API Response Status: %d.&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nn"&gt;Code&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;code_of_status&lt;/span&gt; &lt;span class="n"&gt;resp&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;status&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+   &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;API Response body %s.&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt; &lt;span class="n"&gt;rbody_str&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+   &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;Time to send an email: %.2fs&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;finish&lt;/span&gt; &lt;span class="o"&gt;-.&lt;/span&gt; &lt;span class="n"&gt;start&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
    &lt;span class="nn"&gt;Lwt&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;return&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;The endpoint replies with either 200 and a JSON body like this:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="p"&gt;{&lt;/span&gt;
-  &lt;span class="nt"&gt;"id"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;"&amp;lt;some mailgun email address here&amp;gt;"&lt;/span&gt;
-  &lt;span class="s2"&gt;"message"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;"Queued. Thank you."&lt;/span&gt;
+  &lt;span class="nt"&gt;&amp;quot;id&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="nt"&gt;&amp;quot;&amp;lt;some mailgun email address here&amp;gt;&amp;quot;&lt;/span&gt;
+  &lt;span class="nt"&gt;&amp;quot;message&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;Queued. Thank you.&amp;quot;&lt;/span&gt;
 &lt;span class="p"&gt;}&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;or else a 400 and an explanation of why the request was rejected. In
 my tests, a successful API request typically took between 0.5 and 1
 seconds. For comparison, the webserver can serve the email form in
@@ -205,14 +211,14 @@ support with this script:&lt;/p&gt;
 
 &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;send_email&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;config&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nn"&gt;Letters&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nn"&gt;Config&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;make&lt;/span&gt;
-      &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;username&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="nn"&gt;Sys&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getenv&lt;/span&gt; &lt;span class="s2"&gt;"MAILGUN_SMTP_USER"&lt;/span&gt;
-      &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;password&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="nn"&gt;Sys&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getenv&lt;/span&gt; &lt;span class="s2"&gt;"MAILGUN_SMTP_PASSWORD"&lt;/span&gt;
-      &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;hostname&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="s2"&gt;"smtp.mailgun.org"&lt;/span&gt;
+      &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;username&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="nn"&gt;Sys&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getenv&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;MAILGUN_SMTP_USER&amp;quot;&lt;/span&gt;
+      &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;password&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="nn"&gt;Sys&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getenv&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;MAILGUN_SMTP_PASSWORD&amp;quot;&lt;/span&gt;
+      &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;hostname&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;smtp.mailgun.org&amp;quot;&lt;/span&gt;
       &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;with_starttls&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="bp"&gt;true&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
   &lt;span class="k"&gt;in&lt;/span&gt;
-  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;sender&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Sys&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getenv&lt;/span&gt; &lt;span class="s2"&gt;"MAILGUN_SMTP_SENDER"&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
-  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;recipients&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="nn"&gt;Letters&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nc"&gt;To&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nn"&gt;Sys&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getenv&lt;/span&gt; &lt;span class="s2"&gt;"EMAIL_ADDRESS"&lt;/span&gt;&lt;span class="o"&gt;)]&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
-  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;subject&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"Test email from mailgun."&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;sender&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Sys&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getenv&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;MAILGUN_SMTP_SENDER&amp;quot;&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;recipients&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="nn"&gt;Letters&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nc"&gt;To&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nn"&gt;Sys&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getenv&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;EMAIL_ADDRESS&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;)]&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;subject&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;Test email from mailgun.&amp;quot;&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;mail&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Letters&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;build_email&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;from&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="n"&gt;sender&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;recipients&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;subject&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;body&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
 
   &lt;span class="nn"&gt;Printexc&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;record_backtrace&lt;/span&gt; &lt;span class="bp"&gt;true&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
@@ -222,16 +228,17 @@ support with this script:&lt;/p&gt;
        &lt;span class="nn"&gt;Letters&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;send&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;config&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;sender&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;recipients&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;message&lt;/span&gt;
     &lt;span class="k"&gt;with&lt;/span&gt;
       &lt;span class="n"&gt;e&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
-      &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;"Error. %s&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nn"&gt;Printexc&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;to_string&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+      &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;Error. %s&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nn"&gt;Printexc&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;to_string&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
       &lt;span class="nn"&gt;Printexc&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;print_backtrace&lt;/span&gt; &lt;span class="n"&gt;stdout&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
       &lt;span class="nn"&gt;Lwt&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;return_unit&lt;/span&gt;
    &lt;span class="o"&gt;)&lt;/span&gt;
-  &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Error&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;"Message synthesis failed."&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="n"&gt;flush&lt;/span&gt; &lt;span class="n"&gt;stdout&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="nn"&gt;Lwt&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;return_unit&lt;/span&gt;
+  &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Error&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;Message synthesis failed.&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="n"&gt;flush&lt;/span&gt; &lt;span class="n"&gt;stdout&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="nn"&gt;Lwt&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;return_unit&lt;/span&gt;
 
 
 &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
   &lt;span class="nn"&gt;Lwt_main&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;run&lt;/span&gt; &lt;span class="o"&gt;@@&lt;/span&gt; &lt;span class="n"&gt;send_email&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;I ran into some
 &lt;a href="https://github.com/oxidizing/letters/issues/35"&gt;difficulties&lt;/a&gt; because
 Mailgun does not consistently follow RFC 4954 (thanks to Calascibetta
@@ -262,7 +269,7 @@ mechanism in the event that Mailgun is unavailable.&lt;/p&gt;
 &lt;p&gt;I found the resources below helpful for working on this project:&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;The &lt;code&gt;amqp-client&lt;/code&gt;
-&lt;a href="https://andersfugmann.github.io/amqp-client/amqp-client-lwt/index.html"&gt;documentation&lt;/a&gt;,
+  &lt;a href="https://andersfugmann.github.io/amqp-client/amqp-client-lwt/index.html"&gt;documentation&lt;/a&gt;,
   especially the
   &lt;a href="https://github.com/andersfugmann/amqp-client/tree/master/examples"&gt;examples&lt;/a&gt;
   were helpful for setting up with RabbitMQ.&lt;/li&gt;
@@ -355,8 +362,9 @@ for this, but other tools like &lt;code&gt;curl&lt;/code&gt; would work too.&lt;
 &lt;p&gt;To give a sense of my development workflow, I want to walk through my
 process for adding a simple endpoint, &lt;code&gt;/api/login&lt;/code&gt;. Inside the router,
 that endpoint looks like:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;post&lt;/span&gt; &lt;span class="s2"&gt;"/api/login"&lt;/span&gt; &lt;span class="n"&gt;login&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;post&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;/api/login&amp;quot;&lt;/span&gt; &lt;span class="n"&gt;login&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;In this excerpt &lt;code&gt;login&lt;/code&gt; is a "handler". Handlers are responsible for
 translating requests into responses; this is captured in their &lt;a href="https://aantron.github.io/dream/#type-handler"&gt;type
 signature&lt;/a&gt;.&lt;/p&gt;
@@ -374,6 +382,7 @@ payload, I introduced a simple record type:&lt;/p&gt;
   &lt;span class="n"&gt;password&lt;/span&gt; &lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
 &lt;span class="o"&gt;}&lt;/span&gt; &lt;span class="o"&gt;[@@&lt;/span&gt;&lt;span class="n"&gt;deriving&lt;/span&gt; &lt;span class="n"&gt;yojson&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;Adding &lt;code&gt;[@@deriving yojson]&lt;/code&gt; means the compiler can generate functions
 to convert these records to and from JSON. In this case those
 functions are called &lt;code&gt;login_doc_of_yojson&lt;/code&gt; and &lt;code&gt;yojson_of_login_doc&lt;/code&gt;.&lt;/p&gt;
@@ -391,7 +400,7 @@ functions are called &lt;code&gt;login_doc_of_yojson&lt;/code&gt; and &lt;code&g
   &lt;span class="k"&gt;match&lt;/span&gt; &lt;span class="n"&gt;parse&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt;
   &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Some&lt;/span&gt; &lt;span class="n"&gt;doc&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;handler&lt;/span&gt; &lt;span class="n"&gt;doc&lt;/span&gt; &lt;span class="n"&gt;request&lt;/span&gt;
   &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;None&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
-    &lt;span class="o"&gt;{&lt;/span&gt; &lt;span class="n"&gt;error&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"Received invalid JSON input."&lt;/span&gt; &lt;span class="o"&gt;}&lt;/span&gt;
+    &lt;span class="o"&gt;{&lt;/span&gt; &lt;span class="n"&gt;error&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;Received invalid JSON input.&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;}&lt;/span&gt;
     &lt;span class="o"&gt;|&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;yojson_of_error_doc&lt;/span&gt;
     &lt;span class="o"&gt;|&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;json_response&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;status&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="o"&gt;`&lt;/span&gt;&lt;span class="nc"&gt;Bad_Request&lt;/span&gt;
 
@@ -403,12 +412,13 @@ functions are called &lt;code&gt;login_doc_of_yojson&lt;/code&gt; and &lt;code&g
     &lt;span class="k"&gt;match&lt;/span&gt; &lt;span class="n"&gt;user_id&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt;
     &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Some&lt;/span&gt; &lt;span class="n"&gt;id&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
       &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;invalidate_session&lt;/span&gt; &lt;span class="n"&gt;request&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
-      &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;put_session&lt;/span&gt; &lt;span class="s2"&gt;"user"&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nn"&gt;Int&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;to_string&lt;/span&gt; &lt;span class="n"&gt;id&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="n"&gt;request&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+      &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;put_session&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;user&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nn"&gt;Int&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;to_string&lt;/span&gt; &lt;span class="n"&gt;id&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="n"&gt;request&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
       &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;empty&lt;/span&gt; &lt;span class="o"&gt;`&lt;/span&gt;&lt;span class="nc"&gt;OK&lt;/span&gt;
     &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;None&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;empty&lt;/span&gt; &lt;span class="o"&gt;`&lt;/span&gt;&lt;span class="nc"&gt;Forbidden&lt;/span&gt;
   &lt;span class="k"&gt;in&lt;/span&gt;
   &lt;span class="n"&gt;json_receiver&lt;/span&gt; &lt;span class="n"&gt;login_doc_of_yojson&lt;/span&gt; &lt;span class="n"&gt;login_base&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;If a user uploads an invalid JSON body, this will cause
 &lt;code&gt;login_doc_of_yojson&lt;/code&gt; to throw an exception. By default, this produces
 a 500 server error response. To handle this situation more gracefully,
@@ -429,11 +439,12 @@ API concerns.&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;get&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;query&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
     &lt;span class="nn"&gt;R&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;find_opt&lt;/span&gt; &lt;span class="nn"&gt;T&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;tup2&lt;/span&gt; &lt;span class="nn"&gt;T&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;string&lt;/span&gt; &lt;span class="nn"&gt;T&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;string&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="nn"&gt;T&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;int&lt;/span&gt;
-      &lt;span class="s2"&gt;"SELECT id FROM app_user WHERE username = ? and password = ?"&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+      &lt;span class="s2"&gt;&amp;quot;SELECT id FROM app_user WHERE username = ? and password = ?&amp;quot;&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
   &lt;span class="k"&gt;fun&lt;/span&gt; &lt;span class="n"&gt;username&lt;/span&gt; &lt;span class="n"&gt;password&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="k"&gt;module&lt;/span&gt; &lt;span class="nc"&gt;Db&lt;/span&gt; &lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="nc"&gt;DB&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
     &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="n"&gt;user_or_error&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Db&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;find_opt&lt;/span&gt; &lt;span class="n"&gt;query&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;username&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;password&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
     &lt;span class="nn"&gt;Caqti_lwt&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;or_fail&lt;/span&gt; &lt;span class="n"&gt;user_or_error&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;Caqti allows us to define a function that consumes our query
 parameters (the username and password) along with a database
 connection, and produces a promise that will resolve with the results
@@ -452,28 +463,29 @@ easy access in later database queries.&lt;/p&gt;
 &lt;h2&gt;Thoughts on the Dream Router&lt;/h2&gt;
 &lt;p&gt;The final router for my server looked like this:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
-  &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;run&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;interface&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="s2"&gt;"0.0.0.0"&lt;/span&gt;
+  &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;run&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;interface&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;0.0.0.0&amp;quot;&lt;/span&gt;
   &lt;span class="o"&gt;@@&lt;/span&gt; &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;logger&lt;/span&gt;
-  &lt;span class="o"&gt;@@&lt;/span&gt; &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sql_pool&lt;/span&gt; &lt;span class="s2"&gt;"postgresql://sensors@127.0.0.1/sensors"&lt;/span&gt;
+  &lt;span class="o"&gt;@@&lt;/span&gt; &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sql_pool&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;postgresql://sensors@127.0.0.1/sensors&amp;quot;&lt;/span&gt;
   &lt;span class="o"&gt;@@&lt;/span&gt; &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sql_sessions&lt;/span&gt;
   &lt;span class="o"&gt;@@&lt;/span&gt; &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;router&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;
     &lt;span class="c"&gt;(* More endpoints here ... *)&lt;/span&gt;
 
-    &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get&lt;/span&gt; &lt;span class="s2"&gt;"/version"&lt;/span&gt; &lt;span class="n"&gt;version&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
-    &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;post&lt;/span&gt; &lt;span class="s2"&gt;"/api/login"&lt;/span&gt; &lt;span class="n"&gt;login&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
-    &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;post&lt;/span&gt; &lt;span class="s2"&gt;"/api/logout"&lt;/span&gt; &lt;span class="n"&gt;logout&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+    &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;/version&amp;quot;&lt;/span&gt; &lt;span class="n"&gt;version&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+    &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;post&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;/api/login&amp;quot;&lt;/span&gt; &lt;span class="n"&gt;login&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+    &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;post&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;/api/logout&amp;quot;&lt;/span&gt; &lt;span class="n"&gt;logout&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
 
-    &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;scope&lt;/span&gt; &lt;span class="s2"&gt;"/api"&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;login_required&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;
-      &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get&lt;/span&gt; &lt;span class="s2"&gt;"/user/:user_id"&lt;/span&gt; &lt;span class="n"&gt;user&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+    &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;scope&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;/api&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;login_required&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;
+      &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;/user/:user_id&amp;quot;&lt;/span&gt; &lt;span class="n"&gt;user&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
       &lt;span class="c"&gt;(* More endpoints here... *)&lt;/span&gt;
     &lt;span class="o"&gt;];&lt;/span&gt;
 
-    &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;scope&lt;/span&gt; &lt;span class="s2"&gt;"/sensor"&lt;/span&gt; &lt;span class="bp"&gt;[]&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;
-      &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;post&lt;/span&gt; &lt;span class="s2"&gt;"/upload"&lt;/span&gt; &lt;span class="o"&gt;@@&lt;/span&gt; &lt;span class="n"&gt;api_key_required&lt;/span&gt; &lt;span class="n"&gt;sensor_upload&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+    &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;scope&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;/sensor&amp;quot;&lt;/span&gt; &lt;span class="bp"&gt;[]&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;
+      &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;post&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;/upload&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;@@&lt;/span&gt; &lt;span class="n"&gt;api_key_required&lt;/span&gt; &lt;span class="n"&gt;sensor_upload&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
     &lt;span class="o"&gt;]&lt;/span&gt;
   &lt;span class="o"&gt;]&lt;/span&gt;
   &lt;span class="o"&gt;@@&lt;/span&gt; &lt;span class="nn"&gt;Dream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;not_found&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;I really appreciate how Dream makes it possible to get a concise
 overview of the API; in some Pyramid projects, I found this wasn't
 always possible. In fact, in Pyramid I sometimes struggled with subtle
@@ -509,6 +521,7 @@ particular user:&lt;/p&gt;
 &lt;span class="k"&gt;INNER&lt;/span&gt; &lt;span class="k"&gt;JOIN&lt;/span&gt; &lt;span class="n"&gt;api_key&lt;/span&gt; &lt;span class="n"&gt;k&lt;/span&gt;
  &lt;span class="k"&gt;ON&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;api_key&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;k&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;id&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;By joining against &lt;code&gt;user_sensor&lt;/code&gt;, I ensure that a user only gets data
 for the sensors they own.&lt;/p&gt;
 &lt;p&gt;I should point out that Dream allows us to use a custom router,
@@ -533,11 +546,12 @@ table:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;get&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;query&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
     &lt;span class="nn"&gt;R&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;find_opt&lt;/span&gt; &lt;span class="nn"&gt;T&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;tup2&lt;/span&gt; &lt;span class="nn"&gt;T&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;string&lt;/span&gt; &lt;span class="nn"&gt;T&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;string&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="nn"&gt;T&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;int&lt;/span&gt;
-      &lt;span class="s2"&gt;"SELECT id FROM app_user WHERE username = ? and password = ?"&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+      &lt;span class="s2"&gt;&amp;quot;SELECT id FROM app_user WHERE username = ? and password = ?&amp;quot;&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
   &lt;span class="k"&gt;fun&lt;/span&gt; &lt;span class="n"&gt;username&lt;/span&gt; &lt;span class="n"&gt;password&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="k"&gt;module&lt;/span&gt; &lt;span class="nc"&gt;Db&lt;/span&gt; &lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="nc"&gt;DB&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
     &lt;span class="k"&gt;let&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;lwt&lt;/span&gt; &lt;span class="n"&gt;user_or_error&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;Db&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;find_opt&lt;/span&gt; &lt;span class="n"&gt;query&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;username&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;password&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
     &lt;span class="nn"&gt;Caqti_lwt&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;or_fail&lt;/span&gt; &lt;span class="n"&gt;user_or_error&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;&lt;strong&gt;SQLAlchemy&lt;/strong&gt;&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="n"&gt;db&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;session&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;query&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;User&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; \
     &lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;filter&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
@@ -545,6 +559,7 @@ table:&lt;/p&gt;
         &lt;span class="n"&gt;User&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;password&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;password&lt;/span&gt;
     &lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;one_or_none&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;Working with Caqti, a mistake in the syntax of a SQL query won't be
 discovered until runtime. I made fewer mistakes like this with
 SQLAlchemy because most queries are written in Python and can be
@@ -558,9 +573,10 @@ compiler error meant:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="n"&gt;Error&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;The&lt;/span&gt; &lt;span class="kd"&gt;function&lt;/span&gt; &lt;span class="n"&gt;applied&lt;/span&gt; &lt;span class="n"&gt;to&lt;/span&gt; &lt;span class="k"&gt;this&lt;/span&gt; &lt;span class="n"&gt;argument&lt;/span&gt; &lt;span class="n"&gt;has&lt;/span&gt; &lt;span class="n"&gt;type&lt;/span&gt;
          &lt;span class="o"&gt;?&lt;/span&gt;&lt;span class="n"&gt;env&lt;/span&gt;&lt;span class="o"&gt;:(&lt;/span&gt;&lt;span class="n"&gt;Caqti_driver_info&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;t&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;string&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;Caqti_query&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;t&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
          &lt;span class="o"&gt;?&lt;/span&gt;&lt;span class="n"&gt;oneshot&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="n"&gt;bool&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
-         &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="err"&gt;'&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;unit&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="o"&gt;[&amp;lt;&lt;/span&gt; &lt;span class="err"&gt;`&lt;/span&gt;&lt;span class="n"&gt;Many&lt;/span&gt; &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="err"&gt;`&lt;/span&gt;&lt;span class="n"&gt;One&lt;/span&gt; &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="err"&gt;`&lt;/span&gt;&lt;span class="n"&gt;Zero&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="err"&gt;`&lt;/span&gt;&lt;span class="n"&gt;Zero&lt;/span&gt; &lt;span class="o"&gt;])&lt;/span&gt; &lt;span class="n"&gt;Caqti_request&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;t&lt;/span&gt;
+         &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="err"&gt;&amp;#39;&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;unit&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="o"&gt;[&amp;lt;&lt;/span&gt; &lt;span class="err"&gt;`&lt;/span&gt;&lt;span class="n"&gt;Many&lt;/span&gt; &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="err"&gt;`&lt;/span&gt;&lt;span class="n"&gt;One&lt;/span&gt; &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="err"&gt;`&lt;/span&gt;&lt;span class="n"&gt;Zero&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="err"&gt;`&lt;/span&gt;&lt;span class="n"&gt;Zero&lt;/span&gt; &lt;span class="o"&gt;])&lt;/span&gt; &lt;span class="n"&gt;Caqti_request&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;t&lt;/span&gt;
 &lt;span class="n"&gt;This&lt;/span&gt; &lt;span class="n"&gt;argument&lt;/span&gt; &lt;span class="n"&gt;cannot&lt;/span&gt; &lt;span class="n"&gt;be&lt;/span&gt; &lt;span class="n"&gt;applied&lt;/span&gt; &lt;span class="n"&gt;without&lt;/span&gt; &lt;span class="n"&gt;label&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;Using Caqti became easier as I became accustomed to thinking in terms of
 prepared queries. About halfway through the project I realized I
 needed to switch from SQLite to PostgreSQL, and changing databases was
@@ -579,6 +595,7 @@ adding a custom column type to handle this was straightforward:&lt;/p&gt;
 &lt;span class="w"&gt;  &lt;/span&gt;&lt;span class="ow"&gt;in&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
 &lt;span class="w"&gt;  &lt;/span&gt;&lt;span class="n"&gt;T&lt;/span&gt;&lt;span class="p"&gt;.(&lt;/span&gt;&lt;span class="n"&gt;custom&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;encode&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;decode&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;string&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;In my case, the JSON that I needed to store consisted of arrays of
 floating point numbers, so building the custom type was simply a
 matter of connecting Yojson and Caqti in the right way.&lt;/p&gt;
@@ -709,7 +726,7 @@ library provides. I also spent a fair amount of time experimenting in
 represent either interactive or batch input with a &lt;code&gt;Stream&lt;/code&gt;:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;prompt_stream&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
-    &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;"osh&amp;gt; "&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+    &lt;span class="nn"&gt;Printf&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;printf&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;osh&amp;gt; &amp;quot;&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
     &lt;span class="nc"&gt;Some&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;read_line&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
   &lt;span class="nn"&gt;Stream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;from&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt;
 
@@ -725,6 +742,7 @@ represent either interactive or batch input with a &lt;code&gt;Stream&lt;/code&g
   &lt;span class="k"&gt;in&lt;/span&gt;
   &lt;span class="nn"&gt;Stream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;from&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;It's useful to do this part as early as possible, since batch input
 allows you to run the tests.&lt;/p&gt;
 &lt;p&gt;Once I could get &lt;code&gt;osh&lt;/code&gt; to fail all 22 test cases, I started adding the
@@ -732,14 +750,14 @@ simpler built-in commands &lt;code&gt;cd&lt;/code&gt; and &lt;code&gt;exit&lt;/c
 will run all 22 tests, without stopping at the first one that fails.)&lt;/p&gt;
 &lt;p&gt;My first version of &lt;code&gt;main&lt;/code&gt; just treated user input as &lt;code&gt;string list&lt;/code&gt;:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="k"&gt;rec&lt;/span&gt; &lt;span class="n"&gt;main&lt;/span&gt; &lt;span class="n"&gt;stream&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
-  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;parse&lt;/span&gt; &lt;span class="n"&gt;text&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;String&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split_on_char&lt;/span&gt; &lt;span class="sc"&gt;' '&lt;/span&gt; &lt;span class="n"&gt;text&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;parse&lt;/span&gt; &lt;span class="n"&gt;text&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;String&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split_on_char&lt;/span&gt; &lt;span class="sc"&gt;&amp;#39; &amp;#39;&lt;/span&gt; &lt;span class="n"&gt;text&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;process&lt;/span&gt; &lt;span class="n"&gt;text&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
     &lt;span class="k"&gt;match&lt;/span&gt; &lt;span class="n"&gt;parse&lt;/span&gt; &lt;span class="n"&gt;text&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt;
     &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="bp"&gt;[]&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;main&lt;/span&gt; &lt;span class="n"&gt;stream&lt;/span&gt;  &lt;span class="c"&gt;(* Empty lines should just be treated as no-ops. *)&lt;/span&gt;
-    &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;""&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;main&lt;/span&gt; &lt;span class="n"&gt;stream&lt;/span&gt;
-    &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;"exit"&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;exit&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
-    &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;"cd"&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="n"&gt;x&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Unix&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;chdir&lt;/span&gt; &lt;span class="n"&gt;x&lt;/span&gt;
-    &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="s2"&gt;"cd"&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;print_error&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt;
+    &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;main&lt;/span&gt; &lt;span class="n"&gt;stream&lt;/span&gt;
+    &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;exit&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;exit&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+    &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;cd&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="n"&gt;x&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="nn"&gt;Unix&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;chdir&lt;/span&gt; &lt;span class="n"&gt;x&lt;/span&gt;
+    &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;cd&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;print_error&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt;
     &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="n"&gt;x&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;xs&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
       &lt;span class="k"&gt;match&lt;/span&gt; &lt;span class="nn"&gt;Unix&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fork&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt;
       &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="c"&gt;(* Child *)&lt;/span&gt;
@@ -750,6 +768,7 @@ will run all 22 tests, without stopping at the first one that fails.)&lt;/p&gt;
   &lt;span class="k"&gt;in&lt;/span&gt;
   &lt;span class="nn"&gt;Stream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;iter&lt;/span&gt; &lt;span class="n"&gt;process&lt;/span&gt; &lt;span class="n"&gt;stream&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;This worked well enough for running simple commands like &lt;code&gt;/usr/bin/ls
 -lah&lt;/code&gt;. In order to get output redirection and &lt;code&gt;&amp;amp;&lt;/code&gt; to work, I needed to
 upgrade the program's parsing capabilities. I switched from
@@ -767,6 +786,7 @@ representing user input with a &lt;code&gt;string list&lt;/code&gt; to a variant
   &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Executable&lt;/span&gt; &lt;span class="k"&gt;of&lt;/span&gt; &lt;span class="n"&gt;exec&lt;/span&gt; &lt;span class="kt"&gt;list&lt;/span&gt;
   &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Quit&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;I found the OCaml compiler (and its emacs integrations, &lt;code&gt;merlin&lt;/code&gt; and
 &lt;code&gt;tuareg&lt;/code&gt;) very helpful for refactoring. When I revised my types to
 make them better reflect the data I wanted to model, type errors
@@ -788,7 +808,7 @@ to.&lt;/p&gt;
 &lt;p&gt;For example, I found that the function responsible for running a child
 process was most natural to express with imperative language features:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;run_executable&lt;/span&gt; &lt;span class="n"&gt;path&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;&lt;span class="n"&gt;executable&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="n"&gt;arguments&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt; &lt;span class="n"&gt;output&lt;/span&gt;&lt;span class="o"&gt;}&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
-  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;full_paths&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;List&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;map&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="k"&gt;fun&lt;/span&gt; &lt;span class="n"&gt;p&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;p&lt;/span&gt; &lt;span class="o"&gt;^&lt;/span&gt; &lt;span class="s2"&gt;"/"&lt;/span&gt; &lt;span class="o"&gt;^&lt;/span&gt; &lt;span class="n"&gt;executable&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="n"&gt;path&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;full_paths&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;List&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;map&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="k"&gt;fun&lt;/span&gt; &lt;span class="n"&gt;p&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;p&lt;/span&gt; &lt;span class="o"&gt;^&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;/&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;^&lt;/span&gt; &lt;span class="n"&gt;executable&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="n"&gt;path&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;executables&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;List&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt; &lt;span class="n"&gt;full_paths&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;executable&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;present&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nn"&gt;List&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;filter&lt;/span&gt; &lt;span class="n"&gt;executable_present&lt;/span&gt; &lt;span class="n"&gt;executables&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
 
@@ -811,6 +831,7 @@ process was most natural to express with imperative language features:&lt;/p&gt;
     &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="n"&gt;child_pid&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="c"&gt;(* Parent *)&lt;/span&gt;
       &lt;span class="nc"&gt;Some&lt;/span&gt; &lt;span class="n"&gt;child_pid&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;Writing this way made it easy for me to switch between C and OCaml; in
 both languages, we follow a pattern of calling &lt;code&gt;fork&lt;/code&gt;, then &lt;code&gt;execv&lt;/code&gt; in
 the child process. The fact that I can easily re-use my knowledge of
@@ -820,7 +841,7 @@ main reasons I'm excited to learn more systems programming concepts!&lt;/p&gt;
 languages like Python. These features make it so easy to look at a
 function like:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;main&lt;/span&gt; &lt;span class="n"&gt;stream&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
-  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;path&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ref&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;"/bin"&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
+  &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;path&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ref&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;/bin&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
   &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;process&lt;/span&gt; &lt;span class="n"&gt;text&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
     &lt;span class="k"&gt;match&lt;/span&gt; &lt;span class="nn"&gt;Parser&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;parse_line&lt;/span&gt; &lt;span class="n"&gt;text&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt;
     &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="nc"&gt;Error&lt;/span&gt; &lt;span class="o"&gt;_&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;print_error&lt;/span&gt; &lt;span class="bp"&gt;()&lt;/span&gt;
@@ -834,6 +855,7 @@ function like:&lt;/p&gt;
   &lt;span class="k"&gt;in&lt;/span&gt;
   &lt;span class="nn"&gt;Stream&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;iter&lt;/span&gt; &lt;span class="n"&gt;process&lt;/span&gt; &lt;span class="n"&gt;stream&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;and quickly understand all of the different commands &lt;code&gt;osh&lt;/code&gt; supports.&lt;/p&gt;
 &lt;p&gt;Although it took me some time to get up and running with Angstrom, I
 strongly prefer working with parser combinators to writing an
@@ -858,6 +880,7 @@ expecting&lt;/p&gt;
    &lt;span class="bp"&gt;[]&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="bp"&gt;[]&lt;/span&gt;
   &lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="n"&gt;l&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;r&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt; &lt;span class="n"&gt;r&lt;/span&gt; &lt;span class="o"&gt;::&lt;/span&gt; &lt;span class="n"&gt;map&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="n"&gt;l&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;but I was surprised to learn there are actually several
 implementations of &lt;code&gt;map&lt;/code&gt; in the OCaml ecosystem. I wanted to know more
 about these different implementations and their performance
@@ -913,6 +936,7 @@ unrolled version of &lt;code&gt;stdlib&lt;/code&gt; looks like:&lt;/p&gt;
     &lt;span class="k"&gt;let&lt;/span&gt; &lt;span class="n"&gt;f3&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="n"&gt;x3&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;
     &lt;span class="n"&gt;f1&lt;/span&gt; &lt;span class="o"&gt;::&lt;/span&gt; &lt;span class="n"&gt;f2&lt;/span&gt; &lt;span class="o"&gt;::&lt;/span&gt; &lt;span class="n"&gt;f3&lt;/span&gt; &lt;span class="o"&gt;::&lt;/span&gt; &lt;span class="n"&gt;map&lt;/span&gt; &lt;span class="n"&gt;tl&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;We get to choose how many elements to unroll (here I picked 3); some
 profiling is needed to decide the most appropriate number.&lt;/p&gt;
 &lt;p&gt;The second trick I call "hybridizing". The &lt;code&gt;stdlib&lt;/code&gt; version is faster,
@@ -1010,53 +1034,57 @@ which I'll refer to as &lt;code&gt;batt-hybr&lt;/code&gt;. Other test details:&l
 &lt;p&gt;The library also allows us to produce 95% confidence intervals and
 &lt;span class="math"&gt;\(R^2\)&lt;/span&gt; values for the time estimates.&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;Map Benchmark, N = 100&lt;/strong&gt;&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="err"&gt;┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐&lt;/span&gt;
-&lt;span class="err"&gt;│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │&lt;/span&gt;
-&lt;span class="err"&gt;├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤&lt;/span&gt;
-&lt;span class="err"&gt;│ ntr        │     1.00 │ 741.20ns │ -0.23% +0.22% │ 609.01w │    0.53w │    0.53w │    100.00% │&lt;/span&gt;
-&lt;span class="err"&gt;│ containers │     1.00 │ 439.55ns │ -0.64% +0.67% │ 304.03w │    0.17w │    0.17w │     59.30% │&lt;/span&gt;
-&lt;span class="err"&gt;│ batteries  │     1.00 │ 581.65ns │ -0.14% +0.16% │ 309.01w │    0.35w │    0.35w │     78.47% │&lt;/span&gt;
-&lt;span class="err"&gt;│ base       │     1.00 │ 438.63ns │ -0.19% +0.20% │ 304.03w │    0.16w │    0.16w │     59.18% │&lt;/span&gt;
-&lt;span class="err"&gt;│ stdlib     │     1.00 │ 610.45ns │ -0.10% +0.11% │ 304.01w │    0.17w │    0.17w │     82.36% │&lt;/span&gt;
-&lt;span class="err"&gt;│ batt-hybr  │     1.00 │ 426.76ns │ -0.15% +0.17% │ 304.03w │    0.17w │    0.17w │     57.58% │&lt;/span&gt;
-&lt;span class="err"&gt;└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐
+│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │
+├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤
+│ ntr        │     1.00 │ 741.20ns │ -0.23% +0.22% │ 609.01w │    0.53w │    0.53w │    100.00% │
+│ containers │     1.00 │ 439.55ns │ -0.64% +0.67% │ 304.03w │    0.17w │    0.17w │     59.30% │
+│ batteries  │     1.00 │ 581.65ns │ -0.14% +0.16% │ 309.01w │    0.35w │    0.35w │     78.47% │
+│ base       │     1.00 │ 438.63ns │ -0.19% +0.20% │ 304.03w │    0.16w │    0.16w │     59.18% │
+│ stdlib     │     1.00 │ 610.45ns │ -0.10% +0.11% │ 304.01w │    0.17w │    0.17w │     82.36% │
+│ batt-hybr  │     1.00 │ 426.76ns │ -0.15% +0.17% │ 304.03w │    0.17w │    0.17w │     57.58% │
+└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;&lt;strong&gt;Map Benchmark, N = 1000&lt;/strong&gt;&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="err"&gt;┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐&lt;/span&gt;
-&lt;span class="err"&gt;│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │&lt;/span&gt;
-&lt;span class="err"&gt;├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤&lt;/span&gt;
-&lt;span class="err"&gt;│ ntr        │     1.00 │   8.84us │ -0.14% +0.15% │  6.01kw │   52.08w │   52.08w │    100.00% │&lt;/span&gt;
-&lt;span class="err"&gt;│ containers │     1.00 │   5.07us │ -0.13% +0.15% │  3.00kw │   17.23w │   17.23w │     57.34% │&lt;/span&gt;
-&lt;span class="err"&gt;│ batteries  │     1.00 │   6.57us │ -0.14% +0.14% │  3.01kw │   34.71w │   34.71w │     74.32% │&lt;/span&gt;
-&lt;span class="err"&gt;│ base       │     1.00 │   4.99us │ -0.20% +0.24% │  3.00kw │   17.08w │   17.08w │     56.44% │&lt;/span&gt;
-&lt;span class="err"&gt;│ stdlib     │     1.00 │   6.84us │ -0.10% +0.10% │  3.00kw │   17.22w │   17.22w │     77.34% │&lt;/span&gt;
-&lt;span class="err"&gt;│ batt-hybr  │     1.00 │   4.96us │ -0.13% +0.13% │  3.00kw │   17.07w │   17.07w │     56.10% │&lt;/span&gt;
-&lt;span class="err"&gt;└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐
+│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │
+├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤
+│ ntr        │     1.00 │   8.84us │ -0.14% +0.15% │  6.01kw │   52.08w │   52.08w │    100.00% │
+│ containers │     1.00 │   5.07us │ -0.13% +0.15% │  3.00kw │   17.23w │   17.23w │     57.34% │
+│ batteries  │     1.00 │   6.57us │ -0.14% +0.14% │  3.01kw │   34.71w │   34.71w │     74.32% │
+│ base       │     1.00 │   4.99us │ -0.20% +0.24% │  3.00kw │   17.08w │   17.08w │     56.44% │
+│ stdlib     │     1.00 │   6.84us │ -0.10% +0.10% │  3.00kw │   17.22w │   17.22w │     77.34% │
+│ batt-hybr  │     1.00 │   4.96us │ -0.13% +0.13% │  3.00kw │   17.07w │   17.07w │     56.10% │
+└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;&lt;strong&gt;Map Benchmark, N = 10,000&lt;/strong&gt;&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="err"&gt;┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐&lt;/span&gt;
-&lt;span class="err"&gt;│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │&lt;/span&gt;
-&lt;span class="err"&gt;├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤&lt;/span&gt;
-&lt;span class="err"&gt;│ ntr        │     0.99 │ 203.11us │ -0.45% +0.53% │ 60.01kw │   5.40kw │   5.40kw │    100.00% │&lt;/span&gt;
-&lt;span class="err"&gt;│ containers │     1.00 │ 144.95us │ -0.50% +0.60% │ 48.01kw │   3.04kw │   3.04kw │     71.37% │&lt;/span&gt;
-&lt;span class="err"&gt;│ batteries  │     1.00 │ 136.87us │ -0.51% +0.63% │ 30.01kw │   3.64kw │   3.64kw │     67.39% │&lt;/span&gt;
-&lt;span class="err"&gt;│ base       │     1.00 │ 130.85us │ -0.34% +0.39% │ 44.98kw │   2.66kw │   2.66kw │     64.42% │&lt;/span&gt;
-&lt;span class="err"&gt;│ stdlib     │     1.00 │ 118.70us │ -0.30% +0.29% │ 30.00kw │   1.80kw │   1.80kw │     58.44% │&lt;/span&gt;
-&lt;span class="err"&gt;│ batt-hybr  │     1.00 │ 106.91us │ -0.42% +0.52% │ 30.01kw │   2.22kw │   2.22kw │     52.64% │&lt;/span&gt;
-&lt;span class="err"&gt;└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐
+│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │
+├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤
+│ ntr        │     0.99 │ 203.11us │ -0.45% +0.53% │ 60.01kw │   5.40kw │   5.40kw │    100.00% │
+│ containers │     1.00 │ 144.95us │ -0.50% +0.60% │ 48.01kw │   3.04kw │   3.04kw │     71.37% │
+│ batteries  │     1.00 │ 136.87us │ -0.51% +0.63% │ 30.01kw │   3.64kw │   3.64kw │     67.39% │
+│ base       │     1.00 │ 130.85us │ -0.34% +0.39% │ 44.98kw │   2.66kw │   2.66kw │     64.42% │
+│ stdlib     │     1.00 │ 118.70us │ -0.30% +0.29% │ 30.00kw │   1.80kw │   1.80kw │     58.44% │
+│ batt-hybr  │     1.00 │ 106.91us │ -0.42% +0.52% │ 30.01kw │   2.22kw │   2.22kw │     52.64% │
+└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;&lt;strong&gt;Map Benchmark, N = 100,000&lt;/strong&gt;&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="err"&gt;┌────────────┬──────────┬──────────┬───────────────┬──────────┬──────────┬──────────┬────────────┐&lt;/span&gt;
-&lt;span class="err"&gt;│ Name       │ Time R^2 │ Time/Run │          95ci │  mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │&lt;/span&gt;
-&lt;span class="err"&gt;├────────────┼──────────┼──────────┼───────────────┼──────────┼──────────┼──────────┼────────────┤&lt;/span&gt;
-&lt;span class="err"&gt;│ ntr        │     0.98 │  10.27ms │ -2.39% +2.32% │ 600.02kw │ 411.83kw │ 411.83kw │     94.33% │&lt;/span&gt;
-&lt;span class="err"&gt;│ containers │     0.99 │  10.62ms │ -2.19% +1.83% │ 588.02kw │ 404.91kw │ 404.91kw │     97.61% │&lt;/span&gt;
-&lt;span class="err"&gt;│ batteries  │     1.00 │   7.19ms │ -0.78% +0.79% │ 300.02kw │ 300.35kw │ 300.35kw │     66.02% │&lt;/span&gt;
-&lt;span class="err"&gt;│ base       │     0.99 │  10.88ms │ -1.54% +1.41% │ 584.99kw │ 397.60kw │ 397.60kw │    100.00% │&lt;/span&gt;
-&lt;span class="err"&gt;│ stdlib     │     0.99 │   6.33ms │ -1.08% +1.07% │ 300.01kw │ 171.73kw │ 171.73kw │     58.18% │&lt;/span&gt;
-&lt;span class="err"&gt;│ batt-hybr  │     0.93 │   6.09ms │ -4.30% +4.63% │ 300.02kw │ 285.46kw │ 285.46kw │     55.93% │&lt;/span&gt;
-&lt;span class="err"&gt;└────────────┴──────────┴──────────┴───────────────┴──────────┴──────────┴──────────┴────────────┘&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;┌────────────┬──────────┬──────────┬───────────────┬──────────┬──────────┬──────────┬────────────┐
+│ Name       │ Time R^2 │ Time/Run │          95ci │  mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │
+├────────────┼──────────┼──────────┼───────────────┼──────────┼──────────┼──────────┼────────────┤
+│ ntr        │     0.98 │  10.27ms │ -2.39% +2.32% │ 600.02kw │ 411.83kw │ 411.83kw │     94.33% │
+│ containers │     0.99 │  10.62ms │ -2.19% +1.83% │ 588.02kw │ 404.91kw │ 404.91kw │     97.61% │
+│ batteries  │     1.00 │   7.19ms │ -0.78% +0.79% │ 300.02kw │ 300.35kw │ 300.35kw │     66.02% │
+│ base       │     0.99 │  10.88ms │ -1.54% +1.41% │ 584.99kw │ 397.60kw │ 397.60kw │    100.00% │
+│ stdlib     │     0.99 │   6.33ms │ -1.08% +1.07% │ 300.01kw │ 171.73kw │ 171.73kw │     58.18% │
+│ batt-hybr  │     0.93 │   6.09ms │ -4.30% +4.63% │ 300.02kw │ 285.46kw │ 285.46kw │     55.93% │
+└────────────┴──────────┴──────────┴───────────────┴──────────┴──────────┴──────────┴────────────┘
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;A few things I noticed about the data:&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;
@@ -1116,12 +1144,13 @@ that measures how long it takes to write 4096 bytes to a Unix pipe
 using &lt;code&gt;Lwt_unix.write&lt;/code&gt;, and then read it back using &lt;code&gt;Lwt_unix.read&lt;/code&gt;. Using
 &lt;code&gt;core_bench&lt;/code&gt;, I found:&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;Unix Pipe Read/Write Benchmark&lt;/strong&gt;&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="err"&gt;┌─────────┬──────────┬───────────────┬─────────┬────────────┐&lt;/span&gt;
-&lt;span class="err"&gt;│Time R^2 │ Time/Run │          95ci │ mWd/Run │ Percentage │&lt;/span&gt;
-&lt;span class="err"&gt;├─────────┼──────────┼───────────────┼─────────┼────────────┤&lt;/span&gt;
-&lt;span class="err"&gt;│    1.00 │ 893.33ns │ -0.16% +0.18% │  56.00w │    100.00% │&lt;/span&gt;
-&lt;span class="err"&gt;└─────────┴──────────┴───────────────┴─────────┴────────────┘&lt;/span&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;┌─────────┬──────────┬───────────────┬─────────┬────────────┐
+│Time R^2 │ Time/Run │          95ci │ mWd/Run │ Percentage │
+├─────────┼──────────┼───────────────┼─────────┼────────────┤
+│    1.00 │ 893.33ns │ -0.16% +0.18% │  56.00w │    100.00% │
+└─────────┴──────────┴───────────────┴─────────┴────────────┘
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;It seems reasonable to estimate that &lt;code&gt;Lwt_list.map_p&lt;/code&gt; would primarily
 be applied to IO operations like the ones in this experiment. In that
 case, the data suggest the cost per element of applying the slowest
@@ -1154,130 +1183,132 @@ of allocating space on the heap. This produced data like the
 following:&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;Summary Statistics, &lt;span class="math"&gt;\(N=10^3\)&lt;/span&gt; Garbage Collected Map Benchmark Times (μs)&lt;/strong&gt;&lt;/p&gt;
 &lt;table class="dataframe"&gt;
-&lt;thead&gt;
-&lt;tr&gt;
-&lt;th&gt;&lt;/th&gt;
-&lt;th&gt;Std. Lib.&lt;/th&gt;
-&lt;th&gt;NTR&lt;/th&gt;
-&lt;th&gt;Base&lt;/th&gt;
-&lt;th&gt;Batteries&lt;/th&gt;
-&lt;th&gt;Containers&lt;/th&gt;
-&lt;/tr&gt;
-&lt;/thead&gt;
-&lt;tbody&gt;
-&lt;tr&gt;
-&lt;th&gt;Mean&lt;/th&gt;
-&lt;td&gt;27.18&lt;/td&gt;
-&lt;td&gt;27.21&lt;/td&gt;
-&lt;td&gt;11.23&lt;/td&gt;
-&lt;td&gt;19.03&lt;/td&gt;
-&lt;td&gt;13.06&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;th&gt;Min&lt;/th&gt;
-&lt;td&gt;15.97&lt;/td&gt;
-&lt;td&gt;14.07&lt;/td&gt;
-&lt;td&gt;6.91&lt;/td&gt;
-&lt;td&gt;9.06&lt;/td&gt;
-&lt;td&gt;7.87&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;th&gt;25%&lt;/th&gt;
-&lt;td&gt;18.84&lt;/td&gt;
-&lt;td&gt;17.88&lt;/td&gt;
-&lt;td&gt;7.15&lt;/td&gt;
-&lt;td&gt;10.97&lt;/td&gt;
-&lt;td&gt;10.01&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;th&gt;50%&lt;/th&gt;
-&lt;td&gt;20.03&lt;/td&gt;
-&lt;td&gt;19.07&lt;/td&gt;
-&lt;td&gt;8.11&lt;/td&gt;
-&lt;td&gt;15.50&lt;/td&gt;
-&lt;td&gt;10.01&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;th&gt;75%&lt;/th&gt;
-&lt;td&gt;23.13&lt;/td&gt;
-&lt;td&gt;22.17&lt;/td&gt;
-&lt;td&gt;12.87&lt;/td&gt;
-&lt;td&gt;18.84&lt;/td&gt;
-&lt;td&gt;10.97&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;th&gt;Max&lt;/th&gt;
-&lt;td&gt;849.01&lt;/td&gt;
-&lt;td&gt;576.02&lt;/td&gt;
-&lt;td&gt;379.80&lt;/td&gt;
-&lt;td&gt;622.03&lt;/td&gt;
-&lt;td&gt;434.88&lt;/td&gt;
-&lt;/tr&gt;
-&lt;/tbody&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt;&lt;/th&gt;
+      &lt;th&gt;Std. Lib.&lt;/th&gt;
+      &lt;th&gt;NTR&lt;/th&gt;
+      &lt;th&gt;Base&lt;/th&gt;
+      &lt;th&gt;Batteries&lt;/th&gt;
+      &lt;th&gt;Containers&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;th&gt;Mean&lt;/th&gt;
+      &lt;td&gt;27.18&lt;/td&gt;
+      &lt;td&gt;27.21&lt;/td&gt;
+      &lt;td&gt;11.23&lt;/td&gt;
+      &lt;td&gt;19.03&lt;/td&gt;
+      &lt;td&gt;13.06&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th&gt;Min&lt;/th&gt;
+      &lt;td&gt;15.97&lt;/td&gt;
+      &lt;td&gt;14.07&lt;/td&gt;
+      &lt;td&gt;6.91&lt;/td&gt;
+      &lt;td&gt;9.06&lt;/td&gt;
+      &lt;td&gt;7.87&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th&gt;25%&lt;/th&gt;
+      &lt;td&gt;18.84&lt;/td&gt;
+      &lt;td&gt;17.88&lt;/td&gt;
+      &lt;td&gt;7.15&lt;/td&gt;
+      &lt;td&gt;10.97&lt;/td&gt;
+      &lt;td&gt;10.01&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th&gt;50%&lt;/th&gt;
+      &lt;td&gt;20.03&lt;/td&gt;
+      &lt;td&gt;19.07&lt;/td&gt;
+      &lt;td&gt;8.11&lt;/td&gt;
+      &lt;td&gt;15.50&lt;/td&gt;
+      &lt;td&gt;10.01&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th&gt;75%&lt;/th&gt;
+      &lt;td&gt;23.13&lt;/td&gt;
+      &lt;td&gt;22.17&lt;/td&gt;
+      &lt;td&gt;12.87&lt;/td&gt;
+      &lt;td&gt;18.84&lt;/td&gt;
+      &lt;td&gt;10.97&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th&gt;Max&lt;/th&gt;
+      &lt;td&gt;849.01&lt;/td&gt;
+      &lt;td&gt;576.02&lt;/td&gt;
+      &lt;td&gt;379.80&lt;/td&gt;
+      &lt;td&gt;622.03&lt;/td&gt;
+      &lt;td&gt;434.88&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
 &lt;/table&gt;
+
 &lt;p&gt;&lt;strong&gt;Summary Statistics, &lt;span class="math"&gt;\(N=10^4\)&lt;/span&gt; Garbage Collected Map Benchmark Times (μs)&lt;/strong&gt;&lt;/p&gt;
 &lt;table class="dataframe"&gt;
-&lt;thead&gt;
-&lt;tr&gt;
-&lt;th&gt;&lt;/th&gt;
-&lt;th&gt;Std. Lib.&lt;/th&gt;
-&lt;th&gt;NTR&lt;/th&gt;
-&lt;th&gt;Base&lt;/th&gt;
-&lt;th&gt;Batteries&lt;/th&gt;
-&lt;th&gt;Containers&lt;/th&gt;
-&lt;/tr&gt;
-&lt;/thead&gt;
-&lt;tbody&gt;
-&lt;tr&gt;
-&lt;th&gt;Mean&lt;/th&gt;
-&lt;td&gt;230.23&lt;/td&gt;
-&lt;td&gt;216.60&lt;/td&gt;
-&lt;td&gt;141.39&lt;/td&gt;
-&lt;td&gt;144.59&lt;/td&gt;
-&lt;td&gt;161.56&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;th&gt;Min&lt;/th&gt;
-&lt;td&gt;77.01&lt;/td&gt;
-&lt;td&gt;73.91&lt;/td&gt;
-&lt;td&gt;61.04&lt;/td&gt;
-&lt;td&gt;54.84&lt;/td&gt;
-&lt;td&gt;63.18&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;th&gt;25%&lt;/th&gt;
-&lt;td&gt;97.04&lt;/td&gt;
-&lt;td&gt;86.07&lt;/td&gt;
-&lt;td&gt;67.95&lt;/td&gt;
-&lt;td&gt;58.89&lt;/td&gt;
-&lt;td&gt;70.81&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;th&gt;50%&lt;/th&gt;
-&lt;td&gt;121.95&lt;/td&gt;
-&lt;td&gt;99.90&lt;/td&gt;
-&lt;td&gt;75.10&lt;/td&gt;
-&lt;td&gt;61.99&lt;/td&gt;
-&lt;td&gt;77.01&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;th&gt;75%&lt;/th&gt;
-&lt;td&gt;193.83&lt;/td&gt;
-&lt;td&gt;284.91&lt;/td&gt;
-&lt;td&gt;148.59&lt;/td&gt;
-&lt;td&gt;118.26&lt;/td&gt;
-&lt;td&gt;175.24&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;th&gt;Max&lt;/th&gt;
-&lt;td&gt;12719.87&lt;/td&gt;
-&lt;td&gt;2753.97&lt;/td&gt;
-&lt;td&gt;2960.21&lt;/td&gt;
-&lt;td&gt;3616.09&lt;/td&gt;
-&lt;td&gt;13603.93&lt;/td&gt;
-&lt;/tr&gt;
-&lt;/tbody&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt;&lt;/th&gt;
+      &lt;th&gt;Std. Lib.&lt;/th&gt;
+      &lt;th&gt;NTR&lt;/th&gt;
+      &lt;th&gt;Base&lt;/th&gt;
+      &lt;th&gt;Batteries&lt;/th&gt;
+      &lt;th&gt;Containers&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;th&gt;Mean&lt;/th&gt;
+      &lt;td&gt;230.23&lt;/td&gt;
+      &lt;td&gt;216.60&lt;/td&gt;
+      &lt;td&gt;141.39&lt;/td&gt;
+      &lt;td&gt;144.59&lt;/td&gt;
+      &lt;td&gt;161.56&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th&gt;Min&lt;/th&gt;
+      &lt;td&gt;77.01&lt;/td&gt;
+      &lt;td&gt;73.91&lt;/td&gt;
+      &lt;td&gt;61.04&lt;/td&gt;
+      &lt;td&gt;54.84&lt;/td&gt;
+      &lt;td&gt;63.18&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th&gt;25%&lt;/th&gt;
+      &lt;td&gt;97.04&lt;/td&gt;
+      &lt;td&gt;86.07&lt;/td&gt;
+      &lt;td&gt;67.95&lt;/td&gt;
+      &lt;td&gt;58.89&lt;/td&gt;
+      &lt;td&gt;70.81&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th&gt;50%&lt;/th&gt;
+      &lt;td&gt;121.95&lt;/td&gt;
+      &lt;td&gt;99.90&lt;/td&gt;
+      &lt;td&gt;75.10&lt;/td&gt;
+      &lt;td&gt;61.99&lt;/td&gt;
+      &lt;td&gt;77.01&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th&gt;75%&lt;/th&gt;
+      &lt;td&gt;193.83&lt;/td&gt;
+      &lt;td&gt;284.91&lt;/td&gt;
+      &lt;td&gt;148.59&lt;/td&gt;
+      &lt;td&gt;118.26&lt;/td&gt;
+      &lt;td&gt;175.24&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th&gt;Max&lt;/th&gt;
+      &lt;td&gt;12719.87&lt;/td&gt;
+      &lt;td&gt;2753.97&lt;/td&gt;
+      &lt;td&gt;2960.21&lt;/td&gt;
+      &lt;td&gt;3616.09&lt;/td&gt;
+      &lt;td&gt;13603.93&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
 &lt;/table&gt;
+
 &lt;p&gt;When we ignore the time spent on garbage collection, we see that &lt;code&gt;ntr&lt;/code&gt;
 is surprisingly competitive, especially in comparison with &lt;code&gt;stdlib&lt;/code&gt;;
 the difference between the two implementations, of course, is that

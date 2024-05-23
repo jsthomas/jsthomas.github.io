@@ -37,7 +37,7 @@ extract a contour &lt;span class="math"&gt;\(\gamma\)&lt;/span&gt; that traverse
 counterclockwise. Places where &lt;span class="math"&gt;\(\gamma\)&lt;/span&gt; has high curvature (the
 places where &lt;span class="math"&gt;\(\gamma\)&lt;/span&gt; bends the most sharply) typically correspond to
 fingertips.&lt;/p&gt;
-&lt;p&gt;&lt;img alt="Virtual keyboard processing steps." src="https://jsthomas.github.io/images/vkeyboard/kb_processing.png" style="width: 1680px; height: auto;"/&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt="Virtual keyboard processing steps." src="https://jsthomas.github.io/images/vkeyboard/kb_processing.png"&gt;&lt;/p&gt;
 &lt;p&gt;I addressed the second problem using a technique called &lt;em&gt;shadow
 analysis&lt;/em&gt;, which is discussed in [1]. With this technique, we perform
 another segmentation on &lt;span class="math"&gt;\(I\)&lt;/span&gt;, to locate the regions in the image that

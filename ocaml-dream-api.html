@@ -114,8 +114,9 @@ for this, but other tools like <code>curl</code> would work too.</p>
 <p>To give a sense of my development workflow, I want to walk through my
 process for adding a simple endpoint, <code>/api/login</code>. Inside the router,
 that endpoint looks like:</p>
-<div class="highlight"><pre><span></span><code><span class="nn">Dream</span><span class="p">.</span><span class="n">post</span> <span class="s2">"/api/login"</span> <span class="n">login</span><span class="o">;</span>
+<div class="highlight"><pre><span></span><code><span class="nn">Dream</span><span class="p">.</span><span class="n">post</span> <span class="s2">&quot;/api/login&quot;</span> <span class="n">login</span><span class="o">;</span>
 </code></pre></div>
+
 <p>In this excerpt <code>login</code> is a "handler". Handlers are responsible for
 translating requests into responses; this is captured in their <a href="https://aantron.github.io/dream/#type-handler">type
 signature</a>.</p>
@@ -133,6 +134,7 @@ payload, I introduced a simple record type:</p>
   <span class="n">password</span> <span class="o">:</span> <span class="kt">string</span><span class="o">;</span>
 <span class="o">}</span> <span class="o">[@@</span><span class="n">deriving</span> <span class="n">yojson</span><span class="o">]</span>
 </code></pre></div>
+
 <p>Adding <code>[@@deriving yojson]</code> means the compiler can generate functions
 to convert these records to and from JSON. In this case those
 functions are called <code>login_doc_of_yojson</code> and <code>yojson_of_login_doc</code>.</p>
@@ -150,7 +152,7 @@ functions are called <code>login_doc_of_yojson</code> and <code>yojson_of_login_
   <span class="k">match</span> <span class="n">parse</span> <span class="k">with</span>
   <span class="o">|</span> <span class="nc">Some</span> <span class="n">doc</span> <span class="o">-&gt;</span> <span class="n">handler</span> <span class="n">doc</span> <span class="n">request</span>
   <span class="o">|</span> <span class="nc">None</span> <span class="o">-&gt;</span>
-    <span class="o">{</span> <span class="n">error</span><span class="o">=</span><span class="s2">"Received invalid JSON input."</span> <span class="o">}</span>
+    <span class="o">{</span> <span class="n">error</span><span class="o">=</span><span class="s2">&quot;Received invalid JSON input.&quot;</span> <span class="o">}</span>
     <span class="o">|&gt;</span> <span class="n">yojson_of_error_doc</span>
     <span class="o">|&gt;</span> <span class="n">json_response</span> <span class="o">~</span><span class="n">status</span><span class="o">:</span> <span class="o">`</span><span class="nc">Bad_Request</span>
 
@@ -162,12 +164,13 @@ functions are called <code>login_doc_of_yojson</code> and <code>yojson_of_login_
     <span class="k">match</span> <span class="n">user_id</span> <span class="k">with</span>
     <span class="o">|</span> <span class="nc">Some</span> <span class="n">id</span> <span class="o">-&gt;</span>
       <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="bp">()</span> <span class="o">=</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">invalidate_session</span> <span class="n">request</span> <span class="k">in</span>
-      <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="bp">()</span> <span class="o">=</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">put_session</span> <span class="s2">"user"</span> <span class="o">(</span><span class="nn">Int</span><span class="p">.</span><span class="n">to_string</span> <span class="n">id</span><span class="o">)</span> <span class="n">request</span> <span class="k">in</span>
+      <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="bp">()</span> <span class="o">=</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">put_session</span> <span class="s2">&quot;user&quot;</span> <span class="o">(</span><span class="nn">Int</span><span class="p">.</span><span class="n">to_string</span> <span class="n">id</span><span class="o">)</span> <span class="n">request</span> <span class="k">in</span>
       <span class="nn">Dream</span><span class="p">.</span><span class="n">empty</span> <span class="o">`</span><span class="nc">OK</span>
     <span class="o">|</span> <span class="nc">None</span> <span class="o">-&gt;</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">empty</span> <span class="o">`</span><span class="nc">Forbidden</span>
   <span class="k">in</span>
   <span class="n">json_receiver</span> <span class="n">login_doc_of_yojson</span> <span class="n">login_base</span>
 </code></pre></div>
+
 <p>If a user uploads an invalid JSON body, this will cause
 <code>login_doc_of_yojson</code> to throw an exception. By default, this produces
 a 500 server error response. To handle this situation more gracefully,
@@ -188,11 +191,12 @@ API concerns.</p>
 <div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="n">get</span> <span class="o">=</span>
   <span class="k">let</span> <span class="n">query</span> <span class="o">=</span>
     <span class="nn">R</span><span class="p">.</span><span class="n">find_opt</span> <span class="nn">T</span><span class="p">.</span><span class="o">(</span><span class="n">tup2</span> <span class="nn">T</span><span class="p">.</span><span class="n">string</span> <span class="nn">T</span><span class="p">.</span><span class="n">string</span><span class="o">)</span> <span class="nn">T</span><span class="p">.</span><span class="n">int</span>
-      <span class="s2">"SELECT id FROM app_user WHERE username = ? and password = ?"</span> <span class="k">in</span>
+      <span class="s2">&quot;SELECT id FROM app_user WHERE username = ? and password = ?&quot;</span> <span class="k">in</span>
   <span class="k">fun</span> <span class="n">username</span> <span class="n">password</span> <span class="o">(</span><span class="k">module</span> <span class="nc">Db</span> <span class="o">:</span> <span class="nc">DB</span><span class="o">)</span> <span class="o">-&gt;</span>
     <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">user_or_error</span> <span class="o">=</span> <span class="nn">Db</span><span class="p">.</span><span class="n">find_opt</span> <span class="n">query</span> <span class="o">(</span><span class="n">username</span><span class="o">,</span> <span class="n">password</span><span class="o">)</span> <span class="k">in</span>
     <span class="nn">Caqti_lwt</span><span class="p">.</span><span class="n">or_fail</span> <span class="n">user_or_error</span>
 </code></pre></div>
+
 <p>Caqti allows us to define a function that consumes our query
 parameters (the username and password) along with a database
 connection, and produces a promise that will resolve with the results
@@ -211,28 +215,29 @@ easy access in later database queries.</p>
 <h2>Thoughts on the Dream Router</h2>
 <p>The final router for my server looked like this:</p>
 <div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="bp">()</span> <span class="o">=</span>
-  <span class="nn">Dream</span><span class="p">.</span><span class="n">run</span> <span class="o">~</span><span class="n">interface</span><span class="o">:</span><span class="s2">"0.0.0.0"</span>
+  <span class="nn">Dream</span><span class="p">.</span><span class="n">run</span> <span class="o">~</span><span class="n">interface</span><span class="o">:</span><span class="s2">&quot;0.0.0.0&quot;</span>
   <span class="o">@@</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">logger</span>
-  <span class="o">@@</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">sql_pool</span> <span class="s2">"postgresql://sensors@127.0.0.1/sensors"</span>
+  <span class="o">@@</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">sql_pool</span> <span class="s2">&quot;postgresql://sensors@127.0.0.1/sensors&quot;</span>
   <span class="o">@@</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">sql_sessions</span>
   <span class="o">@@</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">router</span> <span class="o">[</span>
     <span class="c">(* More endpoints here ... *)</span>
 
-    <span class="nn">Dream</span><span class="p">.</span><span class="n">get</span> <span class="s2">"/version"</span> <span class="n">version</span><span class="o">;</span>
-    <span class="nn">Dream</span><span class="p">.</span><span class="n">post</span> <span class="s2">"/api/login"</span> <span class="n">login</span><span class="o">;</span>
-    <span class="nn">Dream</span><span class="p">.</span><span class="n">post</span> <span class="s2">"/api/logout"</span> <span class="n">logout</span><span class="o">;</span>
+    <span class="nn">Dream</span><span class="p">.</span><span class="n">get</span> <span class="s2">&quot;/version&quot;</span> <span class="n">version</span><span class="o">;</span>
+    <span class="nn">Dream</span><span class="p">.</span><span class="n">post</span> <span class="s2">&quot;/api/login&quot;</span> <span class="n">login</span><span class="o">;</span>
+    <span class="nn">Dream</span><span class="p">.</span><span class="n">post</span> <span class="s2">&quot;/api/logout&quot;</span> <span class="n">logout</span><span class="o">;</span>
 
-    <span class="nn">Dream</span><span class="p">.</span><span class="n">scope</span> <span class="s2">"/api"</span> <span class="o">[</span><span class="n">login_required</span><span class="o">]</span> <span class="o">[</span>
-      <span class="nn">Dream</span><span class="p">.</span><span class="n">get</span> <span class="s2">"/user/:user_id"</span> <span class="n">user</span><span class="o">;</span>
+    <span class="nn">Dream</span><span class="p">.</span><span class="n">scope</span> <span class="s2">&quot;/api&quot;</span> <span class="o">[</span><span class="n">login_required</span><span class="o">]</span> <span class="o">[</span>
+      <span class="nn">Dream</span><span class="p">.</span><span class="n">get</span> <span class="s2">&quot;/user/:user_id&quot;</span> <span class="n">user</span><span class="o">;</span>
       <span class="c">(* More endpoints here... *)</span>
     <span class="o">];</span>
 
-    <span class="nn">Dream</span><span class="p">.</span><span class="n">scope</span> <span class="s2">"/sensor"</span> <span class="bp">[]</span> <span class="o">[</span>
-      <span class="nn">Dream</span><span class="p">.</span><span class="n">post</span> <span class="s2">"/upload"</span> <span class="o">@@</span> <span class="n">api_key_required</span> <span class="n">sensor_upload</span><span class="o">;</span>
+    <span class="nn">Dream</span><span class="p">.</span><span class="n">scope</span> <span class="s2">&quot;/sensor&quot;</span> <span class="bp">[]</span> <span class="o">[</span>
+      <span class="nn">Dream</span><span class="p">.</span><span class="n">post</span> <span class="s2">&quot;/upload&quot;</span> <span class="o">@@</span> <span class="n">api_key_required</span> <span class="n">sensor_upload</span><span class="o">;</span>
     <span class="o">]</span>
   <span class="o">]</span>
   <span class="o">@@</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">not_found</span>
 </code></pre></div>
+
 <p>I really appreciate how Dream makes it possible to get a concise
 overview of the API; in some Pyramid projects, I found this wasn't
 always possible. In fact, in Pyramid I sometimes struggled with subtle
@@ -268,6 +273,7 @@ particular user:</p>
 <span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">api_key</span> <span class="n">k</span>
  <span class="k">ON</span> <span class="n">s</span><span class="p">.</span><span class="n">api_key</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">id</span>
 </code></pre></div>
+
 <p>By joining against <code>user_sensor</code>, I ensure that a user only gets data
 for the sensors they own.</p>
 <p>I should point out that Dream allows us to use a custom router,
@@ -292,11 +298,12 @@ table:</p>
 <div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="n">get</span> <span class="o">=</span>
   <span class="k">let</span> <span class="n">query</span> <span class="o">=</span>
     <span class="nn">R</span><span class="p">.</span><span class="n">find_opt</span> <span class="nn">T</span><span class="p">.</span><span class="o">(</span><span class="n">tup2</span> <span class="nn">T</span><span class="p">.</span><span class="n">string</span> <span class="nn">T</span><span class="p">.</span><span class="n">string</span><span class="o">)</span> <span class="nn">T</span><span class="p">.</span><span class="n">int</span>
-      <span class="s2">"SELECT id FROM app_user WHERE username = ? and password = ?"</span> <span class="k">in</span>
+      <span class="s2">&quot;SELECT id FROM app_user WHERE username = ? and password = ?&quot;</span> <span class="k">in</span>
   <span class="k">fun</span> <span class="n">username</span> <span class="n">password</span> <span class="o">(</span><span class="k">module</span> <span class="nc">Db</span> <span class="o">:</span> <span class="nc">DB</span><span class="o">)</span> <span class="o">-&gt;</span>
     <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">user_or_error</span> <span class="o">=</span> <span class="nn">Db</span><span class="p">.</span><span class="n">find_opt</span> <span class="n">query</span> <span class="o">(</span><span class="n">username</span><span class="o">,</span> <span class="n">password</span><span class="o">)</span> <span class="k">in</span>
     <span class="nn">Caqti_lwt</span><span class="p">.</span><span class="n">or_fail</span> <span class="n">user_or_error</span>
 </code></pre></div>
+
 <p><strong>SQLAlchemy</strong></p>
 <div class="highlight"><pre><span></span><code><span class="n">db</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">User</span><span class="p">)</span> \
     <span class="o">.</span><span class="n">filter</span><span class="p">(</span>
@@ -304,6 +311,7 @@ table:</p>
         <span class="n">User</span><span class="o">.</span><span class="n">password</span> <span class="o">==</span> <span class="n">password</span>
     <span class="p">)</span><span class="o">.</span><span class="n">one_or_none</span><span class="p">()</span>
 </code></pre></div>
+
 <p>Working with Caqti, a mistake in the syntax of a SQL query won't be
 discovered until runtime. I made fewer mistakes like this with
 SQLAlchemy because most queries are written in Python and can be
@@ -317,9 +325,10 @@ compiler error meant:</p>
 <div class="highlight"><pre><span></span><code><span class="n">Error</span><span class="o">:</span> <span class="n">The</span> <span class="kd">function</span> <span class="n">applied</span> <span class="n">to</span> <span class="k">this</span> <span class="n">argument</span> <span class="n">has</span> <span class="n">type</span>
          <span class="o">?</span><span class="n">env</span><span class="o">:(</span><span class="n">Caqti_driver_info</span><span class="o">.</span><span class="na">t</span> <span class="o">-&gt;</span> <span class="n">string</span> <span class="o">-&gt;</span> <span class="n">Caqti_query</span><span class="o">.</span><span class="na">t</span><span class="o">)</span> <span class="o">-&gt;</span>
          <span class="o">?</span><span class="n">oneshot</span><span class="o">:</span><span class="n">bool</span> <span class="o">-&gt;</span>
-         <span class="o">(</span><span class="err">'</span><span class="n">a</span><span class="o">,</span> <span class="n">unit</span><span class="o">,</span> <span class="o">[&lt;</span> <span class="err">`</span><span class="n">Many</span> <span class="o">|</span> <span class="err">`</span><span class="n">One</span> <span class="o">|</span> <span class="err">`</span><span class="n">Zero</span> <span class="o">&gt;</span> <span class="err">`</span><span class="n">Zero</span> <span class="o">])</span> <span class="n">Caqti_request</span><span class="o">.</span><span class="na">t</span>
+         <span class="o">(</span><span class="err">&#39;</span><span class="n">a</span><span class="o">,</span> <span class="n">unit</span><span class="o">,</span> <span class="o">[&lt;</span> <span class="err">`</span><span class="n">Many</span> <span class="o">|</span> <span class="err">`</span><span class="n">One</span> <span class="o">|</span> <span class="err">`</span><span class="n">Zero</span> <span class="o">&gt;</span> <span class="err">`</span><span class="n">Zero</span> <span class="o">])</span> <span class="n">Caqti_request</span><span class="o">.</span><span class="na">t</span>
 <span class="n">This</span> <span class="n">argument</span> <span class="n">cannot</span> <span class="n">be</span> <span class="n">applied</span> <span class="n">without</span> <span class="n">label</span>
 </code></pre></div>
+
 <p>Using Caqti became easier as I became accustomed to thinking in terms of
 prepared queries. About halfway through the project I realized I
 needed to switch from SQLite to PostgreSQL, and changing databases was
@@ -338,6 +347,7 @@ adding a custom column type to handle this was straightforward:</p>
 <span class="w">  </span><span class="ow">in</span><span class="w"></span>
 <span class="w">  </span><span class="n">T</span><span class="p">.(</span><span class="n">custom</span><span class="w"> </span><span class="o">~</span><span class="n">encode</span><span class="w"> </span><span class="o">~</span><span class="n">decode</span><span class="w"> </span><span class="n">string</span><span class="p">)</span><span class="w"></span>
 </code></pre></div>
+
 <p>In my case, the JSON that I needed to store consisted of arrays of
 floating point numbers, so building the custom type was simply a
 matter of connecting Yojson and Caqti in the right way.</p>

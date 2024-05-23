@@ -62,7 +62,7 @@ sending mail are:</p>
 </ol>
 <p>To test how easily I could satisfy these requirements, I built a web
 app that lets the user send an arbitary email.</p>
-<p><img alt="A screenshot of the email form." src="https://jsthomas.github.io/images/ocaml-email/screenshot.png" style="width: 671px; height: auto;"/></p>
+<p><img alt="A screenshot of the email form." src="https://jsthomas.github.io/images/ocaml-email/screenshot.png"></p>
 <p>The app has two parts:</p>
 <ul>
 <li>A server process responsible for showing the form above and
@@ -84,11 +84,11 @@ addresses. I utilized <code>Emile.of_string</code>, which generates a simple
 result type, like this:</p>
 <div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="n">form_post</span> <span class="n">request</span> <span class="o">=</span>
   <span class="k">match</span><span class="o">%</span><span class="n">lwt</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">form</span> <span class="n">request</span> <span class="k">with</span>
-    <span class="o">|</span> <span class="o">`</span><span class="nc">Ok</span> <span class="o">[</span><span class="s2">"address"</span><span class="o">,</span> <span class="n">address</span><span class="o">;</span> <span class="s2">"message"</span><span class="o">,</span> <span class="n">message</span><span class="o">;</span> <span class="s2">"subject"</span><span class="o">,</span> <span class="n">subject</span> <span class="o">]</span> <span class="o">-&gt;</span>
+    <span class="o">|</span> <span class="o">`</span><span class="nc">Ok</span> <span class="o">[</span><span class="s2">&quot;address&quot;</span><span class="o">,</span> <span class="n">address</span><span class="o">;</span> <span class="s2">&quot;message&quot;</span><span class="o">,</span> <span class="n">message</span><span class="o">;</span> <span class="s2">&quot;subject&quot;</span><span class="o">,</span> <span class="n">subject</span> <span class="o">]</span> <span class="o">-&gt;</span>
       <span class="k">let</span> <span class="n">parse</span> <span class="o">=</span> <span class="nn">Emile</span><span class="p">.</span><span class="n">of_string</span> <span class="n">address</span> <span class="k">in</span>
       <span class="k">let</span> <span class="n">alert</span> <span class="o">=</span> <span class="k">match</span> <span class="n">parse</span> <span class="k">with</span>
-        <span class="o">|</span> <span class="nc">Ok</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="nn">Printf</span><span class="p">.</span><span class="n">sprintf</span> <span class="s2">"Sent an email to %s."</span> <span class="n">address</span>
-        <span class="o">|</span> <span class="nc">Error</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="nn">Printf</span><span class="p">.</span><span class="n">sprintf</span> <span class="s2">"%s is not a valid email address."</span> <span class="n">address</span>
+        <span class="o">|</span> <span class="nc">Ok</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="nn">Printf</span><span class="p">.</span><span class="n">sprintf</span> <span class="s2">&quot;Sent an email to %s.&quot;</span> <span class="n">address</span>
+        <span class="o">|</span> <span class="nc">Error</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="nn">Printf</span><span class="p">.</span><span class="n">sprintf</span> <span class="s2">&quot;%s is not a valid email address.&quot;</span> <span class="n">address</span>
       <span class="k">in</span>
       <span class="k">let</span> <span class="n">queue_req</span> <span class="o">=</span> <span class="k">match</span> <span class="n">parse</span> <span class="k">with</span>
         <span class="o">|</span> <span class="nc">Ok</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="n">queue_email</span> <span class="n">address</span> <span class="n">subject</span> <span class="n">message</span>
@@ -98,6 +98,7 @@ result type, like this:</p>
         <span class="nn">Dream</span><span class="p">.</span><span class="n">html</span> <span class="o">(</span><span class="nn">Template</span><span class="p">.</span><span class="n">show_form</span> <span class="o">~</span><span class="n">alert</span> <span class="n">request</span><span class="o">))</span>
     <span class="o">|</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">empty</span> <span class="o">`</span><span class="nc">Bad_Request</span>
 </code></pre></div>
+
 <p>This way, if a user provides an invalid address, the form displays a simple
 warning message and won't queue any email tasks.</p>
 <h2>Queuing Tasks with RabbitMQ</h2>
@@ -123,11 +124,12 @@ success with the packages
 <p>The worker and server process share a common function for establishing
 a connection to RabbitMQ:</p>
 <div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="n">rabbit_connection</span> <span class="bp">()</span> <span class="o">=</span>
-  <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">connection</span> <span class="o">=</span> <span class="nn">Connection</span><span class="p">.</span><span class="n">connect</span> <span class="o">~</span><span class="n">id</span><span class="o">:</span><span class="s2">"dream"</span> <span class="s2">"localhost"</span> <span class="k">in</span>
-  <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">channel</span> <span class="o">=</span> <span class="nn">Connection</span><span class="p">.</span><span class="n">open_channel</span> <span class="o">~</span><span class="n">id</span><span class="o">:</span><span class="s2">"email"</span> <span class="nn">Channel</span><span class="p">.</span><span class="n">no_confirm</span> <span class="n">connection</span> <span class="k">in</span>
-  <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">queue</span> <span class="o">=</span> <span class="nn">Queue</span><span class="p">.</span><span class="n">declare</span> <span class="n">channel</span> <span class="o">~</span><span class="n">arguments</span><span class="o">:[</span><span class="nn">Rpc</span><span class="p">.</span><span class="nn">Server</span><span class="p">.</span><span class="n">queue_argument</span><span class="o">]</span> <span class="s2">"email"</span> <span class="k">in</span>
+  <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">connection</span> <span class="o">=</span> <span class="nn">Connection</span><span class="p">.</span><span class="n">connect</span> <span class="o">~</span><span class="n">id</span><span class="o">:</span><span class="s2">&quot;dream&quot;</span> <span class="s2">&quot;localhost&quot;</span> <span class="k">in</span>
+  <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">channel</span> <span class="o">=</span> <span class="nn">Connection</span><span class="p">.</span><span class="n">open_channel</span> <span class="o">~</span><span class="n">id</span><span class="o">:</span><span class="s2">&quot;email&quot;</span> <span class="nn">Channel</span><span class="p">.</span><span class="n">no_confirm</span> <span class="n">connection</span> <span class="k">in</span>
+  <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">queue</span> <span class="o">=</span> <span class="nn">Queue</span><span class="p">.</span><span class="n">declare</span> <span class="n">channel</span> <span class="o">~</span><span class="n">arguments</span><span class="o">:[</span><span class="nn">Rpc</span><span class="p">.</span><span class="nn">Server</span><span class="p">.</span><span class="n">queue_argument</span><span class="o">]</span> <span class="s2">&quot;email&quot;</span> <span class="k">in</span>
   <span class="nn">Lwt</span><span class="p">.</span><span class="n">return</span> <span class="o">(</span><span class="n">channel</span><span class="o">,</span> <span class="n">queue</span><span class="o">)</span>
 </code></pre></div>
+
 <p>I was initially little confused about why I needed a "channel" when I
 already had a connection to the broker. Both the worker and the server
 connect to the RabbitMQ Broker via TCP. It's common for clients to
@@ -149,6 +151,7 @@ connection", according to these <a href="https://www.rabbitmq.com/channels.html"
   <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="o">_</span> <span class="o">=</span> <span class="nn">Queue</span><span class="p">.</span><span class="n">publish</span> <span class="n">channel</span> <span class="n">queue</span> <span class="o">(</span><span class="nn">Message</span><span class="p">.</span><span class="n">make</span> <span class="n">text</span><span class="o">)</span> <span class="k">in</span>
   <span class="nn">Lwt</span><span class="p">.</span><span class="n">return_unit</span>
 </code></pre></div>
+
 <p>Here the server writes the address, subject, and text into a record
 type that can be serialized to JSON before being pushed into the queue.</p>
 <p>The worker process, <code>queue_worker</code>, is fairly simple to define:</p>
@@ -158,7 +161,7 @@ type that can be serialized to JSON before being pushed into the queue.</p>
     <span class="k">try</span>
       <span class="nc">Some</span> <span class="o">(</span><span class="n">text</span> <span class="o">|&gt;</span> <span class="nn">Yojson</span><span class="p">.</span><span class="nn">Safe</span><span class="p">.</span><span class="n">from_string</span> <span class="o">|&gt;</span> <span class="n">email_of_yojson</span><span class="o">)</span>
     <span class="k">with</span> <span class="o">_</span> <span class="o">-&gt;</span>
-      <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"Received invalid email record from RabbitMQ: %s"</span> <span class="n">text</span><span class="o">;</span>
+      <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">&quot;Received invalid email record from RabbitMQ: %s&quot;</span> <span class="n">text</span><span class="o">;</span>
       <span class="nc">None</span>
   <span class="k">in</span>
   <span class="k">match</span> <span class="n">email</span> <span class="k">with</span>
@@ -167,18 +170,19 @@ type that can be serialized to JSON before being pushed into the queue.</p>
 
 
 <span class="k">let</span> <span class="n">queue_worker</span> <span class="bp">()</span> <span class="o">=</span>
-  <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"Starting Queue Worker</span><span class="se">\n</span><span class="s2">"</span><span class="o">;</span>
+  <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">&quot;Starting Queue Worker</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">;</span>
   <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">channel</span><span class="o">,</span> <span class="n">queue</span> <span class="o">=</span> <span class="n">rabbit_connection</span> <span class="bp">()</span> <span class="k">in</span>
   <span class="k">let</span> <span class="k">rec</span> <span class="n">handle</span> <span class="bp">()</span> <span class="o">=</span>
     <span class="nn">Queue</span><span class="p">.</span><span class="n">get</span> <span class="o">~</span><span class="n">no_ack</span><span class="o">:</span><span class="bp">true</span> <span class="n">channel</span> <span class="n">queue</span> <span class="o">&gt;&gt;=</span> <span class="k">fun</span> <span class="n">message</span> <span class="o">-&gt;</span>
     <span class="k">let</span> <span class="n">task</span> <span class="o">=</span> <span class="k">match</span> <span class="n">message</span> <span class="k">with</span>
       <span class="o">|</span> <span class="nc">Some</span> <span class="n">m</span> <span class="o">-&gt;</span> <span class="n">flush</span> <span class="n">stdout</span><span class="o">;</span> <span class="n">handle_message</span> <span class="n">m</span>
-      <span class="o">|</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"No new tasks, waiting.</span><span class="se">\n</span><span class="s2">"</span><span class="o">;</span> <span class="n">flush</span> <span class="n">stdout</span><span class="o">;</span> <span class="nn">Lwt_unix</span><span class="p">.</span><span class="n">sleep</span> <span class="mi">5</span><span class="o">.</span>
+      <span class="o">|</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">&quot;No new tasks, waiting.</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">;</span> <span class="n">flush</span> <span class="n">stdout</span><span class="o">;</span> <span class="nn">Lwt_unix</span><span class="p">.</span><span class="n">sleep</span> <span class="mi">5</span><span class="o">.</span>
     <span class="k">in</span>
     <span class="n">task</span> <span class="o">&gt;&gt;=</span> <span class="n">handle</span>
   <span class="k">in</span>
   <span class="n">handle</span> <span class="bp">()</span>
 </code></pre></div>
+
 <p>The worker consists of an infinite loop. When the worker wakes and
 finds tasks in the queue, it uses <code>yojson</code> to deserialize the
 messages and passes them to <code>send_email</code>. If no work is available,
@@ -202,36 +206,38 @@ data, like this:</p>
    <span class="k">let</span> <span class="k">open</span> <span class="nc">Cohttp</span> <span class="k">in</span>
    <span class="k">let</span> <span class="k">open</span> <span class="nc">Cohttp_lwt_unix</span> <span class="k">in</span>
 
-   <span class="k">let</span> <span class="n">api_key</span> <span class="o">=</span> <span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">"MAILGUN_API_KEY"</span> <span class="k">in</span>
-   <span class="k">let</span> <span class="n">sender</span> <span class="o">=</span> <span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">"MAILGUN_SEND_ADDRESS"</span> <span class="k">in</span>
-   <span class="k">let</span> <span class="n">api_base</span> <span class="o">=</span> <span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">"MAILGUN_API_BASE"</span> <span class="k">in</span>
+   <span class="k">let</span> <span class="n">api_key</span> <span class="o">=</span> <span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">&quot;MAILGUN_API_KEY&quot;</span> <span class="k">in</span>
+   <span class="k">let</span> <span class="n">sender</span> <span class="o">=</span> <span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">&quot;MAILGUN_SEND_ADDRESS&quot;</span> <span class="k">in</span>
+   <span class="k">let</span> <span class="n">api_base</span> <span class="o">=</span> <span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">&quot;MAILGUN_API_BASE&quot;</span> <span class="k">in</span>
 
    <span class="k">let</span> <span class="n">params</span> <span class="o">=</span> <span class="o">[</span>
-     <span class="o">(</span><span class="s2">"from"</span><span class="o">,</span> <span class="o">[</span><span class="n">sender</span><span class="o">]);</span>
-     <span class="o">(</span><span class="s2">"to"</span><span class="o">,</span> <span class="o">[</span><span class="n">e</span><span class="o">.</span><span class="n">address</span><span class="o">]);</span>
-     <span class="o">(</span><span class="s2">"subject"</span><span class="o">,</span> <span class="o">[</span><span class="n">e</span><span class="o">.</span><span class="n">subject</span><span class="o">]);</span>
-     <span class="o">(</span><span class="s2">"text"</span><span class="o">,</span> <span class="o">[</span><span class="n">e</span><span class="o">.</span><span class="n">text</span><span class="o">])</span>
+     <span class="o">(</span><span class="s2">&quot;from&quot;</span><span class="o">,</span> <span class="o">[</span><span class="n">sender</span><span class="o">]);</span>
+     <span class="o">(</span><span class="s2">&quot;to&quot;</span><span class="o">,</span> <span class="o">[</span><span class="n">e</span><span class="o">.</span><span class="n">address</span><span class="o">]);</span>
+     <span class="o">(</span><span class="s2">&quot;subject&quot;</span><span class="o">,</span> <span class="o">[</span><span class="n">e</span><span class="o">.</span><span class="n">subject</span><span class="o">]);</span>
+     <span class="o">(</span><span class="s2">&quot;text&quot;</span><span class="o">,</span> <span class="o">[</span><span class="n">e</span><span class="o">.</span><span class="n">text</span><span class="o">])</span>
    <span class="o">]</span> <span class="k">in</span>
-   <span class="k">let</span> <span class="n">cred</span> <span class="o">=</span> <span class="o">`</span><span class="nc">Basic</span> <span class="o">(</span><span class="s2">"api"</span><span class="o">,</span> <span class="n">api_key</span><span class="o">)</span> <span class="k">in</span>
-   <span class="k">let</span> <span class="n">uri</span> <span class="o">=</span> <span class="n">api_base</span> <span class="o">^</span> <span class="s2">"/messages"</span> <span class="o">|&gt;</span> <span class="nn">Uri</span><span class="p">.</span><span class="n">of_string</span> <span class="k">in</span>
+   <span class="k">let</span> <span class="n">cred</span> <span class="o">=</span> <span class="o">`</span><span class="nc">Basic</span> <span class="o">(</span><span class="s2">&quot;api&quot;</span><span class="o">,</span> <span class="n">api_key</span><span class="o">)</span> <span class="k">in</span>
+   <span class="k">let</span> <span class="n">uri</span> <span class="o">=</span> <span class="n">api_base</span> <span class="o">^</span> <span class="s2">&quot;/messages&quot;</span> <span class="o">|&gt;</span> <span class="nn">Uri</span><span class="p">.</span><span class="n">of_string</span> <span class="k">in</span>
    <span class="k">let</span> <span class="n">headers</span> <span class="o">=</span> <span class="nn">Header</span><span class="p">.</span><span class="n">add_authorization</span> <span class="o">(</span><span class="nn">Header</span><span class="p">.</span><span class="n">init</span> <span class="bp">()</span><span class="o">)</span> <span class="n">cred</span> <span class="k">in</span>
    <span class="k">let</span> <span class="n">start</span> <span class="o">=</span>
-     <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"Initiating email send to %s.</span><span class="se">\n</span><span class="s2">"</span> <span class="n">e</span><span class="o">.</span><span class="n">address</span><span class="o">;</span>
+     <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">&quot;Initiating email send to %s.</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="n">e</span><span class="o">.</span><span class="n">address</span><span class="o">;</span>
      <span class="nn">Unix</span><span class="p">.</span><span class="n">gettimeofday</span> <span class="bp">()</span> <span class="k">in</span>
    <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">resp</span><span class="o">,</span> <span class="n">rbody</span> <span class="o">=</span> <span class="nn">Client</span><span class="p">.</span><span class="n">post_form</span> <span class="n">uri</span> <span class="o">~</span><span class="n">params</span> <span class="o">~</span><span class="n">headers</span> <span class="k">in</span>
    <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">finish</span> <span class="o">=</span> <span class="nn">Unix</span><span class="p">.</span><span class="n">gettimeofday</span> <span class="bp">()</span> <span class="o">|&gt;</span> <span class="nn">Lwt</span><span class="p">.</span><span class="n">return</span> <span class="k">in</span>
    <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">rbody_str</span> <span class="o">=</span> <span class="o">(</span><span class="nn">Cohttp_lwt</span><span class="p">.</span><span class="nn">Body</span><span class="p">.</span><span class="n">to_string</span> <span class="n">rbody</span><span class="o">)</span> <span class="k">in</span>
-   <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"API Response Status: %d.</span><span class="se">\n</span><span class="s2">"</span> <span class="o">(</span><span class="nn">Code</span><span class="p">.</span><span class="n">code_of_status</span> <span class="n">resp</span><span class="o">.</span><span class="n">status</span><span class="o">);</span>
-   <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"API Response body %s.</span><span class="se">\n</span><span class="s2">"</span> <span class="n">rbody_str</span><span class="o">;</span>
-   <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"Time to send an email: %.2fs</span><span class="se">\n</span><span class="s2">"</span> <span class="o">(</span><span class="n">finish</span> <span class="o">-.</span> <span class="n">start</span><span class="o">);</span>
+   <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">&quot;API Response Status: %d.</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">(</span><span class="nn">Code</span><span class="p">.</span><span class="n">code_of_status</span> <span class="n">resp</span><span class="o">.</span><span class="n">status</span><span class="o">);</span>
+   <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">&quot;API Response body %s.</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="n">rbody_str</span><span class="o">;</span>
+   <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">&quot;Time to send an email: %.2fs</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">(</span><span class="n">finish</span> <span class="o">-.</span> <span class="n">start</span><span class="o">);</span>
    <span class="nn">Lwt</span><span class="p">.</span><span class="n">return</span> <span class="bp">()</span>
 </code></pre></div>
+
 <p>The endpoint replies with either 200 and a JSON body like this:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-  <span class="nt">"id"</span><span class="p">:</span> <span class="s2">"&lt;some mailgun email address here&gt;"</span>
-  <span class="s2">"message"</span><span class="p">:</span> <span class="s2">"Queued. Thank you."</span>
+  <span class="nt">&quot;id&quot;</span><span class="p">:</span> <span class="nt">&quot;&lt;some mailgun email address here&gt;&quot;</span>
+  <span class="nt">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Queued. Thank you.&quot;</span>
 <span class="p">}</span>
 </code></pre></div>
+
 <p>or else a 400 and an explanation of why the request was rejected. In
 my tests, a successful API request typically took between 0.5 and 1
 seconds. For comparison, the webserver can serve the email form in
@@ -246,14 +252,14 @@ support with this script:</p>
 
 <span class="k">let</span> <span class="n">send_email</span> <span class="bp">()</span> <span class="o">=</span>
   <span class="k">let</span> <span class="n">config</span> <span class="o">=</span> <span class="o">(</span><span class="nn">Letters</span><span class="p">.</span><span class="nn">Config</span><span class="p">.</span><span class="n">make</span>
-      <span class="o">~</span><span class="n">username</span><span class="o">:</span> <span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">"MAILGUN_SMTP_USER"</span>
-      <span class="o">~</span><span class="n">password</span><span class="o">:</span> <span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">"MAILGUN_SMTP_PASSWORD"</span>
-      <span class="o">~</span><span class="n">hostname</span><span class="o">:</span><span class="s2">"smtp.mailgun.org"</span>
+      <span class="o">~</span><span class="n">username</span><span class="o">:</span> <span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">&quot;MAILGUN_SMTP_USER&quot;</span>
+      <span class="o">~</span><span class="n">password</span><span class="o">:</span> <span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">&quot;MAILGUN_SMTP_PASSWORD&quot;</span>
+      <span class="o">~</span><span class="n">hostname</span><span class="o">:</span><span class="s2">&quot;smtp.mailgun.org&quot;</span>
       <span class="o">~</span><span class="n">with_starttls</span><span class="o">:</span><span class="bp">true</span><span class="o">)</span>
   <span class="k">in</span>
-  <span class="k">let</span> <span class="n">sender</span> <span class="o">=</span> <span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">"MAILGUN_SMTP_SENDER"</span> <span class="k">in</span>
-  <span class="k">let</span> <span class="n">recipients</span> <span class="o">=</span> <span class="o">[</span><span class="nn">Letters</span><span class="p">.</span><span class="nc">To</span> <span class="o">(</span><span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">"EMAIL_ADDRESS"</span><span class="o">)]</span> <span class="k">in</span>
-  <span class="k">let</span> <span class="n">subject</span> <span class="o">=</span> <span class="s2">"Test email from mailgun."</span> <span class="k">in</span>
+  <span class="k">let</span> <span class="n">sender</span> <span class="o">=</span> <span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">&quot;MAILGUN_SMTP_SENDER&quot;</span> <span class="k">in</span>
+  <span class="k">let</span> <span class="n">recipients</span> <span class="o">=</span> <span class="o">[</span><span class="nn">Letters</span><span class="p">.</span><span class="nc">To</span> <span class="o">(</span><span class="nn">Sys</span><span class="p">.</span><span class="n">getenv</span> <span class="s2">&quot;EMAIL_ADDRESS&quot;</span><span class="o">)]</span> <span class="k">in</span>
+  <span class="k">let</span> <span class="n">subject</span> <span class="o">=</span> <span class="s2">&quot;Test email from mailgun.&quot;</span> <span class="k">in</span>
   <span class="k">let</span> <span class="n">mail</span> <span class="o">=</span> <span class="nn">Letters</span><span class="p">.</span><span class="n">build_email</span> <span class="o">~</span><span class="n">from</span><span class="o">:</span><span class="n">sender</span> <span class="o">~</span><span class="n">recipients</span> <span class="o">~</span><span class="n">subject</span> <span class="o">~</span><span class="n">body</span> <span class="k">in</span>
 
   <span class="nn">Printexc</span><span class="p">.</span><span class="n">record_backtrace</span> <span class="bp">true</span><span class="o">;</span>
@@ -263,16 +269,17 @@ support with this script:</p>
        <span class="nn">Letters</span><span class="p">.</span><span class="n">send</span> <span class="o">~</span><span class="n">config</span> <span class="o">~</span><span class="n">sender</span> <span class="o">~</span><span class="n">recipients</span> <span class="o">~</span><span class="n">message</span>
     <span class="k">with</span>
       <span class="n">e</span> <span class="o">-&gt;</span>
-      <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"Error. %s</span><span class="se">\n</span><span class="s2">"</span> <span class="o">(</span><span class="nn">Printexc</span><span class="p">.</span><span class="n">to_string</span> <span class="n">e</span><span class="o">);</span>
+      <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">&quot;Error. %s</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">(</span><span class="nn">Printexc</span><span class="p">.</span><span class="n">to_string</span> <span class="n">e</span><span class="o">);</span>
       <span class="nn">Printexc</span><span class="p">.</span><span class="n">print_backtrace</span> <span class="n">stdout</span><span class="o">;</span>
       <span class="nn">Lwt</span><span class="p">.</span><span class="n">return_unit</span>
    <span class="o">)</span>
-  <span class="o">|</span> <span class="nc">Error</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"Message synthesis failed."</span><span class="o">;</span> <span class="n">flush</span> <span class="n">stdout</span><span class="o">;</span> <span class="nn">Lwt</span><span class="p">.</span><span class="n">return_unit</span>
+  <span class="o">|</span> <span class="nc">Error</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">&quot;Message synthesis failed.&quot;</span><span class="o">;</span> <span class="n">flush</span> <span class="n">stdout</span><span class="o">;</span> <span class="nn">Lwt</span><span class="p">.</span><span class="n">return_unit</span>
 
 
 <span class="k">let</span> <span class="bp">()</span> <span class="o">=</span>
   <span class="nn">Lwt_main</span><span class="p">.</span><span class="n">run</span> <span class="o">@@</span> <span class="n">send_email</span> <span class="bp">()</span>
 </code></pre></div>
+
 <p>I ran into some
 <a href="https://github.com/oxidizing/letters/issues/35">difficulties</a> because
 Mailgun does not consistently follow RFC 4954 (thanks to Calascibetta
@@ -303,7 +310,7 @@ mechanism in the event that Mailgun is unavailable.</p>
 <p>I found the resources below helpful for working on this project:</p>
 <ul>
 <li>The <code>amqp-client</code>
-<a href="https://andersfugmann.github.io/amqp-client/amqp-client-lwt/index.html">documentation</a>,
+  <a href="https://andersfugmann.github.io/amqp-client/amqp-client-lwt/index.html">documentation</a>,
   especially the
   <a href="https://github.com/andersfugmann/amqp-client/tree/master/examples">examples</a>
   were helpful for setting up with RabbitMQ.</li>
@@ -413,8 +420,9 @@ for this, but other tools like <code>curl</code> would work too.</p>
 <p>To give a sense of my development workflow, I want to walk through my
 process for adding a simple endpoint, <code>/api/login</code>. Inside the router,
 that endpoint looks like:</p>
-<div class="highlight"><pre><span></span><code><span class="nn">Dream</span><span class="p">.</span><span class="n">post</span> <span class="s2">"/api/login"</span> <span class="n">login</span><span class="o">;</span>
+<div class="highlight"><pre><span></span><code><span class="nn">Dream</span><span class="p">.</span><span class="n">post</span> <span class="s2">&quot;/api/login&quot;</span> <span class="n">login</span><span class="o">;</span>
 </code></pre></div>
+
 <p>In this excerpt <code>login</code> is a "handler". Handlers are responsible for
 translating requests into responses; this is captured in their <a href="https://aantron.github.io/dream/#type-handler">type
 signature</a>.</p>
@@ -432,6 +440,7 @@ payload, I introduced a simple record type:</p>
   <span class="n">password</span> <span class="o">:</span> <span class="kt">string</span><span class="o">;</span>
 <span class="o">}</span> <span class="o">[@@</span><span class="n">deriving</span> <span class="n">yojson</span><span class="o">]</span>
 </code></pre></div>
+
 <p>Adding <code>[@@deriving yojson]</code> means the compiler can generate functions
 to convert these records to and from JSON. In this case those
 functions are called <code>login_doc_of_yojson</code> and <code>yojson_of_login_doc</code>.</p>
@@ -449,7 +458,7 @@ functions are called <code>login_doc_of_yojson</code> and <code>yojson_of_login_
   <span class="k">match</span> <span class="n">parse</span> <span class="k">with</span>
   <span class="o">|</span> <span class="nc">Some</span> <span class="n">doc</span> <span class="o">-&gt;</span> <span class="n">handler</span> <span class="n">doc</span> <span class="n">request</span>
   <span class="o">|</span> <span class="nc">None</span> <span class="o">-&gt;</span>
-    <span class="o">{</span> <span class="n">error</span><span class="o">=</span><span class="s2">"Received invalid JSON input."</span> <span class="o">}</span>
+    <span class="o">{</span> <span class="n">error</span><span class="o">=</span><span class="s2">&quot;Received invalid JSON input.&quot;</span> <span class="o">}</span>
     <span class="o">|&gt;</span> <span class="n">yojson_of_error_doc</span>
     <span class="o">|&gt;</span> <span class="n">json_response</span> <span class="o">~</span><span class="n">status</span><span class="o">:</span> <span class="o">`</span><span class="nc">Bad_Request</span>
 
@@ -461,12 +470,13 @@ functions are called <code>login_doc_of_yojson</code> and <code>yojson_of_login_
     <span class="k">match</span> <span class="n">user_id</span> <span class="k">with</span>
     <span class="o">|</span> <span class="nc">Some</span> <span class="n">id</span> <span class="o">-&gt;</span>
       <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="bp">()</span> <span class="o">=</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">invalidate_session</span> <span class="n">request</span> <span class="k">in</span>
-      <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="bp">()</span> <span class="o">=</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">put_session</span> <span class="s2">"user"</span> <span class="o">(</span><span class="nn">Int</span><span class="p">.</span><span class="n">to_string</span> <span class="n">id</span><span class="o">)</span> <span class="n">request</span> <span class="k">in</span>
+      <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="bp">()</span> <span class="o">=</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">put_session</span> <span class="s2">&quot;user&quot;</span> <span class="o">(</span><span class="nn">Int</span><span class="p">.</span><span class="n">to_string</span> <span class="n">id</span><span class="o">)</span> <span class="n">request</span> <span class="k">in</span>
       <span class="nn">Dream</span><span class="p">.</span><span class="n">empty</span> <span class="o">`</span><span class="nc">OK</span>
     <span class="o">|</span> <span class="nc">None</span> <span class="o">-&gt;</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">empty</span> <span class="o">`</span><span class="nc">Forbidden</span>
   <span class="k">in</span>
   <span class="n">json_receiver</span> <span class="n">login_doc_of_yojson</span> <span class="n">login_base</span>
 </code></pre></div>
+
 <p>If a user uploads an invalid JSON body, this will cause
 <code>login_doc_of_yojson</code> to throw an exception. By default, this produces
 a 500 server error response. To handle this situation more gracefully,
@@ -487,11 +497,12 @@ API concerns.</p>
 <div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="n">get</span> <span class="o">=</span>
   <span class="k">let</span> <span class="n">query</span> <span class="o">=</span>
     <span class="nn">R</span><span class="p">.</span><span class="n">find_opt</span> <span class="nn">T</span><span class="p">.</span><span class="o">(</span><span class="n">tup2</span> <span class="nn">T</span><span class="p">.</span><span class="n">string</span> <span class="nn">T</span><span class="p">.</span><span class="n">string</span><span class="o">)</span> <span class="nn">T</span><span class="p">.</span><span class="n">int</span>
-      <span class="s2">"SELECT id FROM app_user WHERE username = ? and password = ?"</span> <span class="k">in</span>
+      <span class="s2">&quot;SELECT id FROM app_user WHERE username = ? and password = ?&quot;</span> <span class="k">in</span>
   <span class="k">fun</span> <span class="n">username</span> <span class="n">password</span> <span class="o">(</span><span class="k">module</span> <span class="nc">Db</span> <span class="o">:</span> <span class="nc">DB</span><span class="o">)</span> <span class="o">-&gt;</span>
     <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">user_or_error</span> <span class="o">=</span> <span class="nn">Db</span><span class="p">.</span><span class="n">find_opt</span> <span class="n">query</span> <span class="o">(</span><span class="n">username</span><span class="o">,</span> <span class="n">password</span><span class="o">)</span> <span class="k">in</span>
     <span class="nn">Caqti_lwt</span><span class="p">.</span><span class="n">or_fail</span> <span class="n">user_or_error</span>
 </code></pre></div>
+
 <p>Caqti allows us to define a function that consumes our query
 parameters (the username and password) along with a database
 connection, and produces a promise that will resolve with the results
@@ -510,28 +521,29 @@ easy access in later database queries.</p>
 <h2>Thoughts on the Dream Router</h2>
 <p>The final router for my server looked like this:</p>
 <div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="bp">()</span> <span class="o">=</span>
-  <span class="nn">Dream</span><span class="p">.</span><span class="n">run</span> <span class="o">~</span><span class="n">interface</span><span class="o">:</span><span class="s2">"0.0.0.0"</span>
+  <span class="nn">Dream</span><span class="p">.</span><span class="n">run</span> <span class="o">~</span><span class="n">interface</span><span class="o">:</span><span class="s2">&quot;0.0.0.0&quot;</span>
   <span class="o">@@</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">logger</span>
-  <span class="o">@@</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">sql_pool</span> <span class="s2">"postgresql://sensors@127.0.0.1/sensors"</span>
+  <span class="o">@@</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">sql_pool</span> <span class="s2">&quot;postgresql://sensors@127.0.0.1/sensors&quot;</span>
   <span class="o">@@</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">sql_sessions</span>
   <span class="o">@@</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">router</span> <span class="o">[</span>
     <span class="c">(* More endpoints here ... *)</span>
 
-    <span class="nn">Dream</span><span class="p">.</span><span class="n">get</span> <span class="s2">"/version"</span> <span class="n">version</span><span class="o">;</span>
-    <span class="nn">Dream</span><span class="p">.</span><span class="n">post</span> <span class="s2">"/api/login"</span> <span class="n">login</span><span class="o">;</span>
-    <span class="nn">Dream</span><span class="p">.</span><span class="n">post</span> <span class="s2">"/api/logout"</span> <span class="n">logout</span><span class="o">;</span>
+    <span class="nn">Dream</span><span class="p">.</span><span class="n">get</span> <span class="s2">&quot;/version&quot;</span> <span class="n">version</span><span class="o">;</span>
+    <span class="nn">Dream</span><span class="p">.</span><span class="n">post</span> <span class="s2">&quot;/api/login&quot;</span> <span class="n">login</span><span class="o">;</span>
+    <span class="nn">Dream</span><span class="p">.</span><span class="n">post</span> <span class="s2">&quot;/api/logout&quot;</span> <span class="n">logout</span><span class="o">;</span>
 
-    <span class="nn">Dream</span><span class="p">.</span><span class="n">scope</span> <span class="s2">"/api"</span> <span class="o">[</span><span class="n">login_required</span><span class="o">]</span> <span class="o">[</span>
-      <span class="nn">Dream</span><span class="p">.</span><span class="n">get</span> <span class="s2">"/user/:user_id"</span> <span class="n">user</span><span class="o">;</span>
+    <span class="nn">Dream</span><span class="p">.</span><span class="n">scope</span> <span class="s2">&quot;/api&quot;</span> <span class="o">[</span><span class="n">login_required</span><span class="o">]</span> <span class="o">[</span>
+      <span class="nn">Dream</span><span class="p">.</span><span class="n">get</span> <span class="s2">&quot;/user/:user_id&quot;</span> <span class="n">user</span><span class="o">;</span>
       <span class="c">(* More endpoints here... *)</span>
     <span class="o">];</span>
 
-    <span class="nn">Dream</span><span class="p">.</span><span class="n">scope</span> <span class="s2">"/sensor"</span> <span class="bp">[]</span> <span class="o">[</span>
-      <span class="nn">Dream</span><span class="p">.</span><span class="n">post</span> <span class="s2">"/upload"</span> <span class="o">@@</span> <span class="n">api_key_required</span> <span class="n">sensor_upload</span><span class="o">;</span>
+    <span class="nn">Dream</span><span class="p">.</span><span class="n">scope</span> <span class="s2">&quot;/sensor&quot;</span> <span class="bp">[]</span> <span class="o">[</span>
+      <span class="nn">Dream</span><span class="p">.</span><span class="n">post</span> <span class="s2">&quot;/upload&quot;</span> <span class="o">@@</span> <span class="n">api_key_required</span> <span class="n">sensor_upload</span><span class="o">;</span>
     <span class="o">]</span>
   <span class="o">]</span>
   <span class="o">@@</span> <span class="nn">Dream</span><span class="p">.</span><span class="n">not_found</span>
 </code></pre></div>
+
 <p>I really appreciate how Dream makes it possible to get a concise
 overview of the API; in some Pyramid projects, I found this wasn't
 always possible. In fact, in Pyramid I sometimes struggled with subtle
@@ -567,6 +579,7 @@ particular user:</p>
 <span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">api_key</span> <span class="n">k</span>
  <span class="k">ON</span> <span class="n">s</span><span class="p">.</span><span class="n">api_key</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">id</span>
 </code></pre></div>
+
 <p>By joining against <code>user_sensor</code>, I ensure that a user only gets data
 for the sensors they own.</p>
 <p>I should point out that Dream allows us to use a custom router,
@@ -591,11 +604,12 @@ table:</p>
 <div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="n">get</span> <span class="o">=</span>
   <span class="k">let</span> <span class="n">query</span> <span class="o">=</span>
     <span class="nn">R</span><span class="p">.</span><span class="n">find_opt</span> <span class="nn">T</span><span class="p">.</span><span class="o">(</span><span class="n">tup2</span> <span class="nn">T</span><span class="p">.</span><span class="n">string</span> <span class="nn">T</span><span class="p">.</span><span class="n">string</span><span class="o">)</span> <span class="nn">T</span><span class="p">.</span><span class="n">int</span>
-      <span class="s2">"SELECT id FROM app_user WHERE username = ? and password = ?"</span> <span class="k">in</span>
+      <span class="s2">&quot;SELECT id FROM app_user WHERE username = ? and password = ?&quot;</span> <span class="k">in</span>
   <span class="k">fun</span> <span class="n">username</span> <span class="n">password</span> <span class="o">(</span><span class="k">module</span> <span class="nc">Db</span> <span class="o">:</span> <span class="nc">DB</span><span class="o">)</span> <span class="o">-&gt;</span>
     <span class="k">let</span><span class="o">%</span><span class="n">lwt</span> <span class="n">user_or_error</span> <span class="o">=</span> <span class="nn">Db</span><span class="p">.</span><span class="n">find_opt</span> <span class="n">query</span> <span class="o">(</span><span class="n">username</span><span class="o">,</span> <span class="n">password</span><span class="o">)</span> <span class="k">in</span>
     <span class="nn">Caqti_lwt</span><span class="p">.</span><span class="n">or_fail</span> <span class="n">user_or_error</span>
 </code></pre></div>
+
 <p><strong>SQLAlchemy</strong></p>
 <div class="highlight"><pre><span></span><code><span class="n">db</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">User</span><span class="p">)</span> \
     <span class="o">.</span><span class="n">filter</span><span class="p">(</span>
@@ -603,6 +617,7 @@ table:</p>
         <span class="n">User</span><span class="o">.</span><span class="n">password</span> <span class="o">==</span> <span class="n">password</span>
     <span class="p">)</span><span class="o">.</span><span class="n">one_or_none</span><span class="p">()</span>
 </code></pre></div>
+
 <p>Working with Caqti, a mistake in the syntax of a SQL query won't be
 discovered until runtime. I made fewer mistakes like this with
 SQLAlchemy because most queries are written in Python and can be
@@ -616,9 +631,10 @@ compiler error meant:</p>
 <div class="highlight"><pre><span></span><code><span class="n">Error</span><span class="o">:</span> <span class="n">The</span> <span class="kd">function</span> <span class="n">applied</span> <span class="n">to</span> <span class="k">this</span> <span class="n">argument</span> <span class="n">has</span> <span class="n">type</span>
          <span class="o">?</span><span class="n">env</span><span class="o">:(</span><span class="n">Caqti_driver_info</span><span class="o">.</span><span class="na">t</span> <span class="o">-&gt;</span> <span class="n">string</span> <span class="o">-&gt;</span> <span class="n">Caqti_query</span><span class="o">.</span><span class="na">t</span><span class="o">)</span> <span class="o">-&gt;</span>
          <span class="o">?</span><span class="n">oneshot</span><span class="o">:</span><span class="n">bool</span> <span class="o">-&gt;</span>
-         <span class="o">(</span><span class="err">'</span><span class="n">a</span><span class="o">,</span> <span class="n">unit</span><span class="o">,</span> <span class="o">[&lt;</span> <span class="err">`</span><span class="n">Many</span> <span class="o">|</span> <span class="err">`</span><span class="n">One</span> <span class="o">|</span> <span class="err">`</span><span class="n">Zero</span> <span class="o">&gt;</span> <span class="err">`</span><span class="n">Zero</span> <span class="o">])</span> <span class="n">Caqti_request</span><span class="o">.</span><span class="na">t</span>
+         <span class="o">(</span><span class="err">&#39;</span><span class="n">a</span><span class="o">,</span> <span class="n">unit</span><span class="o">,</span> <span class="o">[&lt;</span> <span class="err">`</span><span class="n">Many</span> <span class="o">|</span> <span class="err">`</span><span class="n">One</span> <span class="o">|</span> <span class="err">`</span><span class="n">Zero</span> <span class="o">&gt;</span> <span class="err">`</span><span class="n">Zero</span> <span class="o">])</span> <span class="n">Caqti_request</span><span class="o">.</span><span class="na">t</span>
 <span class="n">This</span> <span class="n">argument</span> <span class="n">cannot</span> <span class="n">be</span> <span class="n">applied</span> <span class="n">without</span> <span class="n">label</span>
 </code></pre></div>
+
 <p>Using Caqti became easier as I became accustomed to thinking in terms of
 prepared queries. About halfway through the project I realized I
 needed to switch from SQLite to PostgreSQL, and changing databases was
@@ -637,6 +653,7 @@ adding a custom column type to handle this was straightforward:</p>
 <span class="w">  </span><span class="ow">in</span><span class="w"></span>
 <span class="w">  </span><span class="n">T</span><span class="p">.(</span><span class="n">custom</span><span class="w"> </span><span class="o">~</span><span class="n">encode</span><span class="w"> </span><span class="o">~</span><span class="n">decode</span><span class="w"> </span><span class="n">string</span><span class="p">)</span><span class="w"></span>
 </code></pre></div>
+
 <p>In my case, the JSON that I needed to store consisted of arrays of
 floating point numbers, so building the custom type was simply a
 matter of connecting Yojson and Caqti in the right way.</p>
@@ -784,7 +801,7 @@ library provides. I also spent a fair amount of time experimenting in
 represent either interactive or batch input with a <code>Stream</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="n">prompt_stream</span> <span class="o">=</span>
   <span class="k">let</span> <span class="n">f</span> <span class="o">_</span> <span class="o">=</span>
-    <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">"osh&gt; "</span><span class="o">;</span>
+    <span class="nn">Printf</span><span class="p">.</span><span class="n">printf</span> <span class="s2">&quot;osh&gt; &quot;</span><span class="o">;</span>
     <span class="nc">Some</span> <span class="o">(</span><span class="n">read_line</span> <span class="bp">()</span><span class="o">)</span> <span class="k">in</span>
   <span class="nn">Stream</span><span class="p">.</span><span class="n">from</span> <span class="n">f</span>
 
@@ -800,6 +817,7 @@ represent either interactive or batch input with a <code>Stream</code>:</p>
   <span class="k">in</span>
   <span class="nn">Stream</span><span class="p">.</span><span class="n">from</span> <span class="n">f</span>
 </code></pre></div>
+
 <p>It's useful to do this part as early as possible, since batch input
 allows you to run the tests.</p>
 <p>Once I could get <code>osh</code> to fail all 22 test cases, I started adding the
@@ -807,14 +825,14 @@ simpler built-in commands <code>cd</code> and <code>exit</code>. (Note <code>./t
 will run all 22 tests, without stopping at the first one that fails.)</p>
 <p>My first version of <code>main</code> just treated user input as <code>string list</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="k">rec</span> <span class="n">main</span> <span class="n">stream</span> <span class="o">=</span>
-  <span class="k">let</span> <span class="n">parse</span> <span class="n">text</span> <span class="o">=</span> <span class="nn">String</span><span class="p">.</span><span class="n">split_on_char</span> <span class="sc">' '</span> <span class="n">text</span> <span class="k">in</span>
+  <span class="k">let</span> <span class="n">parse</span> <span class="n">text</span> <span class="o">=</span> <span class="nn">String</span><span class="p">.</span><span class="n">split_on_char</span> <span class="sc">&#39; &#39;</span> <span class="n">text</span> <span class="k">in</span>
   <span class="k">let</span> <span class="n">process</span> <span class="n">text</span> <span class="o">=</span>
     <span class="k">match</span> <span class="n">parse</span> <span class="n">text</span> <span class="k">with</span>
     <span class="o">|</span> <span class="bp">[]</span> <span class="o">-&gt;</span> <span class="n">main</span> <span class="n">stream</span>  <span class="c">(* Empty lines should just be treated as no-ops. *)</span>
-    <span class="o">|</span> <span class="o">[</span><span class="s2">""</span><span class="o">]</span> <span class="o">-&gt;</span> <span class="n">main</span> <span class="n">stream</span>
-    <span class="o">|</span> <span class="o">[</span><span class="s2">"exit"</span><span class="o">]</span> <span class="o">-&gt;</span> <span class="n">exit</span> <span class="mi">0</span>
-    <span class="o">|</span> <span class="o">[</span><span class="s2">"cd"</span><span class="o">;</span> <span class="n">x</span><span class="o">]</span> <span class="o">-&gt;</span> <span class="nn">Unix</span><span class="p">.</span><span class="n">chdir</span> <span class="n">x</span>
-    <span class="o">|</span> <span class="s2">"cd"</span><span class="o">::</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="n">print_error</span> <span class="bp">()</span>
+    <span class="o">|</span> <span class="o">[</span><span class="s2">&quot;&quot;</span><span class="o">]</span> <span class="o">-&gt;</span> <span class="n">main</span> <span class="n">stream</span>
+    <span class="o">|</span> <span class="o">[</span><span class="s2">&quot;exit&quot;</span><span class="o">]</span> <span class="o">-&gt;</span> <span class="n">exit</span> <span class="mi">0</span>
+    <span class="o">|</span> <span class="o">[</span><span class="s2">&quot;cd&quot;</span><span class="o">;</span> <span class="n">x</span><span class="o">]</span> <span class="o">-&gt;</span> <span class="nn">Unix</span><span class="p">.</span><span class="n">chdir</span> <span class="n">x</span>
+    <span class="o">|</span> <span class="s2">&quot;cd&quot;</span><span class="o">::</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="n">print_error</span> <span class="bp">()</span>
     <span class="o">|</span> <span class="n">x</span><span class="o">::</span><span class="n">xs</span> <span class="o">-&gt;</span>
       <span class="k">match</span> <span class="nn">Unix</span><span class="p">.</span><span class="n">fork</span> <span class="bp">()</span> <span class="k">with</span>
       <span class="o">|</span> <span class="mi">0</span> <span class="o">-&gt;</span> <span class="c">(* Child *)</span>
@@ -825,6 +843,7 @@ will run all 22 tests, without stopping at the first one that fails.)</p>
   <span class="k">in</span>
   <span class="nn">Stream</span><span class="p">.</span><span class="n">iter</span> <span class="n">process</span> <span class="n">stream</span>
 </code></pre></div>
+
 <p>This worked well enough for running simple commands like <code>/usr/bin/ls
 -lah</code>. In order to get output redirection and <code>&amp;</code> to work, I needed to
 upgrade the program's parsing capabilities. I switched from
@@ -842,6 +861,7 @@ representing user input with a <code>string list</code> to a variant type:</p>
   <span class="o">|</span> <span class="nc">Executable</span> <span class="k">of</span> <span class="n">exec</span> <span class="kt">list</span>
   <span class="o">|</span> <span class="nc">Quit</span>
 </code></pre></div>
+
 <p>I found the OCaml compiler (and its emacs integrations, <code>merlin</code> and
 <code>tuareg</code>) very helpful for refactoring. When I revised my types to
 make them better reflect the data I wanted to model, type errors
@@ -863,7 +883,7 @@ to.</p>
 <p>For example, I found that the function responsible for running a child
 process was most natural to express with imperative language features:</p>
 <div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="n">run_executable</span> <span class="n">path</span> <span class="o">{</span><span class="n">executable</span><span class="o">;</span> <span class="n">arguments</span><span class="o">;</span> <span class="n">output</span><span class="o">}</span> <span class="o">=</span>
-  <span class="k">let</span> <span class="n">full_paths</span> <span class="o">=</span> <span class="nn">List</span><span class="p">.</span><span class="n">map</span> <span class="o">(</span><span class="k">fun</span> <span class="n">p</span> <span class="o">-&gt;</span> <span class="n">p</span> <span class="o">^</span> <span class="s2">"/"</span> <span class="o">^</span> <span class="n">executable</span><span class="o">)</span> <span class="n">path</span> <span class="k">in</span>
+  <span class="k">let</span> <span class="n">full_paths</span> <span class="o">=</span> <span class="nn">List</span><span class="p">.</span><span class="n">map</span> <span class="o">(</span><span class="k">fun</span> <span class="n">p</span> <span class="o">-&gt;</span> <span class="n">p</span> <span class="o">^</span> <span class="s2">&quot;/&quot;</span> <span class="o">^</span> <span class="n">executable</span><span class="o">)</span> <span class="n">path</span> <span class="k">in</span>
   <span class="k">let</span> <span class="n">executables</span> <span class="o">=</span> <span class="nn">List</span><span class="p">.</span><span class="n">append</span> <span class="n">full_paths</span> <span class="o">[</span><span class="n">executable</span><span class="o">]</span> <span class="k">in</span>
   <span class="k">let</span> <span class="n">present</span> <span class="o">=</span> <span class="nn">List</span><span class="p">.</span><span class="n">filter</span> <span class="n">executable_present</span> <span class="n">executables</span> <span class="k">in</span>
 
@@ -886,6 +906,7 @@ process was most natural to express with imperative language features:</p>
     <span class="o">|</span> <span class="n">child_pid</span> <span class="o">-&gt;</span> <span class="c">(* Parent *)</span>
       <span class="nc">Some</span> <span class="n">child_pid</span>
 </code></pre></div>
+
 <p>Writing this way made it easy for me to switch between C and OCaml; in
 both languages, we follow a pattern of calling <code>fork</code>, then <code>execv</code> in
 the child process. The fact that I can easily re-use my knowledge of
@@ -895,7 +916,7 @@ main reasons I'm excited to learn more systems programming concepts!</p>
 languages like Python. These features make it so easy to look at a
 function like:</p>
 <div class="highlight"><pre><span></span><code><span class="k">let</span> <span class="n">main</span> <span class="n">stream</span> <span class="o">=</span>
-  <span class="k">let</span> <span class="n">path</span> <span class="o">=</span> <span class="n">ref</span> <span class="o">[</span><span class="s2">"/bin"</span><span class="o">]</span> <span class="k">in</span>
+  <span class="k">let</span> <span class="n">path</span> <span class="o">=</span> <span class="n">ref</span> <span class="o">[</span><span class="s2">&quot;/bin&quot;</span><span class="o">]</span> <span class="k">in</span>
   <span class="k">let</span> <span class="n">process</span> <span class="n">text</span> <span class="o">=</span>
     <span class="k">match</span> <span class="nn">Parser</span><span class="p">.</span><span class="n">parse_line</span> <span class="n">text</span> <span class="k">with</span>
     <span class="o">|</span> <span class="nc">Error</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="n">print_error</span> <span class="bp">()</span>
@@ -909,6 +930,7 @@ function like:</p>
   <span class="k">in</span>
   <span class="nn">Stream</span><span class="p">.</span><span class="n">iter</span> <span class="n">process</span> <span class="n">stream</span>
 </code></pre></div>
+
 <p>and quickly understand all of the different commands <code>osh</code> supports.</p>
 <p>Although it took me some time to get up and running with Angstrom, I
 strongly prefer working with parser combinators to writing an
@@ -950,6 +972,7 @@ expecting</p>
    <span class="bp">[]</span> <span class="o">-&gt;</span> <span class="bp">[]</span>
   <span class="o">|</span> <span class="n">a</span><span class="o">::</span><span class="n">l</span> <span class="o">-&gt;</span> <span class="k">let</span> <span class="n">r</span> <span class="o">=</span> <span class="n">f</span> <span class="n">a</span> <span class="k">in</span> <span class="n">r</span> <span class="o">::</span> <span class="n">map</span> <span class="n">f</span> <span class="n">l</span>
 </code></pre></div>
+
 <p>but I was surprised to learn there are actually several
 implementations of <code>map</code> in the OCaml ecosystem. I wanted to know more
 about these different implementations and their performance
@@ -1005,6 +1028,7 @@ unrolled version of <code>stdlib</code> looks like:</p>
     <span class="k">let</span> <span class="n">f3</span> <span class="o">=</span> <span class="n">f</span> <span class="n">x3</span> <span class="k">in</span>
     <span class="n">f1</span> <span class="o">::</span> <span class="n">f2</span> <span class="o">::</span> <span class="n">f3</span> <span class="o">::</span> <span class="n">map</span> <span class="n">tl</span>
 </code></pre></div>
+
 <p>We get to choose how many elements to unroll (here I picked 3); some
 profiling is needed to decide the most appropriate number.</p>
 <p>The second trick I call "hybridizing". The <code>stdlib</code> version is faster,
@@ -1102,53 +1126,57 @@ which I'll refer to as <code>batt-hybr</code>. Other test details:</p>
 <p>The library also allows us to produce 95% confidence intervals and
 <span class="math">\(R^2\)</span> values for the time estimates.</p>
 <p><strong>Map Benchmark, N = 100</strong></p>
-<div class="highlight"><pre><span></span><code><span class="err">┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐</span>
-<span class="err">│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │</span>
-<span class="err">├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤</span>
-<span class="err">│ ntr        │     1.00 │ 741.20ns │ -0.23% +0.22% │ 609.01w │    0.53w │    0.53w │    100.00% │</span>
-<span class="err">│ containers │     1.00 │ 439.55ns │ -0.64% +0.67% │ 304.03w │    0.17w │    0.17w │     59.30% │</span>
-<span class="err">│ batteries  │     1.00 │ 581.65ns │ -0.14% +0.16% │ 309.01w │    0.35w │    0.35w │     78.47% │</span>
-<span class="err">│ base       │     1.00 │ 438.63ns │ -0.19% +0.20% │ 304.03w │    0.16w │    0.16w │     59.18% │</span>
-<span class="err">│ stdlib     │     1.00 │ 610.45ns │ -0.10% +0.11% │ 304.01w │    0.17w │    0.17w │     82.36% │</span>
-<span class="err">│ batt-hybr  │     1.00 │ 426.76ns │ -0.15% +0.17% │ 304.03w │    0.17w │    0.17w │     57.58% │</span>
-<span class="err">└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘</span>
+<div class="highlight"><pre><span></span><code>┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐
+│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │
+├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤
+│ ntr        │     1.00 │ 741.20ns │ -0.23% +0.22% │ 609.01w │    0.53w │    0.53w │    100.00% │
+│ containers │     1.00 │ 439.55ns │ -0.64% +0.67% │ 304.03w │    0.17w │    0.17w │     59.30% │
+│ batteries  │     1.00 │ 581.65ns │ -0.14% +0.16% │ 309.01w │    0.35w │    0.35w │     78.47% │
+│ base       │     1.00 │ 438.63ns │ -0.19% +0.20% │ 304.03w │    0.16w │    0.16w │     59.18% │
+│ stdlib     │     1.00 │ 610.45ns │ -0.10% +0.11% │ 304.01w │    0.17w │    0.17w │     82.36% │
+│ batt-hybr  │     1.00 │ 426.76ns │ -0.15% +0.17% │ 304.03w │    0.17w │    0.17w │     57.58% │
+└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘
 </code></pre></div>
+
 <p><strong>Map Benchmark, N = 1000</strong></p>
-<div class="highlight"><pre><span></span><code><span class="err">┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐</span>
-<span class="err">│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │</span>
-<span class="err">├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤</span>
-<span class="err">│ ntr        │     1.00 │   8.84us │ -0.14% +0.15% │  6.01kw │   52.08w │   52.08w │    100.00% │</span>
-<span class="err">│ containers │     1.00 │   5.07us │ -0.13% +0.15% │  3.00kw │   17.23w │   17.23w │     57.34% │</span>
-<span class="err">│ batteries  │     1.00 │   6.57us │ -0.14% +0.14% │  3.01kw │   34.71w │   34.71w │     74.32% │</span>
-<span class="err">│ base       │     1.00 │   4.99us │ -0.20% +0.24% │  3.00kw │   17.08w │   17.08w │     56.44% │</span>
-<span class="err">│ stdlib     │     1.00 │   6.84us │ -0.10% +0.10% │  3.00kw │   17.22w │   17.22w │     77.34% │</span>
-<span class="err">│ batt-hybr  │     1.00 │   4.96us │ -0.13% +0.13% │  3.00kw │   17.07w │   17.07w │     56.10% │</span>
-<span class="err">└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘</span>
+<div class="highlight"><pre><span></span><code>┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐
+│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │
+├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤
+│ ntr        │     1.00 │   8.84us │ -0.14% +0.15% │  6.01kw │   52.08w │   52.08w │    100.00% │
+│ containers │     1.00 │   5.07us │ -0.13% +0.15% │  3.00kw │   17.23w │   17.23w │     57.34% │
+│ batteries  │     1.00 │   6.57us │ -0.14% +0.14% │  3.01kw │   34.71w │   34.71w │     74.32% │
+│ base       │     1.00 │   4.99us │ -0.20% +0.24% │  3.00kw │   17.08w │   17.08w │     56.44% │
+│ stdlib     │     1.00 │   6.84us │ -0.10% +0.10% │  3.00kw │   17.22w │   17.22w │     77.34% │
+│ batt-hybr  │     1.00 │   4.96us │ -0.13% +0.13% │  3.00kw │   17.07w │   17.07w │     56.10% │
+└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘
 </code></pre></div>
+
 <p><strong>Map Benchmark, N = 10,000</strong></p>
-<div class="highlight"><pre><span></span><code><span class="err">┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐</span>
-<span class="err">│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │</span>
-<span class="err">├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤</span>
-<span class="err">│ ntr        │     0.99 │ 203.11us │ -0.45% +0.53% │ 60.01kw │   5.40kw │   5.40kw │    100.00% │</span>
-<span class="err">│ containers │     1.00 │ 144.95us │ -0.50% +0.60% │ 48.01kw │   3.04kw │   3.04kw │     71.37% │</span>
-<span class="err">│ batteries  │     1.00 │ 136.87us │ -0.51% +0.63% │ 30.01kw │   3.64kw │   3.64kw │     67.39% │</span>
-<span class="err">│ base       │     1.00 │ 130.85us │ -0.34% +0.39% │ 44.98kw │   2.66kw │   2.66kw │     64.42% │</span>
-<span class="err">│ stdlib     │     1.00 │ 118.70us │ -0.30% +0.29% │ 30.00kw │   1.80kw │   1.80kw │     58.44% │</span>
-<span class="err">│ batt-hybr  │     1.00 │ 106.91us │ -0.42% +0.52% │ 30.01kw │   2.22kw │   2.22kw │     52.64% │</span>
-<span class="err">└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘</span>
+<div class="highlight"><pre><span></span><code>┌────────────┬──────────┬──────────┬───────────────┬─────────┬──────────┬──────────┬────────────┐
+│ Name       │ Time R^2 │ Time/Run │          95ci │ mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │
+├────────────┼──────────┼──────────┼───────────────┼─────────┼──────────┼──────────┼────────────┤
+│ ntr        │     0.99 │ 203.11us │ -0.45% +0.53% │ 60.01kw │   5.40kw │   5.40kw │    100.00% │
+│ containers │     1.00 │ 144.95us │ -0.50% +0.60% │ 48.01kw │   3.04kw │   3.04kw │     71.37% │
+│ batteries  │     1.00 │ 136.87us │ -0.51% +0.63% │ 30.01kw │   3.64kw │   3.64kw │     67.39% │
+│ base       │     1.00 │ 130.85us │ -0.34% +0.39% │ 44.98kw │   2.66kw │   2.66kw │     64.42% │
+│ stdlib     │     1.00 │ 118.70us │ -0.30% +0.29% │ 30.00kw │   1.80kw │   1.80kw │     58.44% │
+│ batt-hybr  │     1.00 │ 106.91us │ -0.42% +0.52% │ 30.01kw │   2.22kw │   2.22kw │     52.64% │
+└────────────┴──────────┴──────────┴───────────────┴─────────┴──────────┴──────────┴────────────┘
 </code></pre></div>
+
 <p><strong>Map Benchmark, N = 100,000</strong></p>
-<div class="highlight"><pre><span></span><code><span class="err">┌────────────┬──────────┬──────────┬───────────────┬──────────┬──────────┬──────────┬────────────┐</span>
-<span class="err">│ Name       │ Time R^2 │ Time/Run │          95ci │  mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │</span>
-<span class="err">├────────────┼──────────┼──────────┼───────────────┼──────────┼──────────┼──────────┼────────────┤</span>
-<span class="err">│ ntr        │     0.98 │  10.27ms │ -2.39% +2.32% │ 600.02kw │ 411.83kw │ 411.83kw │     94.33% │</span>
-<span class="err">│ containers │     0.99 │  10.62ms │ -2.19% +1.83% │ 588.02kw │ 404.91kw │ 404.91kw │     97.61% │</span>
-<span class="err">│ batteries  │     1.00 │   7.19ms │ -0.78% +0.79% │ 300.02kw │ 300.35kw │ 300.35kw │     66.02% │</span>
-<span class="err">│ base       │     0.99 │  10.88ms │ -1.54% +1.41% │ 584.99kw │ 397.60kw │ 397.60kw │    100.00% │</span>
-<span class="err">│ stdlib     │     0.99 │   6.33ms │ -1.08% +1.07% │ 300.01kw │ 171.73kw │ 171.73kw │     58.18% │</span>
-<span class="err">│ batt-hybr  │     0.93 │   6.09ms │ -4.30% +4.63% │ 300.02kw │ 285.46kw │ 285.46kw │     55.93% │</span>
-<span class="err">└────────────┴──────────┴──────────┴───────────────┴──────────┴──────────┴──────────┴────────────┘</span>
+<div class="highlight"><pre><span></span><code>┌────────────┬──────────┬──────────┬───────────────┬──────────┬──────────┬──────────┬────────────┐
+│ Name       │ Time R^2 │ Time/Run │          95ci │  mWd/Run │ mjWd/Run │ Prom/Run │ Percentage │
+├────────────┼──────────┼──────────┼───────────────┼──────────┼──────────┼──────────┼────────────┤
+│ ntr        │     0.98 │  10.27ms │ -2.39% +2.32% │ 600.02kw │ 411.83kw │ 411.83kw │     94.33% │
+│ containers │     0.99 │  10.62ms │ -2.19% +1.83% │ 588.02kw │ 404.91kw │ 404.91kw │     97.61% │
+│ batteries  │     1.00 │   7.19ms │ -0.78% +0.79% │ 300.02kw │ 300.35kw │ 300.35kw │     66.02% │
+│ base       │     0.99 │  10.88ms │ -1.54% +1.41% │ 584.99kw │ 397.60kw │ 397.60kw │    100.00% │
+│ stdlib     │     0.99 │   6.33ms │ -1.08% +1.07% │ 300.01kw │ 171.73kw │ 171.73kw │     58.18% │
+│ batt-hybr  │     0.93 │   6.09ms │ -4.30% +4.63% │ 300.02kw │ 285.46kw │ 285.46kw │     55.93% │
+└────────────┴──────────┴──────────┴───────────────┴──────────┴──────────┴──────────┴────────────┘
 </code></pre></div>
+
 <p>A few things I noticed about the data:</p>
 <ul>
 <li>
@@ -1208,12 +1236,13 @@ that measures how long it takes to write 4096 bytes to a Unix pipe
 using <code>Lwt_unix.write</code>, and then read it back using <code>Lwt_unix.read</code>. Using
 <code>core_bench</code>, I found:</p>
 <p><strong>Unix Pipe Read/Write Benchmark</strong></p>
-<div class="highlight"><pre><span></span><code><span class="err">┌─────────┬──────────┬───────────────┬─────────┬────────────┐</span>
-<span class="err">│Time R^2 │ Time/Run │          95ci │ mWd/Run │ Percentage │</span>
-<span class="err">├─────────┼──────────┼───────────────┼─────────┼────────────┤</span>
-<span class="err">│    1.00 │ 893.33ns │ -0.16% +0.18% │  56.00w │    100.00% │</span>
-<span class="err">└─────────┴──────────┴───────────────┴─────────┴────────────┘</span>
+<div class="highlight"><pre><span></span><code>┌─────────┬──────────┬───────────────┬─────────┬────────────┐
+│Time R^2 │ Time/Run │          95ci │ mWd/Run │ Percentage │
+├─────────┼──────────┼───────────────┼─────────┼────────────┤
+│    1.00 │ 893.33ns │ -0.16% +0.18% │  56.00w │    100.00% │
+└─────────┴──────────┴───────────────┴─────────┴────────────┘
 </code></pre></div>
+
 <p>It seems reasonable to estimate that <code>Lwt_list.map_p</code> would primarily
 be applied to IO operations like the ones in this experiment. In that
 case, the data suggest the cost per element of applying the slowest
@@ -1246,130 +1275,132 @@ of allocating space on the heap. This produced data like the
 following:</p>
 <p><strong>Summary Statistics, <span class="math">\(N=10^3\)</span> Garbage Collected Map Benchmark Times (μs)</strong></p>
 <table class="dataframe">
-<thead>
-<tr>
-<th></th>
-<th>Std. Lib.</th>
-<th>NTR</th>
-<th>Base</th>
-<th>Batteries</th>
-<th>Containers</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<th>Mean</th>
-<td>27.18</td>
-<td>27.21</td>
-<td>11.23</td>
-<td>19.03</td>
-<td>13.06</td>
-</tr>
-<tr>
-<th>Min</th>
-<td>15.97</td>
-<td>14.07</td>
-<td>6.91</td>
-<td>9.06</td>
-<td>7.87</td>
-</tr>
-<tr>
-<th>25%</th>
-<td>18.84</td>
-<td>17.88</td>
-<td>7.15</td>
-<td>10.97</td>
-<td>10.01</td>
-</tr>
-<tr>
-<th>50%</th>
-<td>20.03</td>
-<td>19.07</td>
-<td>8.11</td>
-<td>15.50</td>
-<td>10.01</td>
-</tr>
-<tr>
-<th>75%</th>
-<td>23.13</td>
-<td>22.17</td>
-<td>12.87</td>
-<td>18.84</td>
-<td>10.97</td>
-</tr>
-<tr>
-<th>Max</th>
-<td>849.01</td>
-<td>576.02</td>
-<td>379.80</td>
-<td>622.03</td>
-<td>434.88</td>
-</tr>
-</tbody>
+  <thead>
+    <tr>
+      <th></th>
+      <th>Std. Lib.</th>
+      <th>NTR</th>
+      <th>Base</th>
+      <th>Batteries</th>
+      <th>Containers</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Mean</th>
+      <td>27.18</td>
+      <td>27.21</td>
+      <td>11.23</td>
+      <td>19.03</td>
+      <td>13.06</td>
+    </tr>
+    <tr>
+      <th>Min</th>
+      <td>15.97</td>
+      <td>14.07</td>
+      <td>6.91</td>
+      <td>9.06</td>
+      <td>7.87</td>
+    </tr>
+    <tr>
+      <th>25%</th>
+      <td>18.84</td>
+      <td>17.88</td>
+      <td>7.15</td>
+      <td>10.97</td>
+      <td>10.01</td>
+    </tr>
+    <tr>
+      <th>50%</th>
+      <td>20.03</td>
+      <td>19.07</td>
+      <td>8.11</td>
+      <td>15.50</td>
+      <td>10.01</td>
+    </tr>
+    <tr>
+      <th>75%</th>
+      <td>23.13</td>
+      <td>22.17</td>
+      <td>12.87</td>
+      <td>18.84</td>
+      <td>10.97</td>
+    </tr>
+    <tr>
+      <th>Max</th>
+      <td>849.01</td>
+      <td>576.02</td>
+      <td>379.80</td>
+      <td>622.03</td>
+      <td>434.88</td>
+    </tr>
+  </tbody>
 </table>
+
 <p><strong>Summary Statistics, <span class="math">\(N=10^4\)</span> Garbage Collected Map Benchmark Times (μs)</strong></p>
 <table class="dataframe">
-<thead>
-<tr>
-<th></th>
-<th>Std. Lib.</th>
-<th>NTR</th>
-<th>Base</th>
-<th>Batteries</th>
-<th>Containers</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<th>Mean</th>
-<td>230.23</td>
-<td>216.60</td>
-<td>141.39</td>
-<td>144.59</td>
-<td>161.56</td>
-</tr>
-<tr>
-<th>Min</th>
-<td>77.01</td>
-<td>73.91</td>
-<td>61.04</td>
-<td>54.84</td>
-<td>63.18</td>
-</tr>
-<tr>
-<th>25%</th>
-<td>97.04</td>
-<td>86.07</td>
-<td>67.95</td>
-<td>58.89</td>
-<td>70.81</td>
-</tr>
-<tr>
-<th>50%</th>
-<td>121.95</td>
-<td>99.90</td>
-<td>75.10</td>
-<td>61.99</td>
-<td>77.01</td>
-</tr>
-<tr>
-<th>75%</th>
-<td>193.83</td>
-<td>284.91</td>
-<td>148.59</td>
-<td>118.26</td>
-<td>175.24</td>
-</tr>
-<tr>
-<th>Max</th>
-<td>12719.87</td>
-<td>2753.97</td>
-<td>2960.21</td>
-<td>3616.09</td>
-<td>13603.93</td>
-</tr>
-</tbody>
+  <thead>
+    <tr>
+      <th></th>
+      <th>Std. Lib.</th>
+      <th>NTR</th>
+      <th>Base</th>
+      <th>Batteries</th>
+      <th>Containers</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Mean</th>
+      <td>230.23</td>
+      <td>216.60</td>
+      <td>141.39</td>
+      <td>144.59</td>
+      <td>161.56</td>
+    </tr>
+    <tr>
+      <th>Min</th>
+      <td>77.01</td>
+      <td>73.91</td>
+      <td>61.04</td>
+      <td>54.84</td>
+      <td>63.18</td>
+    </tr>
+    <tr>
+      <th>25%</th>
+      <td>97.04</td>
+      <td>86.07</td>
+      <td>67.95</td>
+      <td>58.89</td>
+      <td>70.81</td>
+    </tr>
+    <tr>
+      <th>50%</th>
+      <td>121.95</td>
+      <td>99.90</td>
+      <td>75.10</td>
+      <td>61.99</td>
+      <td>77.01</td>
+    </tr>
+    <tr>
+      <th>75%</th>
+      <td>193.83</td>
+      <td>284.91</td>
+      <td>148.59</td>
+      <td>118.26</td>
+      <td>175.24</td>
+    </tr>
+    <tr>
+      <th>Max</th>
+      <td>12719.87</td>
+      <td>2753.97</td>
+      <td>2960.21</td>
+      <td>3616.09</td>
+      <td>13603.93</td>
+    </tr>
+  </tbody>
 </table>
+
 <p>When we ignore the time spent on garbage collection, we see that <code>ntr</code>
 is surprisingly competitive, especially in comparison with <code>stdlib</code>;
 the difference between the two implementations, of course, is that
